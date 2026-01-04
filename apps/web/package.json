@@ -36,6 +36,8 @@
     "react-dom": "19.1.0",
     "react-easy-crop": "^5.5.0",
     "react-textarea-autosize": "^8.5.9"
+    "zustand": "^4.5.0"
+
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
