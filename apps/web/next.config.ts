@@ -7,11 +7,7 @@ const API_BASE =
 const nextConfig: NextConfig = {
   experimental: { externalDir: true },
 
-  transpilePackages: [
-    // add your internal workspace packages here (examples)
- experimental: { externalDir: true },
   transpilePackages: ["@shared"],
-  ],
 
   images: {
     remotePatterns: [
