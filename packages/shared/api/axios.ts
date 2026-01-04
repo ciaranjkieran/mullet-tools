@@ -1,16 +1,16 @@
 // lib/api/axios.ts
 import axios from "axios";
 
-const api =
+const baseURL =
   typeof window !== "undefined"
-    ? axios.create({
-        baseURL: `${window.location.protocol}//${window.location.hostname}:8000/api`,
-        withCredentials: true,
-        xsrfCookieName: "csrftoken",
-        xsrfHeaderName: "X-CSRFToken",
-      })
-    : axios.create({
-        baseURL: "http://localhost:8000/api",
-      });
+    ? process.env.NEXT_PUBLIC_API_BASE_URL
+    : process.env.API_BASE_URL || "http://localhost:8000/api";
+
+const api = axios.create({
+  baseURL,
+  withCredentials: true,
+  xsrfCookieName: "csrftoken",
+  xsrfHeaderName: "X-CSRFToken",
+});
 
 export default api;
