@@ -9,8 +9,8 @@ const nextConfig: NextConfig = {
 
   transpilePackages: [
     // add your internal workspace packages here (examples)
-    // "@mullet/ui",
-    // "@mullet/utils",
+ experimental: { externalDir: true },
+  transpilePackages: ["@shared"],
   ],
 
   images: {
