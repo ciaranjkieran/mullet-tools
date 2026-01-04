@@ -1,0 +1,179 @@
+"use client";
+
+import { useEffect, useMemo, useRef, useState } from "react";
+import * as Dialog from "@radix-ui/react-dialog";
+import { Template, TemplateProjectData } from "@shared/types/Template";
+import { Mode } from "@shared/types/Mode";
+import { Project } from "@shared/types/Project";
+import useApplyTemplate from "@shared/api/hooks/templates/useApplyTemplate";
+import ProjectEditor from "./ProjectEditor";
+import { useHomeFocusStore } from "@/lib/store/useNavFocusStore";
+
+export default function ProjectTemplateUseWindow({
+  isOpen,
+  onOpenChange,
+  template,
+  modes,
+}: {
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+  template: Template | null;
+  modes: Mode[];
+}) {
+  const { applyTemplate } = useApplyTemplate();
+
+  const actionTriggered = useRef(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  const [project, setProject] = useState<TemplateProjectData>({
+    title: "",
+    tasks: [],
+    subProjects: [],
+    subMilestones: [],
+  });
+
+  const modeColor = useMemo(
+    () =>
+      template
+        ? modes.find((m) => m.id === template.mode)?.color || "#000"
+        : "#000",
+    [template, modes]
+  );
+
+  useEffect(() => {
+    if (isOpen && template) {
+      const data = template.data as any;
+      setProject({
+        title: template.title,
+        tasks: data?.tasks || [],
+        subProjects: data?.subProjects || [],
+        subMilestones: data?.subMilestones || [],
+      });
+      actionTriggered.current = false;
+      setSubmitting(false);
+    }
+  }, [isOpen, template]);
+
+  useEffect(() => {
+    if (isOpen) document.body.classList.add("modal-open");
+    else document.body.classList.remove("modal-open");
+    return () => document.body.classList.remove("modal-open");
+  }, [isOpen]);
+
+  if (!template) return null;
+
+  const handleUseTemplate = async () => {
+    if (actionTriggered.current || submitting) return;
+    actionTriggered.current = true;
+    setSubmitting(true);
+
+    try {
+      if (template.type !== "project") {
+        console.error("Wrong template type:", template.type);
+        return;
+      }
+
+      const customTemplate: Template = {
+        ...template,
+        title: project.title,
+        data: project,
+      };
+
+      const created: Project = await applyTemplate(customTemplate);
+      if (!created?.id) {
+        console.error("applyTemplate did not return Project with id:", created);
+        return;
+      }
+
+      const store = useHomeFocusStore.getState();
+      store.setActiveModeId?.(created.modeId);
+      store.setTarget({
+        kind: "project",
+        id: created.id,
+        modeId: created.modeId,
+      });
+
+      onOpenChange(false);
+      document.body.classList.remove("modal-open");
+    } catch (err) {
+      console.error("Project create failed:", err);
+      actionTriggered.current = false;
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  return (
+    <Dialog.Root open={isOpen} onOpenChange={onOpenChange}>
+      <Dialog.Portal>
+        <Dialog.Overlay className="fixed inset-0 bg-black/40 z-40" />
+
+        <Dialog.Content
+          ref={contentRef}
+          tabIndex={-1}
+          aria-describedby="project-template-desc"
+          onOpenAutoFocus={(e) => {
+            e.preventDefault();
+            requestAnimationFrame(() => contentRef.current?.focus());
+          }}
+          className="fixed z-50 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[95vw] max-w-3xl bg-white rounded-xl shadow-lg max-h-[90vh] overflow-y-auto"
+        >
+          <Dialog.Title className="sr-only">Use Project Template</Dialog.Title>
+          <p id="project-template-desc" className="sr-only">
+            Create a project from the selected template.
+          </p>
+          {/* rest unchanged */}
+
+          <div className="p-8 space-y-8">
+            <div className="flex items-center gap-4">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill={modeColor}
+                className="w-7 h-7 flex-shrink-0"
+              >
+                <path d="M3 4.5A1.5 1.5 0 0 1 4.5 3h5.379a1.5 1.5 0 0 1 1.06.44l1.621 1.62H19.5A1.5 1.5 0 0 1 21 6.56V18a1.5 1.5 0 0 1-1.5 1.5H4.5A1.5 1.5 0 0 1 3 18V4.5Z" />
+              </svg>
+              <input
+                type="text"
+                value={project.title}
+                onChange={(e) =>
+                  setProject({ ...project, title: e.target.value })
+                }
+                placeholder="New Project Template Title"
+                className="w-full text-2xl font-bold tracking-tight placeholder-gray-400 focus:outline-none border-none bg-transparent"
+              />
+            </div>
+
+            <ProjectEditor
+              node={project}
+              onChange={setProject}
+              modeColor={modeColor}
+              depth={0}
+            />
+
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => onOpenChange(false)}
+                className="px-4 py-2 border rounded"
+                disabled={submitting}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleUseTemplate}
+                className="px-4 py-2 rounded text-white font-semibold disabled:opacity-60"
+                style={{ backgroundColor: modeColor }}
+                disabled={submitting || !project.title.trim()}
+              >
+                {submitting ? "Creating…" : "Create"}
+              </button>
+            </div>
+          </div>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
+  );
+}

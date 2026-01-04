@@ -1,0 +1,38 @@
+{
+  "name": "mobile",
+  "version": "1.0.0",
+  "main": "index.ts",
+  "private": true,
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web"
+  },
+  "dependencies": {
+    "@babel/runtime": "^7.27.6",
+    "@expo/vector-icons": "^14.1.0",
+    "@react-navigation/native": "^7.1.14",
+    "@react-navigation/native-stack": "^7.3.21",
+    "@tanstack/react-query": "^5.81.5",
+    "expo": "~53.0.17",
+    "expo-constants": "~17.1.7",
+    "expo-linear-gradient": "~14.1.5",
+    "expo-status-bar": "~2.2.3",
+    "nativewind": "^4.1.23",
+    "react": "19.1.0",
+    "react-native": "0.80.1",
+    "react-native-safe-area-context": "5.4.0",
+    "react-native-screens": "~4.11.1",
+    "zustand": "^5.0.6"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.25.2",
+    "@types/react": "19.1.8",
+    "babel-plugin-module-resolver": "^5.0.2",
+    "typescript": "~5.8.3"
+  },
+  "overrides": {
+    "linkifyjs": "^4.1.0"
+  }
+}

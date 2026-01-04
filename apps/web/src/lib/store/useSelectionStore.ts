@@ -1,0 +1,91 @@
+"use client";
+
+import { create } from "zustand";
+
+export type EntityType = "task" | "milestone" | "project" | "goal";
+type SelectedMap = Record<EntityType, Set<number>>;
+
+type SelectionState = {
+  selected: SelectedMap;
+
+  // basic ops
+  isSelected: (type: EntityType, id: number) => boolean;
+  toggle: (type: EntityType, id: number) => void;
+  add: (type: EntityType, id: number) => void;
+  remove: (type: EntityType, id: number) => void;
+  clearAll: () => void;
+
+  // derived helpers
+  countByType: () => Record<EntityType, number>;
+  totalCount: () => number;
+  shape: () => { kinds: EntityType[]; singleKind: EntityType | null };
+};
+
+function emptySelected(): SelectedMap {
+  return {
+    task: new Set<number>(),
+    milestone: new Set<number>(),
+    project: new Set<number>(),
+    goal: new Set<number>(),
+  };
+}
+// useSelectionStore.ts
+export const useSelectionStore = create<SelectionState>((set, get) => ({
+  selected: emptySelected(),
+
+  // ✅ Safe guard: handle missing/unknown type and nullish id
+  isSelected: (type, id) => {
+    const s = get().selected;
+    if (!type || id == null) return false;
+    const setForType = s[type];
+    if (!setForType) return false;
+    return setForType.has(id);
+  },
+
+  toggle: (type, id) =>
+    set((state) => {
+      if (!type || id == null) return state;
+      const next = new Set(state.selected[type] ?? []);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return { selected: { ...state.selected, [type]: next } };
+    }),
+
+  add: (type, id) =>
+    set((state) => {
+      if (!type || id == null) return state;
+      const next = new Set(state.selected[type] ?? []);
+      next.add(id);
+      return { selected: { ...state.selected, [type]: next } };
+    }),
+
+  remove: (type, id) =>
+    set((state) => {
+      if (!type || id == null) return state;
+      const next = new Set(state.selected[type] ?? []);
+      next.delete(id);
+      return { selected: { ...state.selected, [type]: next } };
+    }),
+
+  clearAll: () => set({ selected: emptySelected() }),
+
+  countByType: () => {
+    const s = get().selected;
+    return {
+      task: s.task.size,
+      milestone: s.milestone.size,
+      project: s.project.size,
+      goal: s.goal.size,
+    };
+  },
+
+  totalCount: () => {
+    const c = get().countByType();
+    return c.task + c.milestone + c.project + c.goal;
+  },
+
+  shape: () => {
+    const c = get().countByType();
+    const kinds = (Object.keys(c) as EntityType[]).filter((k) => c[k] > 0);
+    return { kinds, singleKind: kinds.length === 1 ? kinds[0] : null };
+  },
+}));
