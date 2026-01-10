@@ -25,15 +25,7 @@ export default function TaskSectionDashboard({
   return (
     <div className="mt-2 space-y-2">
       {tasks.length > 0 && (
-        <SplitTaskListDashboard
-          modes={modes}
-          mode={mode}
-          tasks={tasks}
-          onEditTask={onEditTask}
-          goalId={goalId}
-          projectId={projectId}
-          milestoneId={milestoneId}
-        />
+        <SplitTaskListDashboard modes={modes} mode={mode} tasks={tasks} />
       )}
 
       <AddTaskInline

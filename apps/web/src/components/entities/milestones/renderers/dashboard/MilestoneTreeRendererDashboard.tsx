@@ -52,7 +52,6 @@ export default function MilestoneTreeRendererDashboard({
     <div className="space-y-2" style={{ marginLeft: `${depth * 16}px` }}>
       <MilestoneCardDragDashboard
         milestone={milestone}
-        onEdit={onEditMilestone}
         dialogOpen={dialogOpen}
         variant={variant}
       />

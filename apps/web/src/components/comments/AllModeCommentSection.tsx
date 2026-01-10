@@ -308,7 +308,6 @@ export default function AllModeCommentSection({
               projects={projects}
               goals={goals}
               modes={allModes}
-              selectedMode={mode}
             />
           )}
         </div>

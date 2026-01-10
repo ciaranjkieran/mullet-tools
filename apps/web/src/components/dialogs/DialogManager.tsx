@@ -174,8 +174,6 @@ export default function DialogManager({
             isOpen={isGoalDialogOpen}
             onClose={() => setIsGoalDialogOpen(false)}
             defaultModeId={fallbackModeId}
-            goals={goals}
-            projects={projects}
             modes={modes}
           />
         ))}

@@ -1,5 +1,5 @@
 // utils/buildGoalTree.ts
-import { Goal } from "@/types/Goal";
+import { Goal } from "@shared/types/Goal";
 
 export function buildGoalTree(goals: Goal[], modeId: number): Goal[] {
   return goals

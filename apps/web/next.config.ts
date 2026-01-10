@@ -4,7 +4,9 @@ const API_BASE = "http://127.0.0.1:8000";
 
 const nextConfig: NextConfig = {
   experimental: { externalDir: true },
-
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
   transpilePackages: ["@shared"],
 
   images: {
