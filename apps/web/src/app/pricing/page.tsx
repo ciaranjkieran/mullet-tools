@@ -42,7 +42,7 @@ const TIERS: Record<
     tone: "purple",
   },
   LionsMane: {
-    name: "Lion’s Mane",
+    name: "Lion&rsquo;s Mane",
     price: "€7/mo",
     blurb:
       "Everything in Full Bodied plus Timer & Stats for honest, mode-aware insight.",
@@ -77,7 +77,7 @@ export default function PricingClient() {
             Simple pricing for focused work
           </h1>
           <p className="mt-6 text-lg md:text-xl text-gray-700">
-            Start free. Upgrade when you’re ready.
+            Start free. Upgrade when you&rsquo;re ready.
           </p>
         </header>
 

@@ -2,25 +2,19 @@
 
 import { CSSProperties } from "react";
 import { Hourglass, Timer } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useViewStore } from "@shared/store/useViewStore";
 import { useTimerUIStore } from "@/lib/store/useTimerUIStore";
 
 type Props = {
   className?: string;
   style?: CSSProperties;
-  modeColor: string;
+  onClick?: () => void;
 };
 
 export default function TimerViewButton({
   className = "",
   style,
-  modeColor,
+  onClick,
 }: Props) {
-  const router = useRouter();
-  const viewType = useViewStore((s) => s.viewType);
-  const isActive = viewType === "timer";
-
   const clockType = useTimerUIStore((s) => s.clockType);
   const label = clockType === "timer" ? "Timer" : "Stopwatch";
 
@@ -37,16 +31,9 @@ export default function TimerViewButton({
 
       <button
         type="button"
-        onClick={() => router.replace("/dashboard/timer")}
-        className={`
-          p-3 rounded-full bg-white hover:bg-gray-100 transition cursor-pointer
-          ${isActive ? "" : "border border-black"}
-          ${className}
-        `}
-        style={{
-          ...(isActive ? { boxShadow: `0 0 0 3px ${modeColor}` } : {}),
-          ...style,
-        }}
+        onClick={onClick}
+        className={className}
+        style={style}
         aria-label="Switch to Timer View"
       >
         {clockType === "timer" ? (

@@ -1,17 +1,15 @@
 "use client";
 
 import { LayoutGrid } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { CSSProperties } from "react";
 
 type Props = {
   style?: CSSProperties;
   className?: string;
+  onClick?: () => void;
 };
 
-export default function ModeBoardsButton({ style, className }: Props) {
-  const router = useRouter();
-
+export default function ModeBoardsButton({ style, className, onClick }: Props) {
   return (
     <div className="relative inline-flex items-center group">
       <span
@@ -25,7 +23,7 @@ export default function ModeBoardsButton({ style, className }: Props) {
 
       <button
         type="button"
-        onClick={() => router.replace("/dashboard/boards")}
+        onClick={onClick}
         className={className}
         style={style}
         aria-label="Open Boards View"

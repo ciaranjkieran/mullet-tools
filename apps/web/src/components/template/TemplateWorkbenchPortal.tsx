@@ -1,6 +1,6 @@
 // components/template/TemplateWorkbenchPortal.tsx
 "use client";
-import { useEffect, useMemo } from "react";
+import { useMemo } from "react";
 
 import { useTemplateWorkbenchStore } from "@shared/store/useTemplateWorkbenchStore";
 import BuildMilestoneTemplateWindow from "@/components/template/milestone/BuildMilestoneTemplateWindow";

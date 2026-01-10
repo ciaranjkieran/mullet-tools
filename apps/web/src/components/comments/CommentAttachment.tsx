@@ -1,5 +1,6 @@
-// components/comments/CommentAttachment.tsx
 "use client";
+
+import Image from "next/image";
 
 type Props = {
   url: string;
@@ -18,10 +19,12 @@ export default function CommentAttachment({ url, name, mime = "" }: Props) {
   if (isImage) {
     return (
       <a href={url} target="_blank" rel="noopener noreferrer" className="block">
-        <img
+        <Image
           src={url}
           alt={name}
-          className="max-h-64 w-auto rounded border border-gray-200"
+          width={800}
+          height={600}
+          className="max-h-64 w-auto rounded border border-gray-200 object-contain"
         />
       </a>
     );

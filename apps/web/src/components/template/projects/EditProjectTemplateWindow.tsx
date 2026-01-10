@@ -59,17 +59,18 @@ export default function EditProjectTemplateWindow({
    * Sync when template changes
    ----------------- */
   useEffect(() => {
-    if (template) {
-      const data = template.data as Partial<TemplateProjectData>;
-      setNode({
-        title: template.title || "",
-        tasks: data.tasks || [],
-        subProjects: data.subProjects || [],
-        subMilestones: data.subMilestones || [],
-      });
-      setModeId(template.mode || modes[0].id);
-    }
-  }, [template]);
+    if (!template) return;
+
+    const data = template.data as Partial<TemplateProjectData>;
+    setNode({
+      title: template.title || "",
+      tasks: data.tasks ?? [],
+      subProjects: data.subProjects ?? [],
+      subMilestones: data.subMilestones ?? [],
+    });
+
+    setModeId(template.mode ?? modes[0]?.id ?? 0);
+  }, [template, modes]);
 
   /** ----------------
    * SAVE
@@ -125,12 +126,7 @@ export default function EditProjectTemplateWindow({
           </div>
 
           <div className="flex flex-col gap-6">
-            <ModeInput
-              modeId={modeId}
-              setModeId={setModeId}
-              modes={modes}
-              modeColor={modeColor}
-            />
+            <ModeInput modeId={modeId} modes={modes} modeColor={modeColor} />
 
             {/* Recursive Project Editor */}
             <ProjectEditor

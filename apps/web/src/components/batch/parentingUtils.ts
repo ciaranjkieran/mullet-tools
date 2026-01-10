@@ -1,4 +1,7 @@
 import { EntityKind, ParentType } from "@shared/api/batch/types/types";
+import type { Milestone } from "@shared/types/Milestone";
+import type { Project } from "@shared/types/Project";
+import type { Goal } from "@shared/types/Goal";
 
 /* ---------------- Configurable limits ---------------- */
 const MILESTONE_MAX_DEPTH = 3;
@@ -14,17 +17,16 @@ type SelectedMap = {
   goal: Set<number>;
 };
 
+type ById<T extends { id: number }> = Record<number, T>;
+
 /* ---------------- Utility helpers ---------------- */
-function indexById<T extends { id: number }>(arr: T[]): Record<number, T> {
-  const out: Record<number, T> = {};
+function indexById<T extends { id: number }>(arr: T[]): ById<T> {
+  const out: ById<T> = {};
   for (const item of arr) out[item.id] = item;
   return out;
 }
 
-function depthOfMilestone(
-  id: number,
-  milestonesById: Record<number, { id: number; parentId?: number | null }>
-): number {
+function depthOfMilestone(id: number, milestonesById: ById<Milestone>): number {
   let d = 1;
   let cur = milestonesById[id];
   while (cur?.parentId) {
@@ -34,10 +36,7 @@ function depthOfMilestone(
   return d;
 }
 
-function depthOfProject(
-  id: number,
-  projectsById: Record<number, { id: number; parentId?: number | null }>
-): number {
+function depthOfProject(id: number, projectsById: ById<Project>): number {
   let d = 1;
   let cur = projectsById[id];
   while (cur?.parentId) {
@@ -50,7 +49,7 @@ function depthOfProject(
 function isMilestoneDescendant(
   possibleAncestorId: number,
   candidateId: number,
-  milestonesById: Record<number, { id: number; parentId?: number | null }>
+  milestonesById: ById<Milestone>
 ): boolean {
   let cur = milestonesById[candidateId];
   while (cur?.parentId) {
@@ -63,7 +62,7 @@ function isMilestoneDescendant(
 function isProjectDescendant(
   possibleAncestorId: number,
   candidateId: number,
-  projectsById: Record<number, { id: number; parentId?: number | null }>
+  projectsById: ById<Project>
 ): boolean {
   let cur = projectsById[candidateId];
   while (cur?.parentId) {
@@ -76,15 +75,11 @@ function isProjectDescendant(
 /* Compatibility matrix */
 function allowedParentTypesForKinds(kinds: EntityKind[]): ParentType[] | null {
   if (kinds.includes("goal")) return null;
+
   let allowed: Set<ParentType> = new Set(["milestone", "project", "goal"]);
+
   for (const k of kinds) {
-    if (k === "task") {
-      allowed = new Set(
-        [...allowed].filter(
-          (t) => t === "milestone" || t === "project" || t === "goal"
-        )
-      );
-    } else if (k === "milestone") {
+    if (k === "task" || k === "milestone") {
       allowed = new Set(
         [...allowed].filter(
           (t) => t === "milestone" || t === "project" || t === "goal"
@@ -96,40 +91,29 @@ function allowedParentTypesForKinds(kinds: EntityKind[]): ParentType[] | null {
       );
     }
   }
+
   return [...allowed];
 }
 
 /* ======================================================== */
-/* Main function */
+/* Main function: mode-filtered lists ONLY */
 export function computeParentOptions({
   kinds,
   selected,
-  effectiveModeId,
   sameMode,
-  milestonesArr,
-  projectsArr,
-  goalsArr,
-  milestonesById,
-  projectsById,
-  milestonesByMode,
-  projectsByMode,
-  goalsByMode,
+  milestonesInMode,
+  projectsInMode,
+  goalsInMode,
 }: {
   kinds: EntityKind[];
   selected: SelectedMap;
-  effectiveModeId: number | null;
   sameMode: boolean;
-  milestonesArr: any[];
-  projectsArr: any[];
-  goalsArr: any[];
-  milestonesById: Record<number, any>;
-  projectsById: Record<number, any>;
-  milestonesByMode: Record<number, any[]>;
-  projectsByMode: Record<number, any[]>;
-  goalsByMode: Record<number, any[]>;
+  milestonesInMode: Milestone[];
+  projectsInMode: Project[];
+  goalsInMode: Goal[];
 }): { parentOptions: ParentOption[]; groupingReason: string | null } {
   // 0) Must share a single mode
-  if (!sameMode || !effectiveModeId) {
+  if (!sameMode) {
     return {
       parentOptions: [],
       groupingReason: "Grouping requires all selected to share the same mode.",
@@ -147,8 +131,9 @@ export function computeParentOptions({
     };
   }
 
-  const msById = indexById(milestonesArr);
-  const pjById = indexById(projectsArr);
+  // 2) Build id indexes from *mode-filtered* lists
+  const msById = indexById(milestonesInMode);
+  const pjById = indexById(projectsInMode);
 
   const selMsIds = selected.milestone;
   const selPjIds = selected.project;
@@ -156,50 +141,52 @@ export function computeParentOptions({
 
   const candidates: ParentOption[] = [];
 
+  // ---- Milestones as parents ----
   if (allowed.includes("milestone")) {
-    for (const m of milestonesByMode[effectiveModeId] ?? []) {
+    for (const m of milestonesInMode) {
       if (selMsIds.has(m.id)) continue;
+
+      // prevent putting a milestone under its own descendant (cycle)
       let unsafe = false;
       for (const mid of selMsIds) {
-        if (m.id === mid) {
-          unsafe = true;
-          break;
-        }
         if (isMilestoneDescendant(mid, m.id, msById)) {
           unsafe = true;
           break;
         }
       }
       if (unsafe) continue;
+
       const parentDepth = depthOfMilestone(m.id, msById);
       if (selMsIds.size > 0 && parentDepth + 1 > MILESTONE_MAX_DEPTH) continue;
+
       candidates.push({ id: m.id, type: "milestone", title: m.title });
     }
   }
 
+  // ---- Projects as parents ----
   if (allowed.includes("project")) {
-    for (const p of projectsByMode[effectiveModeId] ?? []) {
+    for (const p of projectsInMode) {
       if (selPjIds.has(p.id)) continue;
+
       let unsafe = false;
       for (const pid of selPjIds) {
-        if (p.id === pid) {
-          unsafe = true;
-          break;
-        }
         if (isProjectDescendant(pid, p.id, pjById)) {
           unsafe = true;
           break;
         }
       }
       if (unsafe) continue;
+
       const parentDepth = depthOfProject(p.id, pjById);
       if (selPjIds.size > 0 && parentDepth + 1 > PROJECT_MAX_DEPTH) continue;
+
       candidates.push({ id: p.id, type: "project", title: p.title });
     }
   }
 
+  // ---- Goals as parents ----
   if (allowed.includes("goal")) {
-    for (const g of goalsByMode[effectiveModeId] ?? []) {
+    for (const g of goalsInMode) {
       if (selGlIds.has(g.id)) continue;
       candidates.push({ id: g.id, type: "goal", title: g.title });
     }
@@ -211,5 +198,6 @@ export function computeParentOptions({
       groupingReason: "No eligible parents in this mode.",
     };
   }
+
   return { parentOptions: candidates, groupingReason: null };
 }

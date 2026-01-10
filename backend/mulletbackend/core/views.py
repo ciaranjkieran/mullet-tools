@@ -5,6 +5,7 @@ from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 import logging
+from django.db.models import F, Max
 
 logger = logging.getLogger(__name__)
 from django.db import transaction
@@ -55,20 +56,33 @@ class ModeViewSet(ModelViewSet):
         if not id_to_pos:
             return Response(ModeSerializer(self.get_queryset(), many=True).data)
 
-        modes = list(
-            Mode.objects.filter(
-                user=request.user,
-                id__in=id_to_pos.keys(),
-            ).only("id", "position")
-        )
+        qs = Mode.objects.filter(
+            user=request.user,
+            id__in=id_to_pos.keys(),
+        ).only("id", "position")
 
-        for m in modes:
-            m.position = id_to_pos[m.id]
+        modes = list(qs)
+        if not modes:
+            return Response(ModeSerializer(self.get_queryset(), many=True).data)
+
+        # Choose a safe offset so phase-1 positions never collide
+        # (max position + a buffer bigger than count is plenty)
+        max_pos = (
+            Mode.objects.filter(user=request.user).aggregate(m=Max("position"))["m"] or 0
+        )
+        offset = max_pos + len(id_to_pos) + 1
 
         with transaction.atomic():
+            # Phase 1: move affected modes out of the way (avoids unique collisions)
+            qs.update(position=F("position") + offset)
+
+            # Phase 2: apply final requested positions
+            for m in modes:
+                m.position = id_to_pos.get(m.id, m.position)
             Mode.objects.bulk_update(modes, ["position"])
 
         return Response(ModeSerializer(self.get_queryset(), many=True).data)
+
 
 
 # ─────────────────────────────────────────────

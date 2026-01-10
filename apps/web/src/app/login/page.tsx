@@ -9,10 +9,21 @@ import { useRegister } from "@shared/api/hooks/auth/useRegister";
 
 type Mode = "login" | "signup";
 
-function getErrorDetail(err: any): string {
+type ApiError = {
+  response?: {
+    data?: {
+      detail?: string;
+      non_field_errors?: string[];
+    };
+  };
+};
+
+function getErrorDetail(err: unknown): string {
+  const e = err as ApiError;
+
   return (
-    err?.response?.data?.detail ??
-    err?.response?.data?.non_field_errors?.[0] ??
+    e?.response?.data?.detail ??
+    e?.response?.data?.non_field_errors?.[0] ??
     "Something went wrong"
   );
 }

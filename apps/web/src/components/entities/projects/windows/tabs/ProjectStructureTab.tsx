@@ -4,7 +4,7 @@ import { Project } from "@shared/types/Project";
 import { Milestone } from "@shared/types/Milestone";
 import { Mode } from "@shared/types/Mode";
 import { Task } from "@shared/types/Task";
-import BatchEditorTrigger from "@/components/batch/BatchEditorTrigger";
+import type { CSSProperties } from "react";
 
 import ProjectTreeStateProvider from "@/components/entities/projects/containers/dashboard/ProjectTreeStateProvider";
 import ProjectTreeRendererDashboard from "@/components/entities/projects/renderers/dashboard/ProjectTreeRendererDashboard";
@@ -29,13 +29,13 @@ export default function ProjectStructureTab({
   if (!project.modeId || !mode) return null;
 
   const tree = buildProjectTree(projects, project.id);
-
+  const style: CSSProperties & { "--scrollbar-color"?: string } = {
+    "--scrollbar-color": mode.color,
+  };
   return (
     <div
       className="flex-1 flex flex-col overflow-y-auto scrollbar-thin mb-6"
-      style={{
-        ["--scrollbar-color" as any]: mode.color,
-      }}
+      style={style}
     >
       <div className="flex-1 flex flex-col relative overflow-hidden rounded-lg">
         <div className="flex-1 flex flex-col overflow-y-auto scrollbar-thin pt-4 pl-4">

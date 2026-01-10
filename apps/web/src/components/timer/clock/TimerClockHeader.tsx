@@ -3,6 +3,7 @@
 import type { ActiveTimerDTO, Kind } from "@shared/types/Timer";
 import { getContrastingText } from "@shared/utils/getContrastingText";
 import { useState } from "react";
+import type { CSSProperties } from "react";
 
 type Props = {
   active: ActiveTimerDTO | null;
@@ -33,12 +34,12 @@ function toMMSS(totalSec: number) {
 export default function TimerClockHeader({
   active,
   clockType,
-  now, // only for re-render; value ignored
+  now: _now, // used only to trigger re-render
   durationSec = 0,
   cdMin,
   cdSec,
   modeColor,
-  activeColor, // eslint-disable-line @typescript-eslint/no-unused-vars
+  activeColor: _activeColor, // intentionally unused
   onStart,
   onStop,
   fetchedAtMs,
@@ -51,28 +52,31 @@ export default function TimerClockHeader({
   if (active) {
     running = true;
 
-    if (active.kind === "stopwatch") {
-      // ✅ Use server-supplied elapsedSeconds as baseline,
-      // then add on local time since that snapshot so it actually ticks.
-      const elapsedFromServer = (active as any).elapsedSeconds;
+    // Safely read possibly-present fields not declared on ActiveTimerDTO
+    const a = active as unknown as Record<string, unknown>;
+    const elapsedSeconds = a["elapsedSeconds"];
+    const remainingSeconds = a["remainingSeconds"];
 
-      if (typeof elapsedFromServer === "number") {
+    if (active.kind === "stopwatch") {
+      // Prefer server-supplied elapsedSeconds (if present), then tick locally
+      if (typeof elapsedSeconds === "number") {
         if (typeof fetchedAtMs === "number") {
           const dtSec = (nowMs - fetchedAtMs) / 1000;
-          displaySec = Math.max(0, Math.floor(elapsedFromServer + dtSec));
+          displaySec = Math.max(0, Math.floor(elapsedSeconds + dtSec));
         } else {
-          // No fetchedAtMs → use raw server value (will still reset to 0 on new session)
-          displaySec = Math.max(0, Math.floor(elapsedFromServer));
+          displaySec = Math.max(0, Math.floor(elapsedSeconds));
         }
       } else {
-        // Fallback: derive from startedAt like before
+        // Fallback: derive from startedAt
         const startedAtMs = Date.parse(active.startedAt);
         displaySec = Math.max(0, Math.floor((nowMs - startedAtMs) / 1000));
       }
     } else {
-      const rs: unknown = (active as any).remainingSeconds;
-      if (typeof rs === "number" && fetchedAtMs) {
-        const decayed = rs - (nowMs - fetchedAtMs) / 1000;
+      if (
+        typeof remainingSeconds === "number" &&
+        typeof fetchedAtMs === "number"
+      ) {
+        const decayed = remainingSeconds - (nowMs - fetchedAtMs) / 1000;
         displaySec = Math.max(0, Math.ceil(decayed));
       } else if (active.endsAt) {
         const endsAtMs = Date.parse(active.endsAt);
@@ -103,7 +107,7 @@ export default function TimerClockHeader({
   const startFg = getContrastingText(modeColor);
   const stopBase = "#991B1B";
 
-  const startStyle: React.CSSProperties = hoverStart
+  const startStyle: CSSProperties = hoverStart
     ? {
         backgroundColor: "#FFFFFF",
         color: modeColor,
@@ -117,7 +121,7 @@ export default function TimerClockHeader({
         border: "2px solid transparent",
       };
 
-  const stopStyle: React.CSSProperties = hoverStop
+  const stopStyle: CSSProperties = hoverStop
     ? {
         backgroundColor: "#FFFFFF",
         color: stopBase,

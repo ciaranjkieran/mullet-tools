@@ -14,8 +14,8 @@ import {
 import {
   SortableContext,
   verticalListSortingStrategy,
-  arrayMove,
 } from "@dnd-kit/sortable";
+
 import { useReorderTasksHome } from "@shared/api/hooks/tasks/useReorderTasksHome";
 
 import { Mode } from "@shared/types/Mode";
@@ -82,7 +82,6 @@ export default function TaskListUnscheduledDashboard({ mode, tasks }: Props) {
 
     // ✅ Not drag-locked: always sync local tasks to latest store props
     setLocalTasks(incoming);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [unscheduled]);
 
   // ---- Store/server updates ----

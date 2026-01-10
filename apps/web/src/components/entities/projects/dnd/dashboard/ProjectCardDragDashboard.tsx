@@ -61,7 +61,6 @@ export default function ProjectCardDragDashboard({
     <div ref={setNodeRef} style={style} data-project-id={project.id}>
       <ProjectRenderer
         project={project}
-        mode={mode}
         modeColor={modeColor}
         variant={variant}
         // ⬇️ pass handle listeners only when draggable

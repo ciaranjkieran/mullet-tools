@@ -1,17 +1,19 @@
 "use client";
 
 import { MessageSquare } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { CSSProperties } from "react";
 
 type Props = {
   style?: CSSProperties;
   className?: string;
+  onClick?: () => void;
 };
 
-export default function ModeCommentsButton({ style, className }: Props) {
-  const router = useRouter();
-
+export default function ModeCommentsButton({
+  style,
+  className,
+  onClick,
+}: Props) {
   return (
     <div className="relative inline-flex items-center group">
       <span
@@ -31,7 +33,7 @@ export default function ModeCommentsButton({ style, className }: Props) {
 
       <button
         type="button"
-        onClick={() => router.replace("/dashboard/comments")}
+        onClick={onClick}
         className={className}
         style={style}
         aria-label="Open Comments View"

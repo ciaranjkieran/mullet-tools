@@ -45,33 +45,31 @@ export default function ProjectTreeRendererDashboard({
   dialogOpen,
   variant,
 }: Props) {
-  const safeTasks = tasks ?? [];
-  const safeMilestones = milestones ?? [];
-
   const isCollapsed = useEntityUIStore(
     (s) => !!s.collapsed.project?.[project.id]
   );
 
   // Tasks directly under this project (milestone tasks are rendered under their milestone)
-  const childTasks = useMemo(
-    () => safeTasks.filter((t) => t.projectId === project.id && !t.milestoneId),
-    [safeTasks, project.id]
-  );
+  const childTasks = useMemo(() => {
+    const safeTasks = tasks ?? [];
+    return safeTasks.filter(
+      (t) => t.projectId === project.id && !t.milestoneId
+    );
+  }, [tasks, project.id]);
 
   // Build a Map for O(1) milestone lookups during effective traversal
-  const milestonesById = useMemo(
-    () => new Map<number, Milestone>(safeMilestones.map((m) => [m.id, m])),
-    [safeMilestones]
-  );
+  const milestonesById = useMemo(() => {
+    const safeMilestones = milestones ?? [];
+    return new Map<number, Milestone>(safeMilestones.map((m) => [m.id, m]));
+  }, [milestones]);
 
   // ✅ Milestones whose *effective* project is this project (transitive via milestone parents)
-  const childMilestones = useMemo(
-    () =>
-      safeMilestones.filter(
-        (m) => milestoneEffectiveProjectId(m.id, milestonesById) === project.id
-      ),
-    [safeMilestones, milestonesById, project.id]
-  );
+  const childMilestones = useMemo(() => {
+    const safeMilestones = milestones ?? [];
+    return safeMilestones.filter(
+      (m) => milestoneEffectiveProjectId(m.id, milestonesById) === project.id
+    );
+  }, [milestones, milestonesById, project.id]);
 
   // AFTER (no projectId → no direct re-filtering)
   const milestoneTree = useMemo(

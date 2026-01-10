@@ -1,15 +1,34 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { CalendarIcon, HomeIcon } from "lucide-react";
+
 import PageTitle from "@/components/views/PageTitle";
+import ViewHandler from "@/components/views/ViewHandler";
+
 import ModeNotesButton from "@/components/notes/ModeNotesButton";
 import ModeBoardsButton from "@/components/boards/ModeBoardsButton";
 import ModeTemplatesButton from "@/components/template/ModeTemplatesButton";
 import TimerViewButton from "@/components/timer/TimerViewButton";
+import ModeCommentsButton from "@/components/comments/ModeCommentsButton";
+import ModeStatsButton from "@/components/stats/ModeStatsButton";
+
 import ScrollJumper from "@/components/common/ScrollJumper";
+import ModeFilter from "@/components/entities/modes/windows/ModeFilter";
+import DialogManager from "@/components/dialogs/DialogManager";
+
+import {
+  AddGoalButton,
+  AddMilestoneButton,
+  AddProjectButton,
+  AddTaskButton,
+} from "@/components/addbuttons";
+
 import { useViewerStore } from "@/components/boards/viewer/store/useViewerStore";
-import { useRouter } from "next/navigation";
+
+import { useDialogStore } from "@/lib/dialogs/useDialogStore";
+import { useHomeFocusStore } from "@/lib/store/useNavFocusStore";
 
 import { useViewStore } from "@shared/store/useViewStore";
 import { useModeStore } from "@shared/store/useModeStore";
@@ -23,25 +42,33 @@ import { useMilestones } from "@shared/api/hooks/milestones/useMilestones";
 import { useModes } from "@shared/api/hooks/modes/useModes";
 import { useProjects } from "@shared/api/hooks/projects/useProjects";
 import { useTasks } from "@shared/api/hooks/tasks/useTasks";
+
 import type { Mode } from "@shared/types/Mode";
 
-import { useDialogStore } from "@/lib/dialogs/useDialogStore";
-import DialogManager from "@/components/dialogs/DialogManager";
-import ModeFilter from "@/components/entities/modes/windows/ModeFilter";
-import ModeCommentsButton from "@/components/comments/ModeCommentsButton";
-import ModeStatsButton from "@/components/stats/ModeStatsButton";
-import BatchEditorWindow from "@/components/batch/BatchEditorWindow";
-import { useBatchEditorStore } from "@/lib/store/useBatchEditorStore";
-import {
-  AddGoalButton,
-  AddMilestoneButton,
-  AddProjectButton,
-  AddTaskButton,
-} from "@/components/addbuttons";
-import ViewHandler from "@/components/views/ViewHandler";
+type View =
+  | "home"
+  | "calendar"
+  | "comments"
+  | "notes"
+  | "boards"
+  | "templates"
+  | "stats"
+  | "timer";
 
-import { getContrastingText } from "@shared/utils/getContrastingText";
-import { useHomeFocusStore } from "@/lib/store/useNavFocusStore";
+const VIEWS: View[] = [
+  "home",
+  "calendar",
+  "comments",
+  "notes",
+  "boards",
+  "templates",
+  "stats",
+  "timer",
+];
+
+function isView(v: string | null): v is View {
+  return !!v && (VIEWS as readonly string[]).includes(v);
+}
 
 export default function DashboardPage() {
   // Load data
@@ -51,34 +78,56 @@ export default function DashboardPage() {
   useProjects();
   useGoals();
 
-  // Global view state
-  const viewType = useViewStore((s) => s.viewType);
-  const setViewType = useViewStore((s) => s.setViewType);
-  const viewerOpen = useViewerStore((s) => s.isOpen);
+  // Router + URL state
   const router = useRouter();
-  const goView = (view: string) => {
-    const href = view === "home" ? "/dashboard" : `/dashboard/${view}`;
-    router.replace(href);
+  const searchParams = useSearchParams();
+
+  // Global view state
+  const viewType = useViewStore((s) => s.viewType) as any;
+  const setViewType = useViewStore((s) => s.setViewType);
+
+  // URL -> view
+  const urlView: View = useMemo(() => {
+    const v = searchParams.get("view");
+    return isView(v) ? v : "home";
+  }, [searchParams]);
+
+  // Keep store in sync with URL
+  useEffect(() => {
+    // Back-compat: if your store uses "dashboard" for home, you can either:
+    // 1) switch the store to "home", or
+    // 2) keep mapping here.
+    // This sets the store to "home" (preferred). If your store doesn't allow it yet,
+    // change this to: setViewType(urlView === "home" ? "dashboard" : urlView)
+    try {
+      setViewType(urlView as any);
+    } catch {
+      setViewType((urlView === "home" ? "dashboard" : urlView) as any);
+    }
+  }, [urlView, setViewType]);
+
+  // One navigation function: store + URL
+  const goView = (view: View) => {
+    // update store immediately (nice UX)
+    try {
+      setViewType(view as any);
+    } catch {
+      setViewType((view === "home" ? "dashboard" : view) as any);
+    }
+
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("view", view);
+    router.replace(`/dashboard?${params.toString()}`);
   };
-  // Mode selection (treat as Mode | "All" locally for type-safety)
+
+  const viewerOpen = useViewerStore((s) => s.isOpen);
+
+  // Mode selection
   type MaybeAll = Mode | "All";
   const selectedMode = useModeStore((s) => s.selectedMode) as MaybeAll;
   const setSelectedMode = useModeStore((s) => s.setSelectedMode);
 
   const activeMode = selectedMode === "All" ? null : selectedMode;
-  const showModeTitle = selectedMode === "All";
-
-  const isOpen = useBatchEditorStore((s) => s.isBatchEditorOpen);
-  const setIsOpen = useBatchEditorStore((s) => s.setIsBatchEditorOpen);
-
-  // Focus target from Home focus store (HomeView clears it after reveal)
-  const focusTarget = useHomeFocusStore((s) => s.target);
-
-  // Local UI state
-  const [isModeFocus, setIsModeFocus] = useState(false);
-  const [isTodayFocus, setIsTodayFocus] = useState(false);
-
-  // Global entity state
   const modes = useModeStore((s) => s.modes);
   const tasks = useTaskStore((s) => s.tasks);
   const milestones = useMilestoneStore((s) => s.milestones);
@@ -103,7 +152,13 @@ export default function DashboardPage() {
   const filteredTasks =
     selectedMode === "All"
       ? tasks
-      : tasks.filter((t) => t.modeId === selectedMode.id);
+      : tasks.filter((t) => t.modeId === (selectedMode as Mode).id);
+
+  // Focus target from Home focus store
+  const focusTarget = useHomeFocusStore((s) => s.target);
+
+  const [isModeFocus, setIsModeFocus] = useState(false);
+  const [isTodayFocus, setIsTodayFocus] = useState(false);
 
   const [jumperPos, setJumperPos] = useState<{
     top: number;
@@ -141,46 +196,41 @@ export default function DashboardPage() {
   }, []);
 
   /**
-   * 🔌 Bridge: when a focus target arrives, force the UI to the right place.
-   * Guard with nonce so we run exactly once per request.
+   * 🔌 Bridge: when a focus target arrives, force UI into home + correct mode.
    */
   const lastApplied = useRef<number | null>(null);
   useEffect(() => {
     if (!focusTarget) return;
-    if (lastApplied.current === focusTarget.nonce) return; // already handled
+    if (lastApplied.current === focusTarget.nonce) return;
 
-    // 1) Ensure Home/Dashboard view
-    if (viewType !== "dashboard") {
-      setViewType("dashboard");
-    }
+    // Always go home for focus reveals
+    goView("home");
 
-    // 2) Ensure correct mode tab (if provided)
+    // Ensure correct mode tab (if provided)
     if (focusTarget.modeId != null && modes.length) {
       const m = modes.find((mm) => mm.id === focusTarget.modeId);
       if (m) {
-        if (selectedMode === "All" || selectedMode.id !== m.id) {
+        if (selectedMode === "All" || (selectedMode as Mode).id !== m.id) {
           setSelectedMode(m);
         }
       }
     }
 
     lastApplied.current = focusTarget.nonce;
-  }, [
-    focusTarget?.nonce,
-    modes,
-    viewType,
-    selectedMode,
-    setSelectedMode,
-    setViewType,
-  ]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusTarget, modes.length]);
+
+  // Helper for "active" styling based on URL (more reliable than store during transitions)
+  const activeView = urlView;
 
   return (
     <div className="min-h-screen">
+      {/* Desktop view buttons */}
       <div className="hidden md:grid md:grid-cols-2 gap-6 absolute top-[6.5rem] left-10 z-40 ml-8">
         <div className="relative inline-flex items-center group">
           <span
-            className="pointer-events-none absolute right-full mr-3 top-1/2 -translate-y-1/2 
-               whitespace-nowrap rounded-md bg-gray-900 px-2 py-1 text-xs 
+            className="pointer-events-none absolute right-full mr-3 top-1/2 -translate-y-1/2
+               whitespace-nowrap rounded-md bg-gray-900 px-2 py-1 text-xs
                font-medium text-white shadow-lg opacity-0 transition-opacity
                group-hover:opacity-100"
           >
@@ -188,12 +238,12 @@ export default function DashboardPage() {
           </span>
 
           <button
-            onClick={() => setViewType("dashboard")}
+            onClick={() => goView("home")}
             className={`p-3 rounded-full bg-white hover:bg-gray-100 transition cursor-pointer ${
-              viewType !== "dashboard" ? "border border-black" : ""
+              activeView !== "home" ? "border border-black" : ""
             }`}
             style={
-              viewType === "dashboard"
+              activeView === "home"
                 ? { boxShadow: `0 0 0 3px ${modeColor}` }
                 : undefined
             }
@@ -206,8 +256,8 @@ export default function DashboardPage() {
 
         <div className="relative inline-flex items-center group">
           <span
-            className="pointer-events-none absolute right-full mr-3 top-1/2 -translate-y-1/2 
-               whitespace-nowrap rounded-md bg-gray-900 px-2 py-1 text-xs 
+            className="pointer-events-none absolute right-full mr-3 top-1/2 -translate-y-1/2
+               whitespace-nowrap rounded-md bg-gray-900 px-2 py-1 text-xs
                font-medium text-white shadow-lg opacity-0 transition-opacity
                group-hover:opacity-100"
           >
@@ -215,12 +265,12 @@ export default function DashboardPage() {
           </span>
 
           <button
-            onClick={() => setViewType("calendar")}
+            onClick={() => goView("calendar")}
             className={`p-3 rounded-full bg-white hover:bg-gray-100 transition cursor-pointer ${
-              viewType !== "calendar" ? "border border-black" : ""
+              activeView !== "calendar" ? "border border-black" : ""
             }`}
             style={
-              viewType === "calendar"
+              activeView === "calendar"
                 ? { boxShadow: `0 0 0 3px ${modeColor}` }
                 : undefined
             }
@@ -232,66 +282,76 @@ export default function DashboardPage() {
         </div>
 
         <ModeCommentsButton
+          onClick={() => goView("comments")}
           style={
-            viewType === "comments"
+            activeView === "comments"
               ? { boxShadow: `0 0 0 3px ${modeColor}` }
               : undefined
           }
           className={`p-3 rounded-full bg-white hover:bg-gray-100 transition cursor-pointer ${
-            viewType !== "comments" ? "border border-black" : ""
+            activeView !== "comments" ? "border border-black" : ""
           }`}
         />
 
         <ModeNotesButton
+          onClick={() => goView("notes")}
           style={
-            viewType === "notes"
+            activeView === "notes"
               ? { boxShadow: `0 0 0 3px ${modeColor}` }
               : undefined
           }
           className={`p-3 rounded-full bg-white hover:bg-gray-100 transition cursor-pointer ${
-            viewType !== "notes" ? "border border-black" : ""
+            activeView !== "notes" ? "border border-black" : ""
           }`}
         />
 
         <ModeBoardsButton
+          onClick={() => goView("boards")}
           style={
-            viewType === "boards"
+            activeView === "boards"
               ? { boxShadow: `0 0 0 3px ${modeColor}` }
               : undefined
           }
           className={`p-3 rounded-full bg-white hover:bg-gray-100 transition cursor-pointer ${
-            viewType !== "boards" ? "border border-black" : ""
+            activeView !== "boards" ? "border border-black" : ""
           }`}
         />
 
         <ModeTemplatesButton
+          onClick={() => goView("templates")}
           style={
-            viewType === "templates"
+            activeView === "templates"
               ? { boxShadow: `0 0 0 3px ${modeColor}` }
               : undefined
           }
           className={`p-3 rounded-full bg-white hover:bg-gray-100 transition cursor-pointer ${
-            viewType !== "templates" ? "border border-black" : ""
+            activeView !== "templates" ? "border border-black" : ""
           }`}
         />
 
         <ModeStatsButton
+          onClick={() => goView("stats")}
           style={
-            viewType === "stats"
+            activeView === "stats"
               ? { boxShadow: `0 0 0 3px ${modeColor}` }
               : undefined
           }
           className={`p-3 rounded-full bg-white hover:bg-gray-100 transition cursor-pointer ${
-            viewType !== "stats" ? "border border-black" : ""
+            activeView !== "stats" ? "border border-black" : ""
           }`}
           modeColor={modeColor}
         />
 
         <TimerViewButton
-          modeColor={modeColor}
+          onClick={() => goView("timer")}
           className={`p-3 rounded-full bg-white hover:bg-gray-100 transition cursor-pointer ${
-            viewType !== "timer" ? "border border-black" : ""
+            activeView !== "timer" ? "border border-black" : ""
           }`}
+          style={
+            activeView === "timer"
+              ? { boxShadow: `0 0 0 3px ${modeColor}` }
+              : undefined
+          }
         />
       </div>
 
@@ -309,15 +369,15 @@ export default function DashboardPage() {
           )}
         </div>
 
-        {/* Mobile view buttons (under ModeFilter) */}
+        {/* Mobile view buttons */}
         <div className="flex md:hidden items-center gap-2 mt-2 mb-4 flex-wrap">
           <button
             onClick={() => goView("home")}
             className={`p-2 rounded-full bg-white hover:bg-gray-100 transition cursor-pointer ${
-              viewType !== "dashboard" ? "border border-black" : ""
+              activeView !== "home" ? "border border-black" : ""
             }`}
             style={
-              viewType === "dashboard"
+              activeView === "home"
                 ? { boxShadow: `0 0 0 2px ${modeColor}` }
                 : undefined
             }
@@ -330,10 +390,10 @@ export default function DashboardPage() {
           <button
             onClick={() => goView("calendar")}
             className={`p-2 rounded-full bg-white hover:bg-gray-100 transition cursor-pointer ${
-              viewType !== "calendar" ? "border border-black" : ""
+              activeView !== "calendar" ? "border border-black" : ""
             }`}
             style={
-              viewType === "calendar"
+              activeView === "calendar"
                 ? { boxShadow: `0 0 0 2px ${modeColor}` }
                 : undefined
             }
@@ -344,66 +404,76 @@ export default function DashboardPage() {
           </button>
 
           <ModeCommentsButton
+            onClick={() => goView("comments")}
             style={
-              viewType === "comments"
-                ? { boxShadow: `0 0 0 2px ${modeColor}` }
+              activeView === "comments"
+                ? { boxShadow: `0 0 0 3px ${modeColor}` }
                 : undefined
             }
-            className={`p-2 rounded-full bg-white hover:bg-gray-100 transition cursor-pointer ${
-              viewType !== "comments" ? "border border-black" : ""
+            className={`p-3 rounded-full bg-white hover:bg-gray-100 transition cursor-pointer ${
+              activeView !== "comments" ? "border border-black" : ""
             }`}
           />
 
           <ModeNotesButton
+            onClick={() => goView("notes")}
             style={
-              viewType === "notes"
+              activeView === "notes"
                 ? { boxShadow: `0 0 0 2px ${modeColor}` }
                 : undefined
             }
             className={`p-2 rounded-full bg-white hover:bg-gray-100 transition cursor-pointer ${
-              viewType !== "notes" ? "border border-black" : ""
+              activeView !== "notes" ? "border border-black" : ""
             }`}
           />
 
           <ModeBoardsButton
+            onClick={() => goView("boards")}
             style={
-              viewType === "boards"
+              activeView === "boards"
                 ? { boxShadow: `0 0 0 2px ${modeColor}` }
                 : undefined
             }
             className={`p-2 rounded-full bg-white hover:bg-gray-100 transition cursor-pointer ${
-              viewType !== "boards" ? "border border-black" : ""
+              activeView !== "boards" ? "border border-black" : ""
             }`}
           />
 
           <ModeTemplatesButton
+            onClick={() => goView("templates")}
             style={
-              viewType === "templates"
+              activeView === "templates"
                 ? { boxShadow: `0 0 0 2px ${modeColor}` }
                 : undefined
             }
             className={`p-2 rounded-full bg-white hover:bg-gray-100 transition cursor-pointer ${
-              viewType !== "templates" ? "border border-black" : ""
+              activeView !== "templates" ? "border border-black" : ""
             }`}
           />
 
           <ModeStatsButton
+            onClick={() => goView("stats")}
             style={
-              viewType === "stats"
+              activeView === "stats"
                 ? { boxShadow: `0 0 0 2px ${modeColor}` }
                 : undefined
             }
             className={`p-2 rounded-full bg-white hover:bg-gray-100 transition cursor-pointer ${
-              viewType !== "stats" ? "border border-black" : ""
+              activeView !== "stats" ? "border border-black" : ""
             }`}
             modeColor={modeColor}
           />
 
           <TimerViewButton
-            modeColor={modeColor}
+            onClick={() => goView("timer")}
             className={`p-2 rounded-full bg-white hover:bg-gray-100 transition cursor-pointer ${
-              viewType !== "timer" ? "border border-black" : ""
+              activeView !== "timer" ? "border border-black" : ""
             }`}
+            style={
+              activeView === "timer"
+                ? { boxShadow: `0 0 0 2px ${modeColor}` }
+                : undefined
+            }
           />
         </div>
 
@@ -419,7 +489,7 @@ export default function DashboardPage() {
           showModeTitle={selectedMode === "All"}
           isTodayFocus={isTodayFocus}
           setIsTodayFocus={setIsTodayFocus}
-          setSelectedMode={setSelectedMode} // <- NEW
+          setSelectedMode={setSelectedMode}
         />
 
         <DialogManager
@@ -434,42 +504,34 @@ export default function DashboardPage() {
         {!viewerOpen && (
           <div className="fixed bottom-10 right-12 z-50 flex flex-row items-end gap-4">
             <div className="flex flex-col items-center gap-4">
-              {(() => {
-                const textColor = getContrastingText(modeColor);
-
-                return (
-                  <>
-                    <AddGoalButton
-                      onClick={() => {
-                        setGoalToEdit(null);
-                        setIsGoalDialogOpen(true);
-                      }}
-                      modeColor={modeColor}
-                    />
-                    <AddProjectButton
-                      onClick={() => {
-                        setProjectToEdit(null);
-                        setIsProjectDialogOpen(true);
-                      }}
-                      modeColor={modeColor}
-                    />
-                    <AddMilestoneButton
-                      onClick={() => {
-                        setMilestoneToEdit(null);
-                        setIsMilestoneDialogOpen(true);
-                      }}
-                      modeColor={modeColor}
-                    />
-                    <AddTaskButton
-                      onClick={() => {
-                        setTaskToEdit(null);
-                        setIsTaskDialogOpen(true);
-                      }}
-                      modeColor={modeColor}
-                    />
-                  </>
-                );
-              })()}
+              <AddGoalButton
+                onClick={() => {
+                  setGoalToEdit(null);
+                  setIsGoalDialogOpen(true);
+                }}
+                modeColor={modeColor}
+              />
+              <AddProjectButton
+                onClick={() => {
+                  setProjectToEdit(null);
+                  setIsProjectDialogOpen(true);
+                }}
+                modeColor={modeColor}
+              />
+              <AddMilestoneButton
+                onClick={() => {
+                  setMilestoneToEdit(null);
+                  setIsMilestoneDialogOpen(true);
+                }}
+                modeColor={modeColor}
+              />
+              <AddTaskButton
+                onClick={() => {
+                  setTaskToEdit(null);
+                  setIsTaskDialogOpen(true);
+                }}
+                modeColor={modeColor}
+              />
             </div>
           </div>
         )}

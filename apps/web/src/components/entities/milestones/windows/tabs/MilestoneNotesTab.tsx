@@ -6,6 +6,7 @@ import NoteCard from "@/components/notes/NoteCard";
 import NoteComposer from "@/components/notes/NoteComposer";
 import Spinner from "@/components/status/Spinner";
 import { Milestone } from "@shared/types/Milestone";
+import type { CSSProperties } from "react";
 
 type Props = {
   milestone: Milestone;
@@ -20,6 +21,9 @@ export default function MilestoneNotesTab({ milestone, modeColor }: Props) {
     milestone.id
   );
   const modeLevel = false;
+  const scrollbarStyle: CSSProperties & { "--scrollbar-color"?: string } = {
+    "--scrollbar-color": modeColor,
+  };
 
   const composerRef = useRef<NoteComposerHandle | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
@@ -42,10 +46,8 @@ export default function MilestoneNotesTab({ milestone, modeColor }: Props) {
 
   return (
     <div
-      ref={scrollContainerRef}
       className="flex-1 flex flex-col overflow-y-auto scrollbar-thin mb-6"
-      style={{ ["--scrollbar-color" as any]: modeColor }}
-      onMouseDown={refocusIfNonInteractive}
+      style={scrollbarStyle}
     >
       <div className="flex flex-col h-full p-6 mt-4 space-y-6">
         <h2 className="text-lg font-semibold text-gray-800 mb-2">Notes</h2>

@@ -6,10 +6,10 @@ import { Goal } from "@shared/types/Goal";
 import { Project } from "@shared/types/Project";
 import { Milestone } from "@shared/types/Milestone";
 import { Task } from "@shared/types/Task";
-import BatchEditorTrigger from "@/components/batch/BatchEditorTrigger";
 import MilestoneTreeRendererDashboard from "@/components/entities/milestones/renderers/dashboard/MilestoneTreeRendererDashboard";
 import MilestoneTreeStateProvider from "@/components/entities/milestones/containers/dashboard/MilestoneTreeStateProvider";
 import { buildMilestoneTree } from "@/components/entities/milestones/utils/MilestoneTreeBuilder";
+import type { CSSProperties } from "react";
 
 type Props = {
   milestone: Milestone;
@@ -39,16 +39,19 @@ export default function MilestoneStructureTab({
   );
 
   const modeColor = mode.color;
+  const scrollbarStyle: CSSProperties & { "--scrollbar-color"?: string } = {
+    "--scrollbar-color": modeColor,
+  };
 
   return (
     <div
       className="flex-1 flex flex-col overflow-y-auto scrollbar-thin mb-6"
-      style={{ ["--scrollbar-color" as any]: modeColor }}
+      style={scrollbarStyle}
     >
       <div className="flex-1 flex flex-col relative overflow-hidden rounded-lg">
         <div
           className="flex-1 flex flex-col overflow-y-auto scrollbar-thin pt-4 pl-4"
-          style={{ ["--scrollbar-color" as any]: modeColor }}
+          style={scrollbarStyle}
         >
           <div className="px-4 space-y-6 pt-4">
             <MilestoneTreeStateProvider milestones={tree}>

@@ -16,21 +16,36 @@ type ButtonProps = Omit<
 type Props = {
   entityKind: EntityType;
   entityId: number;
-  canDrag?: boolean; // ← NEW
+  canDrag?: boolean;
   className?: string;
   onClick?: React.MouseEventHandler<HTMLButtonElement>;
-  activatorRef?: (el: HTMLElement | null) => void; // ✅ NEW
+  activatorRef?: (el: HTMLElement | null) => void;
 } & ButtonProps;
+
+function stopNativeImmediatePropagation(e: React.SyntheticEvent) {
+  // Keep original behavior: call stopImmediatePropagation if it exists.
+  const native = e.nativeEvent as unknown;
+  if (
+    native &&
+    typeof native === "object" &&
+    "stopImmediatePropagation" in native &&
+    typeof (native as { stopImmediatePropagation?: unknown })
+      .stopImmediatePropagation === "function"
+  ) {
+    (
+      native as { stopImmediatePropagation: () => void }
+    ).stopImmediatePropagation();
+  }
+}
 
 export default function EntityDragHandle({
   entityKind,
   entityId,
   canDrag = true,
   className,
-  activatorRef, // ✅ NEW
-
+  activatorRef,
   onClick,
-  ...rest // will contain dnd-kit listeners/attributes when canDrag=true
+  ...rest
 }: Props) {
   const isSelected = useSelectionStore((s) =>
     s.isSelected(entityKind, entityId)
@@ -51,20 +66,20 @@ export default function EntityDragHandle({
 
   return (
     <button
-      ref={activatorRef as any} // ✅ hook up sortable activator
+      ref={(el) => activatorRef?.(el)} // ✅ no `as any`, same behavior
       type="button"
       aria-label="Drag"
       aria-pressed={isSelected}
       data-drag-handle
       onClick={(e) => {
         e.stopPropagation();
-        (e as any).nativeEvent?.stopImmediatePropagation?.();
+        stopNativeImmediatePropagation(e); // ✅ same intent as before
         toggle(entityKind, entityId);
         onClick?.(e);
       }}
       className={clsx(
         "p-1 rounded transition",
-        canDrag ? "cursor-grab active:cursor-grabbing" : "cursor-pointer", // ← stays pointer on hover & active
+        canDrag ? "cursor-grab active:cursor-grabbing" : "cursor-pointer",
         "text-gray-800 hover:text-gray-950",
         className
       )}

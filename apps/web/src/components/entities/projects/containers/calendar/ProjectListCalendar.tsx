@@ -1,11 +1,18 @@
+// src/components/entities/projects/containers/calendar/ProjectListCalendar.tsx
 "use client";
 
 import { format, parseISO } from "date-fns";
 import { Project } from "@shared/types/Project";
 import { Mode } from "@shared/types/Mode";
 import { Maps, getEntityBreadcrumb } from "@shared/utils/getEntityBreadcrumb";
+
 import CalendarEntityDragCard from "../../../../dnd/calendar/CalendarEntityDragCard";
 import ProjectRendererCalendar from "@/components/entities/projects/renderers/calendar/ProjectRendererCalendar";
+
+import type {
+  DragAttributes,
+  DragListeners,
+} from "@/components/dnd/calendar/dragTypes";
 
 type Props = {
   projects: Project[];
@@ -63,8 +70,8 @@ export default function ProjectListCalendar({
               breadcrumb={getEntityBreadcrumb(project, maps, {
                 immediateOnly: true,
               })}
-              dragAttributes={dragAttributes as any}
-              dragListeners={dragListeners as any}
+              dragAttributes={dragAttributes as DragAttributes | undefined}
+              dragListeners={dragListeners as DragListeners | undefined}
               activatorRef={setActivatorNodeRef}
             />
           )}

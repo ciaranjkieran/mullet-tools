@@ -1,4 +1,3 @@
-# comments/views.py
 from rest_framework import viewsets, permissions
 from django.contrib.contenttypes.models import ContentType
 
@@ -30,7 +29,19 @@ class CommentViewSet(viewsets.ModelViewSet):
         return qs.order_by("created_at")
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        comment = serializer.save(user=self.request.user)
+
+        # ✅ create attachments from multipart files
+        files = self.request.FILES.getlist("attachments")
+        for f in files:
+            CommentAttachment.objects.create(
+                comment=comment,
+                user=self.request.user,
+                file=f,
+                original_name=getattr(f, "name", "") or "",
+                mime=getattr(f, "content_type", "") or "",
+            )
+
 
 
 class CommentAttachmentViewSet(viewsets.ModelViewSet):

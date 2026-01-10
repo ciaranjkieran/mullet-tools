@@ -14,6 +14,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useCompleteNextTimer } from "./useCompleteNextTimer";
+import { useCallback } from "react"; // add useCallback at top
 
 import type { Mode } from "@shared/types/Mode";
 import type { Goal } from "@shared/types/Goal";
@@ -48,10 +49,10 @@ import { useTimerClockType } from "./useTimerClockType";
 import { useTimerBreadcrumbs } from "./useTimerBreadcrumbs";
 import { useTimerResumeFromEntry } from "./useTimerResumeFromEntry";
 import {
-  buildRetargetPayload,
   normalizePathIdsToSelection,
   resolveModeIdFromPathStrict,
   type SelectionLike,
+  type TimerPathIds,
 } from "../types/timerTypes";
 
 type Args = {
@@ -62,6 +63,11 @@ type Args = {
   milestones: Milestone[];
   tasks: Task[];
   onRequestFilterMode?: (modeId: number) => void;
+};
+type TaskWithLinks = Task & {
+  goalId?: number | null;
+  projectId?: number | null;
+  milestoneId?: number | null;
 };
 
 export function useTimerController({
@@ -77,7 +83,7 @@ export function useTimerController({
   const startMut = useStartTimer();
   const stopMut = useStopTimer();
   const { data: entries = [] } = useTimeEntries();
-  const { mutateAsync: retargetAsync } = useRetargetActiveTimer();
+  const { mutateAsync: _retargetAsync } = useRetargetActiveTimer();
 
   useActiveTimerPolling(active);
   const now = useTimerTick(100);
@@ -130,7 +136,7 @@ export function useTimerController({
   }
 
   // Active path → ids
-  const pathIds = useMemo(
+  const pathIds: TimerPathIds = useMemo(
     () => (active?.path ? pathToIdPayload(active.path) : {}),
     [active?.path]
   );
@@ -139,7 +145,7 @@ export function useTimerController({
   const activeSessionModeId: number | null = useMemo(
     () =>
       active
-        ? resolveModeIdFromPathStrict(pathIds as any, {
+        ? resolveModeIdFromPathStrict(pathIds, {
             goals,
             projects,
             milestones,
@@ -168,7 +174,12 @@ export function useTimerController({
     () => makeMilestoneMaps(milestones).byId,
     [milestones]
   );
-  const taskById = useMemo(() => new Map(tasks.map((t) => [t.id, t])), [tasks]);
+  const tasksWithLinks = useMemo(() => tasks as TaskWithLinks[], [tasks]);
+
+  const taskById = useMemo(
+    () => new Map(tasksWithLinks.map((t) => [t.id, t])),
+    [tasksWithLinks]
+  );
   type EntityType = "task" | "milestone" | "project" | "goal";
 
   function getDeepestEntity(selection: {
@@ -229,27 +240,33 @@ export function useTimerController({
   // ---------- PROJECTS ----------
   function scopedProjectsByPosition(): Project[] {
     if (typeof modeId !== "number") return [];
+    const base = tasksWithLinks.filter(
+      (t) => t.modeId === modeId && !t.isCompleted
+    );
 
-    const base = projects.filter((p) => p.modeId === modeId && !p.isCompleted);
+    if (milestoneId != null) {
+      return sortByPosition(base.filter((t) => t.milestoneId === milestoneId));
+    }
 
-    // Lane is: siblings under same parent (if current project is subproject),
-    // else goal lane, else mode-root lane.
     if (projectId != null) {
-      const current = projectsById.get(projectId) ?? null;
-      const parentId = current?.parentId ?? null;
-      if (parentId != null) {
-        return sortByPosition(base.filter((p) => p.parentId === parentId));
-      }
+      return sortByPosition(
+        base.filter((t) => t.projectId === projectId && t.milestoneId == null)
+      );
     }
 
     if (goalId != null) {
       return sortByPosition(
-        base.filter((p) => p.goalId === goalId && p.parentId == null)
+        base.filter(
+          (t) =>
+            t.goalId === goalId && t.projectId == null && t.milestoneId == null
+        )
       );
     }
 
     return sortByPosition(
-      base.filter((p) => p.goalId == null && p.parentId == null)
+      base.filter(
+        (t) => t.goalId == null && t.projectId == null && t.milestoneId == null
+      )
     );
   }
 
@@ -408,7 +425,7 @@ export function useTimerController({
         ? modeId
         : modes[0]?.id ?? 0;
 
-    return normalizePathIdsToSelection(pathIds as any, resolvedModeId);
+    return normalizePathIdsToSelection(pathIds, resolvedModeId);
   }, [active, activeSessionModeId, modeId, modes, pathIds]);
 
   function applyTaskPathNormalized(path: {
@@ -424,11 +441,11 @@ export function useTimerController({
     if (next.taskId != null) {
       const t = taskById.get(next.taskId);
       if (t) {
-        const tMsId = (t as any).milestoneId as number | null | undefined;
-        const tPrId = (t as any).projectId as number | null | undefined;
-        const tGoId = (t as any).goalId as number | null | undefined;
+        const tMsId = t.milestoneId ?? null;
+        const tPrId = t.projectId ?? null;
+        const tGoId = t.goalId ?? null;
 
-        let msId = next.milestoneId ?? tMsId ?? null;
+        const msId = next.milestoneId ?? tMsId ?? null;
         let prId = next.projectId ?? tPrId ?? null;
         let goId = next.goalId ?? tGoId ?? null;
 
@@ -574,7 +591,7 @@ export function useTimerController({
 
   useEffect(() => {
     if (active) setDidCompleteStop(false);
-  }, [active?.sessionId]);
+  }, [active]);
 
   // Save snapshot whenever picks change
   useEffect(() => {
@@ -676,7 +693,7 @@ export function useTimerController({
 
       // normalise selection using a guaranteed number, even if placeholder
       const normalized = normalizePathIdsToSelection(
-        pathIds as any,
+        pathIds,
         baselineModeId ?? 0
       );
 
@@ -782,10 +799,7 @@ export function useTimerController({
           ? activeSessionModeId
           : sel.modeId;
 
-      const baseline = normalizePathIdsToSelection(
-        pathIds as any,
-        baselineModeId
-      );
+      const baseline = normalizePathIdsToSelection(pathIds, baselineModeId);
 
       setBaselineSel(baseline);
       setSwitchArmed(true);
@@ -973,97 +987,94 @@ export function useTimerController({
 
   // Canonicalise a selection using lineage so logically-equivalent paths
   // (e.g. project-only vs project+goal) compare equal.
-  const canonicalizeSelection = (
-    sel: SelectionLike | null
-  ): SelectionLike | null => {
-    if (!sel) return null;
 
-    let { modeId, goalId, projectId, milestoneId, taskId } = sel;
+  const canonicalizeSelection = useCallback(
+    (sel: SelectionLike | null): SelectionLike | null => {
+      if (!sel) return null;
 
-    const norm = (v: number | null | undefined): number | null =>
-      typeof v === "number" ? v : null;
+      let { modeId, goalId, projectId, milestoneId, taskId } = sel;
 
-    goalId = norm(goalId);
-    projectId = norm(projectId);
-    milestoneId = norm(milestoneId);
-    taskId = norm(taskId);
+      const norm = (v: number | null | undefined): number | null =>
+        typeof v === "number" ? v : null;
 
-    // Task-level: derive parents from task + lineage
-    if (taskId != null) {
-      const t = taskById.get(taskId);
-      if (t) {
-        const tMsId = norm((t as any).milestoneId);
-        const tPrId = norm((t as any).projectId);
-        const tGoId = norm((t as any).goalId);
+      goalId = norm(goalId);
+      projectId = norm(projectId);
+      milestoneId = norm(milestoneId);
+      taskId = norm(taskId);
 
-        let msId = milestoneId ?? tMsId;
-        let prId = projectId ?? tPrId;
-        let goId = goalId ?? tGoId;
+      if (taskId != null) {
+        const t = taskById.get(taskId);
+        if (t) {
+          const tMsId = t.milestoneId ?? null;
+          const tPrId = t.projectId ?? null;
+          const tGoId = t.goalId ?? null;
 
-        if (msId != null) {
-          const eff = milestoneEffectiveLineage(
-            msId,
-            milestonesById,
-            projectsById
-          );
-          if (prId == null) prId = norm(eff.projectId);
-          if (goId == null) goId = norm(eff.goalId);
-        } else if (prId != null) {
-          const eff = projectEffectiveLineage(prId, projectsById);
-          if (goId == null) goId = norm(eff.goalId);
+          const msId = milestoneId ?? tMsId;
+          let prId = projectId ?? tPrId;
+          let goId = goalId ?? tGoId;
+
+          if (msId != null) {
+            const eff = milestoneEffectiveLineage(
+              msId,
+              milestonesById,
+              projectsById
+            );
+            if (prId == null) prId = norm(eff.projectId);
+            if (goId == null) goId = norm(eff.goalId);
+          } else if (prId != null) {
+            const eff = projectEffectiveLineage(prId, projectsById);
+            if (goId == null) goId = norm(eff.goalId);
+          }
+
+          return {
+            modeId,
+            goalId: goId,
+            projectId: prId,
+            milestoneId: msId,
+            taskId,
+          };
         }
+      }
 
+      if (milestoneId != null) {
+        const eff = milestoneEffectiveLineage(
+          milestoneId,
+          milestonesById,
+          projectsById
+        );
+        const prId = projectId ?? norm(eff.projectId);
+        const goId = goalId ?? norm(eff.goalId);
         return {
           modeId,
           goalId: goId,
           projectId: prId,
-          milestoneId: msId,
-          taskId,
+          milestoneId,
+          taskId: taskId ?? null,
         };
       }
-    }
 
-    // Milestone-level: derive project + goal
-    if (milestoneId != null) {
-      const eff = milestoneEffectiveLineage(
-        milestoneId,
-        milestonesById,
-        projectsById
-      );
-      const prId = projectId ?? norm(eff.projectId);
-      const goId = goalId ?? norm(eff.goalId);
+      if (projectId != null) {
+        const eff = projectEffectiveLineage(projectId, projectsById);
+        const goId = goalId ?? norm(eff.goalId);
+        return {
+          modeId,
+          goalId: goId,
+          projectId,
+          milestoneId: milestoneId ?? null,
+          taskId: taskId ?? null,
+        };
+      }
+
       return {
         modeId,
-        goalId: goId,
-        projectId: prId,
-        milestoneId,
-        taskId: taskId ?? null,
-      };
-    }
-
-    // Project-level: derive goal
-    if (projectId != null) {
-      const eff = projectEffectiveLineage(projectId, projectsById);
-      const goId = goalId ?? norm(eff.goalId);
-      return {
-        modeId,
-        goalId: goId,
-        projectId,
+        goalId: goalId ?? null,
+        projectId: projectId ?? null,
         milestoneId: milestoneId ?? null,
         taskId: taskId ?? null,
       };
-    }
-
-    // Goal or bare mode
-    return {
-      modeId,
-      goalId: goalId ?? null,
-      projectId: projectId ?? null,
-      milestoneId: milestoneId ?? null,
-      taskId: taskId ?? null,
-    };
-  };
-
+    },
+    [taskById, milestonesById, projectsById]
+  );
   // Raw current selection from the *UI* perspective
   const currentSelRaw: SelectionLike = useMemo(
     () => ({
@@ -1076,16 +1087,13 @@ export function useTimerController({
     [modeIdForDiff, goalId, projectId, milestoneId, taskId]
   );
 
-  // Canonicalised current selection
   const currentSel = useMemo(
     () => canonicalizeSelection(currentSelRaw),
-    [currentSelRaw, projectsById, milestonesById, taskById]
+    [currentSelRaw, canonicalizeSelection]
   );
-
-  // Canonicalised baseline selection
   const baselineSelCanonical = useMemo(
     () => canonicalizeSelection(baselineSel),
-    [baselineSel, projectsById, milestonesById, taskById]
+    [baselineSel, canonicalizeSelection]
   );
 
   const canInlineSwitch = Boolean(active && active.kind === "stopwatch");
@@ -1283,24 +1291,29 @@ export function useTimerController({
     finalLeafTitle: leafTitle,
   });
 
-  // remainingSeconds for countdown
-  const remainingLive =
-    active && typeof (active as any).remainingSeconds === "number"
-      ? Math.max(
-          0,
-          Math.ceil(
-            (active as any).remainingSeconds -
-              (Date.now() - (dataUpdatedAt ?? Date.now())) / 1000
-          )
-        )
-      : active && (active as any).endsAt
-      ? Math.max(
-          0,
-          Math.ceil(
-            Date.parse((active as any).endsAt) / 1000 - Date.now() / 1000
-          )
-        )
-      : null;
+  const remainingLive = (() => {
+    if (!active) return null;
+
+    const a = active as unknown as Record<string, unknown>;
+
+    const rem = a["remainingSeconds"];
+    if (typeof rem === "number") {
+      return Math.max(
+        0,
+        Math.ceil(rem - (Date.now() - (dataUpdatedAt ?? Date.now())) / 1000)
+      );
+    }
+
+    const endsAt = a["endsAt"];
+    if (typeof endsAt === "string" && endsAt.length > 0) {
+      return Math.max(
+        0,
+        Math.ceil(Date.parse(endsAt) / 1000 - Date.now() / 1000)
+      );
+    }
+
+    return null;
+  })();
 
   const didAutoStopRef = useRef(false);
 

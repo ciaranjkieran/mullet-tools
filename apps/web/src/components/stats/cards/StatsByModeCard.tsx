@@ -32,7 +32,12 @@ export default function StatsByModeCard({
   modeColor,
   onChainUp,
 }: Props) {
-  const modeLabel = (mode as any)?.title || (mode as any)?.name || "This mode";
+  const modeLabel = useMemo(() => {
+    const m = mode as unknown as Record<string, unknown>;
+    const title = typeof m["title"] === "string" ? m["title"] : null;
+    const name = typeof m["name"] === "string" ? m["name"] : null;
+    return title ?? name ?? "This mode";
+  }, [mode]);
 
   const flattened = useMemo<FlattenedItem[]>(() => {
     return flattenStatsTree(tree, modeLabel).sort(

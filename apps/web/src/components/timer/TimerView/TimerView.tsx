@@ -135,7 +135,6 @@ export default function TimerView({
   // What should we show on the clock?
   // - While running: the live remaining seconds.
   // - After expiry: snap back to the configured duration.
-  const displaySeconds = timerHasElapsed ? durationSec ?? 0 : liveRemaining;
 
   // UI-active:
   // - Stopwatch: stays active while `active` is truthy.

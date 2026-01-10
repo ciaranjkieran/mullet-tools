@@ -3,6 +3,7 @@
 import { useMemo, useState, useEffect } from "react";
 import { Target as TargetIcon } from "lucide-react";
 import { getContrastingText } from "@shared/utils/getContrastingText";
+import type React from "react";
 
 import { Mode } from "@shared/types/Mode";
 import { Goal } from "@shared/types/Goal";
@@ -32,6 +33,63 @@ type Props = {
   /** Optional: let parent switch mode when resuming from All view */
   onRequestFilterMode?: (modeId: number) => void;
 };
+
+type PathLike = {
+  modeId?: number | null;
+  goalId?: number | null;
+  projectId?: number | null;
+  milestoneId?: number | null;
+  taskId?: number | null;
+} | null;
+
+type EntryLike = TimeEntryDTO | ActiveTimerDTO;
+
+type EntrySnapshots = {
+  taskTitle?: string | null;
+  milestoneTitle?: string | null;
+  projectTitle?: string | null;
+  goalTitle?: string | null;
+  modeTitle?: string | null;
+};
+
+type PlannedSecondsLike = {
+  plannedSeconds?: number | null;
+};
+
+function getPath(e: EntryLike): PathLike {
+  // DTOs don't expose `path` in the TS type (or it's too loose),
+  // so we read it safely from an unknown record.
+  const rec = e as unknown as Record<string, unknown>;
+  const p = rec["path"] as unknown;
+
+  if (!p || typeof p !== "object") return null;
+
+  const po = p as Record<string, unknown>;
+  const toNumOrNull = (v: unknown): number | null =>
+    typeof v === "number" ? v : v == null ? null : null;
+
+  return {
+    modeId: toNumOrNull(po["modeId"]),
+    goalId: toNumOrNull(po["goalId"]),
+    projectId: toNumOrNull(po["projectId"]),
+    milestoneId: toNumOrNull(po["milestoneId"]),
+    taskId: toNumOrNull(po["taskId"]),
+  };
+}
+
+function getSnapshots(e: EntryLike): EntrySnapshots {
+  const rec = e as unknown as Record<string, unknown>;
+  const toStrOrNull = (v: unknown): string | null =>
+    typeof v === "string" ? v : null;
+
+  return {
+    taskTitle: toStrOrNull(rec["taskTitle"]),
+    milestoneTitle: toStrOrNull(rec["milestoneTitle"]),
+    projectTitle: toStrOrNull(rec["projectTitle"]),
+    goalTitle: toStrOrNull(rec["goalTitle"]),
+    modeTitle: toStrOrNull(rec["modeTitle"]),
+  };
+}
 
 export default function TodayEntriesCard({
   entries,
@@ -75,20 +133,23 @@ export default function TodayEntriesCard({
     [modes, tasks, milestones, projects, goals]
   );
 
-  const deriveModeId = (e: TimeEntryDTO | ActiveTimerDTO): number | null => {
-    const p = (e as any).path;
-    if (!p) return null;
-    if (p.modeId != null) return p.modeId;
-    if (p.taskId && maps.tasksById.get(p.taskId)?.modeId != null)
-      return maps.tasksById.get(p.taskId)!.modeId!;
-    if (p.milestoneId && maps.milestonesById.get(p.milestoneId)?.modeId != null)
-      return maps.milestonesById.get(p.milestoneId)!.modeId!;
-    if (p.projectId && maps.projectsById.get(p.projectId)?.modeId != null)
-      return maps.projectsById.get(p.projectId)!.modeId!;
-    if (p.goalId && maps.goalsById.get(p.goalId)?.modeId != null)
-      return maps.goalsById.get(p.goalId)!.modeId!;
-    return null;
-  };
+  const deriveModeId = useMemo(() => {
+    return (e: EntryLike): number | null => {
+      const p = getPath(e);
+      if (!p) return null;
+
+      if (p.modeId != null) return p.modeId;
+
+      if (p.taskId != null) return maps.tasksById.get(p.taskId)?.modeId ?? null;
+      if (p.milestoneId != null)
+        return maps.milestonesById.get(p.milestoneId)?.modeId ?? null;
+      if (p.projectId != null)
+        return maps.projectsById.get(p.projectId)?.modeId ?? null;
+      if (p.goalId != null) return maps.goalsById.get(p.goalId)?.modeId ?? null;
+
+      return null;
+    };
+  }, [maps]);
 
   function within24hFromEnd(endISO?: string | null, nowMs?: number) {
     if (!endISO) return false;
@@ -105,7 +166,7 @@ export default function TodayEntriesCard({
       const inWindow = within24hFromEnd(e.endedAt, now);
       return passesMode && inWindow;
     });
-  }, [entries, filterModeId, now]);
+  }, [entries, filterModeId, now, deriveModeId]);
 
   const filteredSorted = useMemo(() => {
     const ts = (e: TimeEntryDTO) =>
@@ -198,10 +259,12 @@ export default function TodayEntriesCard({
                 window.scrollTo({ top: 72, behavior: "smooth" });
               }}
               disabled={!canResume}
-              style={{
-                ["--btn" as any]: meta.color,
-                ["--btnText" as any]: getContrastingText(meta.color),
-              }}
+              style={
+                {
+                  ["--btn"]: meta.color,
+                  ["--btnText"]: getContrastingText(meta.color),
+                } as React.CSSProperties
+              }
               className={`px-3 py-1.5 rounded-md text-xs font-semibold transition
               border bg-[var(--btn)] text-[var(--btnText)] border-[var(--btn)]
               hover:bg-transparent hover:text-[var(--btn)]
@@ -315,7 +378,8 @@ function classifyEntryDay(
 }
 
 function getPlannedSecondsFromEntry(e: TimeEntryDTO): number | null {
-  const plannedFromEntry = (e as any).plannedSeconds as number | undefined;
+  const rec = e as unknown as PlannedSecondsLike;
+  const plannedFromEntry = rec.plannedSeconds;
   return typeof plannedFromEntry === "number" ? plannedFromEntry : null;
 }
 
@@ -346,40 +410,40 @@ function isEntryResumable(
     tasksById: Map<number, Task>;
   }
 ): boolean {
-  const p: any = (e as any).path;
+  const p = getPath(e);
   if (!p) return true; // mode-only / floating entry → still resumable
 
-  const checkCompleted = (entity: any | undefined) => {
-    if (!entity) return false; // entity missing (likely archived) → non-resumable
+  const checkCompleted = (entity: unknown) => {
+    if (!entity) return false;
+
+    const rec = entity as Record<string, unknown>;
 
     const isCompleted =
-      (typeof entity.is_completed === "boolean" && entity.is_completed) ||
-      (typeof entity.isCompleted === "boolean" && entity.isCompleted);
+      (typeof rec["is_completed"] === "boolean" && rec["is_completed"]) ||
+      (typeof rec["isCompleted"] === "boolean" && rec["isCompleted"]);
 
     const isArchived =
-      (typeof entity.is_archived === "boolean" && entity.is_archived) ||
-      (typeof entity.isArchived === "boolean" && entity.isArchived) ||
-      !!entity.archived_at ||
-      !!entity.archivedAt;
+      (typeof rec["is_archived"] === "boolean" && rec["is_archived"]) ||
+      (typeof rec["isArchived"] === "boolean" && rec["isArchived"]) ||
+      Boolean(rec["archived_at"]) ||
+      Boolean(rec["archivedAt"]);
 
-    if (isCompleted || isArchived) return false;
-
-    return true;
+    return !(isCompleted || isArchived);
   };
 
-  if (p.taskId) {
+  if (p.taskId != null) {
     const t = maps.tasksById.get(p.taskId);
     return checkCompleted(t);
   }
-  if (p.milestoneId) {
+  if (p.milestoneId != null) {
     const m = maps.milestonesById.get(p.milestoneId);
     return checkCompleted(m);
   }
-  if (p.projectId) {
+  if (p.projectId != null) {
     const pr = maps.projectsById.get(p.projectId);
     return checkCompleted(pr);
   }
-  if (p.goalId) {
+  if (p.goalId != null) {
     const g = maps.goalsById.get(p.goalId);
     return checkCompleted(g);
   }
@@ -402,54 +466,53 @@ function getMetaFromPath(
   color: string;
   type: "task" | "milestone" | "project" | "goal" | "mode";
 } {
-  if (!item || !(item as any).path) {
+  if (!item) {
     return { title: "", color: "#E5E7EB", type: "mode" };
   }
 
-  const path: any = (item as any).path;
-  const anyItem = item as any;
+  const path = getPath(item);
+  if (!path) {
+    return { title: "", color: "#E5E7EB", type: "mode" };
+  }
 
-  // Snapshots as exposed by TimeEntrySerializer
+  // Snapshot titles (may be present even if entity no longer exists)
+  const s = getSnapshots(item);
   const snapshots = {
-    task: anyItem.taskTitle ?? null,
-    milestone: anyItem.milestoneTitle ?? null,
-    project: anyItem.projectTitle ?? null,
-    goal: anyItem.goalTitle ?? null,
-    mode: anyItem.modeTitle ?? null,
+    task: s.taskTitle ?? null,
+    milestone: s.milestoneTitle ?? null,
+    project: s.projectTitle ?? null,
+    goal: s.goalTitle ?? null,
+    mode: s.modeTitle ?? null,
   };
 
-  if (path.taskId) {
+  if (path.taskId != null) {
     const t = maps.tasksById.get(path.taskId);
-    if (t) {
-      return withModeColor(t.title, deriveModeId(item), maps, "task");
-    }
+    if (t) return withModeColor(t.title, deriveModeId(item), maps, "task");
+
     const title = snapshots.task || "Completed task";
     return withModeColor(title, deriveModeId(item), maps, "task");
   }
 
-  if (path.milestoneId) {
+  if (path.milestoneId != null) {
     const m = maps.milestonesById.get(path.milestoneId);
-    if (m) {
-      return withModeColor(m.title, deriveModeId(item), maps, "milestone");
-    }
+    if (m) return withModeColor(m.title, deriveModeId(item), maps, "milestone");
+
     const title = snapshots.milestone || "Completed milestone";
     return withModeColor(title, deriveModeId(item), maps, "milestone");
   }
 
-  if (path.projectId) {
+  if (path.projectId != null) {
     const p = maps.projectsById.get(path.projectId);
-    if (p) {
-      return withModeColor(p.title, deriveModeId(item), maps, "project");
-    }
+    if (p) return withModeColor(p.title, deriveModeId(item), maps, "project");
+
     const title = snapshots.project || "Completed project";
     return withModeColor(title, deriveModeId(item), maps, "project");
   }
 
-  if (path.goalId) {
+  if (path.goalId != null) {
     const g = maps.goalsById.get(path.goalId);
-    if (g) {
-      return withModeColor(g.title, deriveModeId(item), maps, "goal");
-    }
+    if (g) return withModeColor(g.title, deriveModeId(item), maps, "goal");
+
     const title = snapshots.goal || "Completed goal";
     return withModeColor(title, deriveModeId(item), maps, "goal");
   }

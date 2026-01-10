@@ -24,7 +24,6 @@ export function StatsPieChart({
   totalSeconds,
   segments,
   color,
-  maxSlices, // kept for API compatibility (unused now)
   solid = false,
 }: StatsPieChartProps) {
   const [open, setOpen] = useState(false);

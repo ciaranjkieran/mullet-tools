@@ -41,28 +41,24 @@ export default function DialogManager({
     // Tasks
     taskToEdit,
     isTaskDialogOpen,
-    taskDialogTab,
     setTaskToEdit,
     setIsTaskDialogOpen,
 
     // Milestones
     milestoneToEdit,
     isMilestoneDialogOpen,
-    milestoneDialogTab,
     setMilestoneToEdit,
     setIsMilestoneDialogOpen,
 
     // Projects
     projectToEdit,
     isProjectDialogOpen,
-    projectDialogTab,
     setProjectToEdit,
     setIsProjectDialogOpen,
 
     // Goals
     goalToEdit,
     isGoalDialogOpen,
-    goalDialogTab,
     setGoalToEdit,
     setIsGoalDialogOpen,
 

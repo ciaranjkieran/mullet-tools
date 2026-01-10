@@ -1,9 +1,13 @@
 "use client";
 
-import { useRef, useEffect } from "react";
+import { useRef } from "react";
+import type { CSSProperties } from "react";
+import type React from "react";
+
 import { useNotesByEntity } from "@shared/api/hooks/notes/useNotesByEntity";
 import NoteCard from "@/components/notes/NoteCard";
 import NoteComposer from "@/components/notes/NoteComposer";
+
 import { Task } from "@shared/types/Task";
 import { Mode } from "@shared/types/Mode";
 
@@ -12,10 +16,13 @@ type Props = {
   modes: Mode[];
 };
 
-type NoteComposerHandle = { focus: () => void };
+type NoteComposerHandle = {
+  focus: () => void;
+};
 
 export default function TaskNotesTab({ task, modes }: Props) {
   const { data: notes = [], isLoading } = useNotesByEntity("task", task.id);
+
   const mode = modes.find((m) => m.id === task.modeId);
   const modeColor = mode?.color ?? "#555";
 
@@ -30,13 +37,15 @@ export default function TaskNotesTab({ task, modes }: Props) {
     if (!interactive) composerRef.current?.focus();
   };
 
-  // ⬇️ Scroll tab’s internal area to its bottom on open
+  const containerStyle = {
+    ["--scrollbar-color"]: modeColor,
+  } as CSSProperties;
 
   return (
     <div
       ref={scrollContainerRef}
       className="flex-1 flex flex-col overflow-y-auto scrollbar-thin mb-6"
-      style={{ ["--scrollbar-color" as any]: modeColor }}
+      style={containerStyle}
       onMouseDown={refocusIfNonInteractive}
     >
       <div className="flex flex-col h-full p-6 mt-4 space-y-6">

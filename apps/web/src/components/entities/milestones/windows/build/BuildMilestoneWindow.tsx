@@ -9,7 +9,7 @@ import { Project } from "@shared/types/Project";
 import { Milestone } from "@shared/types/Milestone";
 
 import BuildMilestoneForm from "./BuildMilestoneForm";
-import { buildMilestonePayload } from "@shared/lineage/xor"; // << normalization
+import { buildMilestonePayload } from "@shared/lineage/xor";
 
 type Props = {
   isOpen: boolean;
@@ -50,14 +50,10 @@ export default function BuildMilestoneWindow({
     return () => document.body.classList.remove("modal-open");
   }, [isOpen]);
 
-  // IMPORTANT: we do NOT auto-write project/goal from parent/project here.
-  // The form derives them for display-only. Stored state remains XOR-clean.
-
   const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
     if (!title || !modeId) return;
 
-    // Normalize to "at most one" before sending
     const normalized = buildMilestonePayload({
       title: title.trim(),
       dueDate: dueDate || null,
@@ -68,10 +64,7 @@ export default function BuildMilestoneWindow({
       goalId: goalId ?? null,
     });
 
-    createMilestone(
-      normalized, // your create hook can map keys to API names
-      { onSuccess: onClose }
-    );
+    createMilestone(normalized, { onSuccess: onClose });
   };
 
   return (

@@ -47,6 +47,14 @@ export type Crumb = {
   title: string;
 };
 
+type MaybeId = number | string | null | undefined;
+
+const toNum = (v: unknown): number | null => {
+  if (v == null || v === "") return null;
+  const n = typeof v === "number" ? v : Number(v);
+  return Number.isFinite(n) ? n : null;
+};
+
 /** Deepest id wins for retarget PATCH payload. */
 export function buildRetargetPayload(sel: {
   modeId: number | null | undefined;
@@ -88,9 +96,6 @@ export function resolveModeIdFromPathStrict(
     tasks: Task[];
   }
 ): number | null {
-  const toNum = (v: unknown): number | null =>
-    v == null || v === "" ? null : Number(v);
-
   const tId = toNum(ids.taskId);
   const mId = toNum(ids.milestoneId);
   const pId = toNum(ids.projectId);
@@ -99,20 +104,21 @@ export function resolveModeIdFromPathStrict(
 
   if (tId != null) {
     const t = deps.tasks.find((x) => x.id === tId);
-    if (t && typeof (t as any).modeId === "number") return (t as any).modeId;
+    if (t) return t.modeId ?? null;
   }
   if (mId != null) {
     const m = deps.milestones.find((x) => x.id === mId);
-    if (m && typeof (m as any).modeId === "number") return (m as any).modeId;
+    if (m) return m.modeId ?? null;
   }
   if (pId != null) {
     const p = deps.projects.find((x) => x.id === pId);
-    if (p && typeof (p as any).modeId === "number") return (p as any).modeId;
+    if (p) return p.modeId ?? null;
   }
   if (gId != null) {
     const g = deps.goals.find((x) => x.id === gId);
-    if (g && typeof (g as any).modeId === "number") return (g as any).modeId;
+    if (g) return g.modeId ?? null;
   }
+
   return mExplicit ?? null;
 }
 
@@ -125,9 +131,6 @@ export function buildBreadcrumbFromIds(
   deps: TimerDeps
 ): Crumb[] {
   const { modes, goals, projects, milestones, tasks } = deps;
-
-  const toNum = (v: unknown): number | null =>
-    v == null || v === "" ? null : Number(v);
 
   const ids = {
     modeId: toNum(rawIds.modeId),
@@ -157,21 +160,14 @@ export function buildBreadcrumbFromIds(
     const t = findTask(ids.taskId);
     if (t) out.push({ type: "task", id: t.id, title: t.title });
 
-    let msId: number | null =
-      (t && typeof (t as any).milestoneId === "number"
-        ? (t as any).milestoneId
-        : null) ?? ids.milestoneId;
-    let pId: number | null =
-      (t && typeof (t as any).projectId === "number"
-        ? (t as any).projectId
-        : null) ?? ids.projectId;
-    let gId: number | null =
-      (t && typeof (t as any).goalId === "number" ? (t as any).goalId : null) ??
-      ids.goalId;
+    const msId: number | null = toNum(t?.milestoneId) ?? ids.milestoneId; // ✅ const
+    let pId: number | null = toNum(t?.projectId) ?? ids.projectId; // may be filled via lineage
+    let gId: number | null = toNum(t?.goalId) ?? ids.goalId; // may be filled via lineage
 
     if (msId != null) {
       const ms = findMs(msId);
       if (ms) out.push({ type: "milestone", id: ms.id, title: ms.title });
+
       const effMs = milestoneEffectiveLineage(
         msId,
         milestonesById,
@@ -184,6 +180,7 @@ export function buildBreadcrumbFromIds(
     if (pId != null) {
       const p = findProject(pId);
       if (p) out.push({ type: "project", id: p.id, title: p.title });
+
       const effP = projectEffectiveLineage(pId, projectsById);
       if (gId == null) gId = effP.goalId ?? null;
     }
@@ -201,6 +198,7 @@ export function buildBreadcrumbFromIds(
       milestonesById,
       projectsById
     );
+
     if (eff.projectId != null) {
       const p = findProject(eff.projectId);
       if (p) out.push({ type: "project", id: p.id, title: p.title });
@@ -225,6 +223,7 @@ export function buildBreadcrumbFromIds(
 
   // Mode (derive from leaf if not explicitly provided)
   let resolvedModeId: number | null = ids.modeId ?? null;
+
   if (resolvedModeId == null) {
     const leaf = out[0];
     if (leaf?.type === "task")
@@ -256,22 +255,34 @@ export function buildBreadcrumbFromIds(
   return out;
 }
 
-/** Resolve plannedSeconds for a time entry, falling back to the task. */
+/** Resolve plannedSeconds for a time entry, falling back to the task (if present on Task in your app). */
+type EntryLike = {
+  plannedSeconds?: unknown;
+  path?: { taskId?: MaybeId } | null;
+};
+
+// Your Task type (as shared) doesn’t include plannedSeconds, but your app might still have it.
+// We model that safely without using `any`.
+type TaskWithPlanning = Task & {
+  plannedSeconds?: number | null;
+  timerPlannedSeconds?: number | null;
+};
+
 export function resolvePlannedSecondsForEntry(
-  entry: any,
+  entry: unknown,
   taskById: Map<number, Task>
 ): number | null {
-  const fromEntry = entry?.plannedSeconds;
+  const e = entry as EntryLike | null;
+
+  const fromEntry = e?.plannedSeconds;
   if (typeof fromEntry === "number") return fromEntry;
 
-  const tId = entry?.path?.taskId ?? null;
+  const tId = toNum(e?.path?.taskId);
   if (tId != null) {
-    const task = taskById.get(tId);
-    const fromTask =
-      (task as any)?.plannedSeconds ??
-      (task as any)?.timerPlannedSeconds ??
-      null;
+    const task = taskById.get(tId) as TaskWithPlanning | undefined;
+    const fromTask = task?.plannedSeconds ?? task?.timerPlannedSeconds ?? null;
     if (typeof fromTask === "number") return fromTask;
   }
+
   return null;
 }

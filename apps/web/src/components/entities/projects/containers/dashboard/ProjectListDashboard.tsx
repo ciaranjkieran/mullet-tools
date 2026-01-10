@@ -29,6 +29,19 @@ type Props = {
   dragHandleProps?: React.HTMLAttributes<HTMLButtonElement>;
 };
 
+// Minimal nested milestone shape for MilestoneList
+type NestedMilestone = Milestone & { children: NestedMilestone[] };
+
+type ProjectWithChildren = NestedProject & { children?: NestedProject[] };
+function hasProjectChildren(p: NestedProject): p is ProjectWithChildren {
+  return (
+    typeof p === "object" &&
+    p !== null &&
+    "children" in p &&
+    Array.isArray((p as Record<string, unknown>).children)
+  );
+}
+
 export default function ProjectItem({
   project,
   parentId,
@@ -39,6 +52,9 @@ export default function ProjectItem({
   milestones = [],
   dragHandleProps,
 }: Props) {
+  // keep prop for compatibility / future use
+  void parentId;
+
   const collapsed = !!useEntityUIStore(
     (s) => s.collapsed.project?.[project.id]
   );
@@ -52,19 +68,25 @@ export default function ProjectItem({
     .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
 
   const msMap = makeMilestoneMaps(milestones).byId;
-  const projectMilestoneRoots = milestones.filter(
-    (m) =>
-      milestoneEffectiveProjectId(m.id, msMap) === project.id &&
-      m.parentId == null
-  );
 
-  const children = (project as any).children ?? [];
+  // Roots = milestones effectively in this project AND with no parent
+  // Convert to NestedMilestone nodes so MilestoneList doesn't need any-casts
+  const projectMilestoneRoots: NestedMilestone[] = milestones
+    .filter(
+      (m) =>
+        milestoneEffectiveProjectId(m.id, msMap) === project.id &&
+        m.parentId == null
+    )
+    .map((m) => ({ ...m, children: [] }));
+
+  const children: NestedProject[] = hasProjectChildren(project)
+    ? project.children ?? []
+    : [];
 
   return (
     <div className="space-y-2" style={{ paddingLeft: depth * 16 }}>
       <ProjectRenderer
         project={project}
-        mode={mode}
         dragHandleProps={dragHandleProps}
         modeColor={modeColor}
       />
@@ -81,7 +103,7 @@ export default function ProjectItem({
           {projectMilestoneRoots.length > 0 && (
             <MilestoneList
               parentId={null}
-              milestones={projectMilestoneRoots as any}
+              milestones={projectMilestoneRoots}
               depth={depth + 1}
               mode={mode}
               modes={modes}

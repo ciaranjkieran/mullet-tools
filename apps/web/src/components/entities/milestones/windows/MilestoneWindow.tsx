@@ -165,8 +165,13 @@ export default function MilestoneWindow({
   const setViewType = useViewStore((s) => s.setViewType);
   const handleLaunchAsTemplate = () => {
     const data = milestoneToTemplateData(milestone, milestones, tasks);
-    const mode = modeId || selectedMode?.id!;
-    openWorkbench({ type: "milestone", modeId: mode, data });
+
+    const resolvedModeId =
+      modeId ?? selectedMode?.id ?? milestone.modeId ?? null;
+
+    if (resolvedModeId == null) return;
+
+    openWorkbench({ type: "milestone", modeId: resolvedModeId, data });
     setViewType("templates");
     onClose();
   };

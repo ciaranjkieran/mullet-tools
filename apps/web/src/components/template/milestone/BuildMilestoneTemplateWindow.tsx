@@ -30,6 +30,15 @@ const EMPTY_MILESTONE: TemplateMilestoneData = {
   subMilestones: [],
 };
 
+function getAxiosErrorData(err: unknown): unknown {
+  if (!err || typeof err !== "object") return null;
+  const rec = err as Record<string, unknown>;
+  const resp = rec["response"];
+  if (!resp || typeof resp !== "object") return null;
+  const respRec = resp as Record<string, unknown>;
+  return respRec["data"] ?? null;
+}
+
 export default function BuildMilestoneTemplateWindow({
   open: isOpen,
   onOpenChange,
@@ -65,6 +74,17 @@ export default function BuildMilestoneTemplateWindow({
     }
   }, [isOpen, prefillNode, prefillModeId, modes]);
 
+  const internalClose = (open: boolean) => {
+    if (!open) {
+      // Reset local state so next open re-syncs with selectedMode (via prefillModeId)
+      setModeId(null);
+      setMilestone(EMPTY_MILESTONE);
+      onAfterClose?.();
+    }
+
+    onOpenChange(open);
+  };
+
   const handleSubmit = async () => {
     if (actionTriggered.current) return;
     actionTriggered.current = true;
@@ -86,23 +106,13 @@ export default function BuildMilestoneTemplateWindow({
     try {
       await createTemplate.mutateAsync(template);
       internalClose(false);
-    } catch (err: any) {
-      console.error("Template creation failed:", err?.response?.data || err);
+    } catch (err: unknown) {
+      const axiosData = getAxiosErrorData(err);
+      console.error("Template creation failed:", axiosData ?? err);
       alert("Something went wrong while creating the template.");
     } finally {
       actionTriggered.current = false;
     }
-  };
-
-  const internalClose = (open: boolean) => {
-    if (!open) {
-      // Reset local state so next open re-syncs with selectedMode (via prefillModeId)
-      setModeId(null);
-      setMilestone(EMPTY_MILESTONE);
-      onAfterClose?.();
-    }
-
-    onOpenChange(open);
   };
 
   const effectiveMode =

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSelectionStore } from "@/lib/store/useSelectionStore";
 import { useBatchEditorStore } from "@/lib/store/useBatchEditorStore";
 import { useModeStore } from "@shared/store/useModeStore";
@@ -19,6 +19,30 @@ type Props = {
   offsetLeftPx?: number; // default 375
 };
 
+type EntityWithMode = {
+  id: number;
+  modeId?: number;
+  mode?: number | { id: number };
+};
+
+type Mode = { id: number; color?: string };
+
+// Store shapes can vary (map vs array), so we keep selectors flexible but typed safely.
+type StoreWithById<T extends { id: number }> = {
+  byId?: Record<number, T>;
+  tasksById?: Record<number, T>;
+  milestonesById?: Record<number, T>;
+  projectsById?: Record<number, T>;
+  goalsById?: Record<number, T>;
+};
+
+type StoreWithArray<T> = {
+  tasks?: T[];
+  milestones?: T[];
+  projects?: T[];
+  goals?: T[];
+};
+
 export default function BatchEditorTrigger({
   open: controlledOpen,
   onOpenChange,
@@ -31,45 +55,95 @@ export default function BatchEditorTrigger({
     (s) => s.setIsBatchEditorOpen
   );
 
-  // entity stores (robust selectors that work with either maps or arrays)
-  const modes = useModeStore((s) => s.modes);
+  const modes = useModeStore((s) => s.modes as Mode[] | undefined);
 
-  const tasksById = useTaskStore((s: any) => s.byId ?? s.tasksById ?? null);
-  const tasksArr = useTaskStore((s: any) => s.tasks ?? []);
-  const getTask = (id: number) =>
-    tasksById ? tasksById[id] : tasksArr.find((t: any) => t.id === id);
-
-  const milestonesById = useMilestoneStore(
-    (s: any) => s.byId ?? s.milestonesById ?? null
+  // ---- Tasks ----
+  const tasksById = useTaskStore((s) => {
+    const st = s as unknown as StoreWithById<EntityWithMode>;
+    return st.byId ?? st.tasksById ?? null;
+  });
+  const tasksArr = useTaskStore((s) => {
+    const st = s as unknown as StoreWithArray<EntityWithMode>;
+    return st.tasks ?? [];
+  });
+  const getTask = useCallback(
+    (id: number) =>
+      tasksById
+        ? (tasksById as Record<number, EntityWithMode>)[id]
+        : tasksArr.find((t) => t.id === id),
+    [tasksById, tasksArr]
   );
-  const milestonesArr = useMilestoneStore((s: any) => s.milestones ?? []);
-  const getMilestone = (id: number) =>
-    milestonesById
-      ? milestonesById[id]
-      : milestonesArr.find((m: any) => m.id === id);
 
-  const projectsById = useProjectStore(
-    (s: any) => s.byId ?? s.projectsById ?? null
+  // ---- Milestones ----
+  const milestonesById = useMilestoneStore((s) => {
+    const st = s as unknown as StoreWithById<EntityWithMode>;
+    return st.byId ?? st.milestonesById ?? null;
+  });
+  const milestonesArr = useMilestoneStore((s) => {
+    const st = s as unknown as StoreWithArray<EntityWithMode>;
+    return st.milestones ?? [];
+  });
+  const getMilestone = useCallback(
+    (id: number) =>
+      milestonesById
+        ? (milestonesById as Record<number, EntityWithMode>)[id]
+        : milestonesArr.find((m) => m.id === id),
+    [milestonesById, milestonesArr]
   );
-  const projectsArr = useProjectStore((s: any) => s.projects ?? []);
-  const getProject = (id: number) =>
-    projectsById ? projectsById[id] : projectsArr.find((p: any) => p.id === id);
 
-  const goalsById = useGoalStore((s: any) => s.byId ?? s.goalsById ?? null);
-  const goalsArr = useGoalStore((s: any) => s.goals ?? []);
-  const getGoal = (id: number) =>
-    goalsById ? goalsById[id] : goalsArr.find((g: any) => g.id === id);
+  // ---- Projects ----
+  const projectsById = useProjectStore((s) => {
+    const st = s as unknown as StoreWithById<EntityWithMode>;
+    return st.byId ?? st.projectsById ?? null;
+  });
+  const projectsArr = useProjectStore((s) => {
+    const st = s as unknown as StoreWithArray<EntityWithMode>;
+    return st.projects ?? [];
+  });
+  const getProject = useCallback(
+    (id: number) =>
+      projectsById
+        ? (projectsById as Record<number, EntityWithMode>)[id]
+        : projectsArr.find((p) => p.id === id),
+    [projectsById, projectsArr]
+  );
+
+  // ---- Goals ----
+  const goalsById = useGoalStore((s) => {
+    const st = s as unknown as StoreWithById<EntityWithMode>;
+    return st.byId ?? st.goalsById ?? null;
+  });
+  const goalsArr = useGoalStore((s) => {
+    const st = s as unknown as StoreWithArray<EntityWithMode>;
+    return st.goals ?? [];
+  });
+  const getGoal = useCallback(
+    (id: number) =>
+      goalsById
+        ? (goalsById as Record<number, EntityWithMode>)[id]
+        : goalsArr.find((g) => g.id === id),
+    [goalsById, goalsArr]
+  );
 
   // Uncontrolled fallback
   const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
   const isControlled = controlledOpen !== undefined;
   const open = isControlled ? (controlledOpen as boolean) : uncontrolledOpen;
 
+  const setOpen = useCallback(
+    (next: boolean) => {
+      if (isControlled) onOpenChange?.(next);
+      else setUncontrolledOpen(next);
+    },
+    [isControlled, onOpenChange]
+  );
+
   // Snapshot the last non-zero count while open to avoid "0 selected" flicker if selection clears on mousedown.
   const lastCountWhileOpen = useRef<number>(0);
   useEffect(() => {
     if (open && totalCount > 0) lastCountWhileOpen.current = totalCount;
   }, [open, totalCount]);
+
   const displayCount = useMemo(
     () => (open ? totalCount || lastCountWhileOpen.current || 0 : totalCount),
     [open, totalCount]
@@ -82,11 +156,6 @@ export default function BatchEditorTrigger({
     }
   }, [isControlled, totalCount, uncontrolledOpen]);
 
-  const setOpen = (next: boolean) => {
-    if (isControlled) onOpenChange?.(next);
-    else setUncontrolledOpen(next);
-  };
-
   const handleCancel = () => {
     clearAll(); // remove this line if you only want to close without clearing
     setOpen(false);
@@ -98,52 +167,39 @@ export default function BatchEditorTrigger({
   };
 
   // ---- YES button color logic ----
-  // Gather distinct modeIds across selected entities
   const selectedModeIds = useMemo(() => {
     const ids = new Set<number>();
 
-    // helper to safely add a modeId that may be at entity.mode or entity.modeId
-    const addMode = (entity: any) => {
-      const mid = entity?.modeId ?? entity?.mode?.id ?? entity?.mode;
+    const addMode = (entity?: EntityWithMode) => {
+      const mid =
+        entity?.modeId ??
+        (typeof entity?.mode === "object" ? entity.mode?.id : entity?.mode);
       if (typeof mid === "number") ids.add(mid);
     };
 
-    selected.task.forEach((id) => addMode(getTask(id)));
-    selected.milestone.forEach((id) => addMode(getMilestone(id)));
-    selected.project.forEach((id) => addMode(getProject(id)));
-    selected.goal.forEach((id) => addMode(getGoal(id)));
+    selected.task.forEach((id: number) => addMode(getTask(id)));
+    selected.milestone.forEach((id: number) => addMode(getMilestone(id)));
+    selected.project.forEach((id: number) => addMode(getProject(id)));
+    selected.goal.forEach((id: number) => addMode(getGoal(id)));
 
     return ids;
-  }, [
-    selected,
-    tasksById,
-    tasksArr,
-    milestonesById,
-    milestonesArr,
-    projectsById,
-    projectsArr,
-    goalsById,
-    goalsArr,
-  ]);
+  }, [selected, getTask, getMilestone, getProject, getGoal]);
 
   const yesBg = useMemo(() => {
     if (selectedModeIds.size === 1) {
       const onlyId = [...selectedModeIds][0];
-      const mode = modes?.find((m: any) => m.id === onlyId);
+      const mode = modes?.find((m) => m.id === onlyId);
       return mode?.color || "#000000";
     }
-    // multiple modes (or none): black
     return "#000000";
   }, [selectedModeIds, modes]);
 
   const yesFg = useMemo(() => getContrastingText(yesBg), [yesBg]);
 
-  // --- Close bubble when the global hook clears selection (totalCount -> 0)
+  // Close bubble when selection clears (totalCount -> 0)
   useEffect(() => {
-    if (open && totalCount === 0) {
-      setOpen(false);
-    }
-  }, [open, totalCount]); // setOpen comes from closure
+    if (open && totalCount === 0) setOpen(false);
+  }, [open, totalCount, setOpen]);
 
   return (
     <div className="relative">
@@ -151,14 +207,13 @@ export default function BatchEditorTrigger({
         role="dialog"
         aria-hidden={!open}
         aria-label="Batch edit confirmation"
-        data-batch-ui="true" // <-- so useGlobalOutsideDeselect treats clicks inside as safe
-        // Keep mounted; just toggle interactivity/visibility
-        className={`absolute bottom-0 z-[999] bg-white border border-gray-300 shadow-md p-4 rounded-md w-[280px] transition-opacity duration-200 ${
+        data-batch-ui="true"
+        className={`absolute bottom-0 z-[999] w-[280px] rounded-md border border-gray-300 bg-white p-4 shadow-md transition-opacity duration-200 ${
           open
-            ? "opacity-100 pointer-events-auto"
-            : "opacity-0 pointer-events-none"
+            ? "pointer-events-auto opacity-100"
+            : "pointer-events-none opacity-0"
         }`}
-        style={{ left: -offsetLeftPx }} // runtime offset
+        style={{ left: -offsetLeftPx }}
       >
         <div className="mb-3 text-sm font-medium">
           Batch edit {displayCount} selected item{displayCount === 1 ? "" : "s"}
@@ -171,7 +226,7 @@ export default function BatchEditorTrigger({
             onPointerDown={(e) => e.stopPropagation()}
             onMouseDown={(e) => e.stopPropagation()}
             onClick={handleCancel}
-            className="text-sm px-3 py-1 rounded border border-gray-300 hover:bg-gray-100"
+            className="rounded border border-gray-300 px-3 py-1 text-sm hover:bg-gray-100"
           >
             Cancel
           </button>
@@ -181,7 +236,7 @@ export default function BatchEditorTrigger({
             onPointerDown={(e) => e.stopPropagation()}
             onMouseDown={(e) => e.stopPropagation()}
             onClick={handleYes}
-            className="text-sm px-3 py-1 rounded cursor-pointer transition-opacity hover:opacity-90"
+            className="cursor-pointer rounded px-3 py-1 text-sm transition-opacity hover:opacity-90"
             style={{ backgroundColor: yesBg, color: yesFg }}
             data-no-dnd="true"
           >

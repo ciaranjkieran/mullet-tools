@@ -46,7 +46,6 @@ type Props = {
   projects: Project[];
   milestones: Milestone[];
   tasks: Task[];
-  defaultTab?: "edit" | "structure" | "comments" | "stats";
 };
 
 export default function GoalWindow({
@@ -57,7 +56,6 @@ export default function GoalWindow({
   projects,
   milestones,
   tasks,
-  defaultTab,
 }: Props) {
   const [title, setTitle] = useState(goal.title);
   const [modeId, setModeId] = useState(goal.modeId);

@@ -29,39 +29,36 @@ function emptySelected(): SelectedMap {
     goal: new Set<number>(),
   };
 }
-// useSelectionStore.ts
+
 export const useSelectionStore = create<SelectionState>((set, get) => ({
   selected: emptySelected(),
 
-  // ✅ Safe guard: handle missing/unknown type and nullish id
   isSelected: (type, id) => {
     const s = get().selected;
-    if (!type || id == null) return false;
     const setForType = s[type];
-    if (!setForType) return false;
-    return setForType.has(id);
+    return setForType ? setForType.has(id) : false;
   },
 
   toggle: (type, id) =>
     set((state) => {
-      if (!type || id == null) return state;
-      const next = new Set(state.selected[type] ?? []);
-      next.has(id) ? next.delete(id) : next.add(id);
+      const next = new Set(state.selected[type]);
+
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+
       return { selected: { ...state.selected, [type]: next } };
     }),
 
   add: (type, id) =>
     set((state) => {
-      if (!type || id == null) return state;
-      const next = new Set(state.selected[type] ?? []);
+      const next = new Set(state.selected[type]);
       next.add(id);
       return { selected: { ...state.selected, [type]: next } };
     }),
 
   remove: (type, id) =>
     set((state) => {
-      if (!type || id == null) return state;
-      const next = new Set(state.selected[type] ?? []);
+      const next = new Set(state.selected[type]);
       next.delete(id);
       return { selected: { ...state.selected, [type]: next } };
     }),

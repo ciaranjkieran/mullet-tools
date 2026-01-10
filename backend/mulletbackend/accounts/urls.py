@@ -8,11 +8,10 @@ from .views import MeView
 
 
 urlpatterns = [
-    path('auth/register/', RegisterView.as_view(), name='register'),
-    path('auth/login/', LoginView.as_view(), name='login'),
-    path('auth/csrf/', CSRFTokenView.as_view(), name='csrf_token'),
-        path('auth/me/', MeView.as_view(), name='me'),
-            path("auth/logout/", LogoutView.as_view(), name="logout"),
-
-
+    path("register/", RegisterView.as_view(), name="register"),
+    path("login/", LoginView.as_view(), name="login"),
+    path("csrf/", CSRFTokenView.as_view(), name="csrf_token"),
+    path("me/", MeView.as_view(), name="me"),
+    path("logout/", LogoutView.as_view(), name="logout"),
 ]
+

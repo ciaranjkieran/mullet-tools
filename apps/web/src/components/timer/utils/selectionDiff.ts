@@ -9,11 +9,13 @@ export type Sel = {
   taskId: number | null;
 };
 
+function hasPath(x: unknown): x is { path: unknown } {
+  return typeof x === "object" && x !== null && "path" in x;
+}
+
 export function idsFromActivePath(active: unknown): Partial<Sel> {
-  // Your hook returns { data: active } where active?.path exists when running
-  const a = active as any;
-  if (!a?.path) return {};
-  return pathToIdPayload(a.path);
+  if (!hasPath(active) || !active.path) return {};
+  return pathToIdPayload(active.path);
 }
 
 export function sameSelection(

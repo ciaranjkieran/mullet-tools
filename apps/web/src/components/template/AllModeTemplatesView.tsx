@@ -1,4 +1,4 @@
-// components/views/templates/AllModeTemplatesSection.tsx
+// components/views/templates/AllModeTemplatesView.tsx
 "use client";
 
 import { useState } from "react";
@@ -25,13 +25,16 @@ export default function AllModeTemplatesSection({
   onEdit,
   onUse,
 }: Props) {
-  // If this mode has no templates at all, don't render the row
-  if (milestoneTemplates.length === 0 && projectTemplates.length === 0) {
-    return null;
-  }
-
   const [showMilestones, setShowMilestones] = useState(true);
   const [showProjects, setShowProjects] = useState(true);
+
+  const hasMilestones = milestoneTemplates.length > 0;
+  const hasProjects = projectTemplates.length > 0;
+
+  // If this mode has no templates at all, don't render the row
+  if (!hasMilestones && !hasProjects) {
+    return null;
+  }
 
   return (
     <div className="space-y-4 rounded-md border border-gray-200 p-4">
@@ -46,15 +49,25 @@ export default function AllModeTemplatesSection({
 
       {/* Row: left column = milestone, right column = project */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* LEFT COLUMN – always rendered, may be empty */}
+        {/* LEFT COLUMN – Milestones */}
         <div className="space-y-2">
-          {milestoneTemplates.length > 0 && (
+          {hasMilestones && (
             <>
               <button
                 type="button"
                 className="flex items-center gap-2 text-md font-semibold text-gray-800 hover:underline"
                 onClick={() => setShowMilestones((prev) => !prev)}
-              ></button>
+              >
+                {showMilestones ? (
+                  <ChevronDown className="w-4 h-4" />
+                ) : (
+                  <ChevronRight className="w-4 h-4" />
+                )}
+                <span>Milestones</span>
+                <span className="text-xs text-gray-500 font-normal">
+                  ({milestoneTemplates.length})
+                </span>
+              </button>
 
               {showMilestones && (
                 <TemplateList
@@ -68,15 +81,25 @@ export default function AllModeTemplatesSection({
           )}
         </div>
 
-        {/* RIGHT COLUMN – always rendered, may be empty */}
+        {/* RIGHT COLUMN – Projects */}
         <div className="space-y-2">
-          {projectTemplates.length > 0 && (
+          {hasProjects && (
             <>
               <button
                 type="button"
                 className="flex items-center gap-2 text-md font-semibold text-gray-800 hover:underline"
                 onClick={() => setShowProjects((prev) => !prev)}
-              ></button>
+              >
+                {showProjects ? (
+                  <ChevronDown className="w-4 h-4" />
+                ) : (
+                  <ChevronRight className="w-4 h-4" />
+                )}
+                <span>Projects</span>
+                <span className="text-xs text-gray-500 font-normal">
+                  ({projectTemplates.length})
+                </span>
+              </button>
 
               {showProjects && (
                 <TemplateList

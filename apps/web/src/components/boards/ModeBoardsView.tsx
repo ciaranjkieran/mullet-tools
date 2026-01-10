@@ -47,7 +47,11 @@ const rawToEntityType = (v: unknown): EntityType | null => {
   return null;
 };
 
-type Props = { mode: Mode; isAllMode: boolean; modes: Mode[] };
+type Props = {
+  mode: Mode;
+  isAllMode?: boolean;
+  modes?: Mode[];
+};
 
 export default function ModeBoardsView({ mode, isAllMode, modes }: Props) {
   const { data: pins = [], isLoading } = usePinsByMode(mode.id);
@@ -117,7 +121,7 @@ export default function ModeBoardsView({ mode, isAllMode, modes }: Props) {
     );
 
     const ordered = [...nonMode, ...modeOptions].map(
-      ({ latestCreatedAt, ...rest }) => rest
+      ({ latestCreatedAt: _latestCreatedAt, ...rest }) => rest
     );
 
     // 🔍 Debug: derived entity options in final order

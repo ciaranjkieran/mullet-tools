@@ -3,7 +3,7 @@
 import { Task } from "@shared/types/Task";
 import { Mode } from "@shared/types/Mode";
 import { format, parseISO } from "date-fns";
-import { PencilSquareIcon, CalendarIcon } from "@heroicons/react/24/outline";
+import { PencilSquareIcon } from "@heroicons/react/24/outline";
 import clsx from "clsx";
 import { useDeleteTask } from "@shared/api/hooks/tasks/useDeleteTask";
 import { useDialogStore } from "@/lib/dialogs/useDialogStore";
@@ -87,7 +87,7 @@ export default function TaskRendererDashboard({
             entityId={task.id}
             canDrag={!task.dueDate}
             className="p-1 rounded"
-            {...(dragHandleProps as any)}
+            {...(dragHandleProps ?? {})}
           />
           <input
             type="checkbox"

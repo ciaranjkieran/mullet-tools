@@ -14,7 +14,7 @@ export default function RequireAuth({
 
   useEffect(() => {
     if (me.isFetched && me.isError) {
-      router.replace("/login");
+      router.replace("/login/");
     }
   }, [me.isFetched, me.isError, router]);
 

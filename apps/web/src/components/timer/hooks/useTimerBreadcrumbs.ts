@@ -20,11 +20,19 @@ import { pathToIdPayload } from "../utils/timerPath";
 import {
   buildBreadcrumbFromIds,
   type Crumb,
-  type TimerDeps,
+  type TimerPathIds,
 } from "../types/timerTypes";
 
+type ActiveLike =
+  | {
+      sessionId?: string | number | null;
+      path?: unknown | null;
+    }
+  | null
+  | undefined;
+
 type UseTimerBreadcrumbsArgs = {
-  active: any | null;
+  active: ActiveLike;
   modes: Mode[];
   goals: Goal[];
   projects: Project[];
@@ -46,41 +54,45 @@ export function useTimerBreadcrumbs({
   milestones,
   tasks,
 }: UseTimerBreadcrumbsArgs) {
-  const deps: TimerDeps = { modes, goals, projects, milestones, tasks };
-
-  const pathIds = useMemo(
-    () => (active?.path ? pathToIdPayload(active.path) : {}),
+  const pathIds: TimerPathIds = useMemo(
+    () => (active?.path ? pathToIdPayload(active.path as any) : {}),
     [active?.path]
   );
 
-  const rawBreadcrumb = useMemo<Crumb[]>(
-    () => buildBreadcrumbFromIds(pathIds as any, deps),
-    [pathIds, deps]
-  );
+  const rawBreadcrumb = useMemo<Crumb[]>(() => {
+    // deps created inside memo so it doesn't churn the dependency array
+    return buildBreadcrumbFromIds(pathIds, {
+      modes,
+      goals,
+      projects,
+      milestones,
+      tasks,
+    });
+  }, [pathIds, modes, goals, projects, milestones, tasks]);
 
   // Update global cache whenever we have a real breadcrumb for this session
   useEffect(() => {
-    if (active?.sessionId && rawBreadcrumb.length > 0) {
+    const sid = active?.sessionId;
+    if (
+      (typeof sid === "string" || typeof sid === "number") &&
+      rawBreadcrumb.length > 0
+    ) {
       lastCrumbsGlobal = {
-        sessionId: active.sessionId,
+        sessionId: sid,
         crumbs: rawBreadcrumb,
       };
     }
   }, [active?.sessionId, rawBreadcrumb]);
 
   const breadcrumb = useMemo(() => {
+    const sid = active?.sessionId;
     const last = lastCrumbsGlobal;
 
-    // If:
-    // - there is an active session
-    // - current build produced no crumbs (e.g. lists filtered for another mode)
-    // - and we have cached crumbs for this same session
-    // → fall back to the cached crumbs instead of "no breadcrumb".
     if (
-      active?.sessionId &&
+      (typeof sid === "string" || typeof sid === "number") &&
       rawBreadcrumb.length === 0 &&
       last &&
-      last.sessionId === active.sessionId
+      last.sessionId === sid
     ) {
       return last.crumbs;
     }

@@ -2,7 +2,8 @@
 
 import * as Dialog from "@radix-ui/react-dialog";
 import { X } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import Image from "next/image";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { useUpdatePin } from "@shared/api/hooks/boards/useUpdatePin";
 import { useDeletePin } from "@shared/api/hooks/boards/useDeletePin";
 import { usePinsByMode } from "@shared/api/hooks/boards/usePinsByMode";
@@ -43,18 +44,48 @@ type Props = {
   modeColor: string; // fallback
 };
 
+function resolvePinModeId(pin: Pin | null | undefined): number {
+  if (!pin) return 0;
+
+  const direct = (pin as Record<string, unknown> | null | undefined)?.modeId;
+
+  if (typeof direct === "number") return direct;
+
+  if (
+    typeof direct === "string" &&
+    direct.trim() !== "" &&
+    !Number.isNaN(Number(direct))
+  ) {
+    return Number(direct);
+  }
+
+  // some endpoints might send `mode` as an id
+  const legacy = (pin as Partial<Pin> & { mode?: unknown }).mode;
+  if (typeof legacy === "number") return legacy;
+  if (
+    typeof legacy === "string" &&
+    legacy.trim() !== "" &&
+    !Number.isNaN(Number(legacy))
+  ) {
+    return Number(legacy);
+  }
+
+  return 0;
+}
+
 export default function EditPinDialog({ modes, modeColor }: Props) {
   const { isOpen, pin, close } = useEditPinDialogStore();
 
-  // keep list in cache fresh elsewhere
-  usePinsByMode(Number((pin as any)?.modeId ?? (pin as any)?.mode ?? 0));
+  const safeModes = useMemo<Mode[]>(() => modes ?? [], [modes]);
 
-  const [modeId, setModeId] = useState<number>(
-    Number((pin as any)?.modeId ?? (pin as any)?.mode ?? 0)
-  );
+  // keep list in cache fresh elsewhere
+  const pinModeId = useMemo(() => resolvePinModeId(pin ?? null), [pin]);
+  usePinsByMode(pinModeId);
+
+  const [modeId, setModeId] = useState<number>(pinModeId);
   const [title, setTitle] = useState("");
 
-  // ✅ replace content
+  // replace content
   const [url, setUrl] = useState("");
   const [file, setFile] = useState<File | null>(null);
 
@@ -63,28 +94,23 @@ export default function EditPinDialog({ modes, modeColor }: Props) {
   const updatePin = useUpdatePin();
   const deletePin = useDeletePin();
 
-  const safeModes = modes ?? [];
-
   useEffect(() => {
     if (isOpen) document.body.classList.add("modal-open");
     else document.body.classList.remove("modal-open");
     return () => document.body.classList.remove("modal-open");
   }, [isOpen]);
 
+  // initialize when pin changes
   useEffect(() => {
     if (!pin) return;
 
     setTitle(pin.title || "");
-
-    const nextModeId = Number((pin as any).modeId ?? (pin as any).mode ?? 0);
-    setModeId(nextModeId);
-
-    // ✅ initialize url from pin
+    setModeId(resolvePinModeId(pin));
     setUrl(pin.url || "");
-    // ✅ clear any staged file when opening a new pin
     setFile(null);
-  }, [pin?.id]);
+  }, [pin]);
 
+  // keep modeId valid if modes list changes
   useEffect(() => {
     if (!safeModes.length) return;
     const hasValid = safeModes.some((m) => m.id === modeId);
@@ -102,9 +128,9 @@ export default function EditPinDialog({ modes, modeColor }: Props) {
     [resolvedModeColor]
   );
 
-  const handleClose = () => close();
+  const handleClose = useCallback(() => close(), [close]);
 
-  const handleSubmit = async () => {
+  const handleSubmit = useCallback(async () => {
     if (!pin) return;
 
     await updatePin.mutateAsync({
@@ -112,39 +138,42 @@ export default function EditPinDialog({ modes, modeColor }: Props) {
       data: {
         title,
         mode: modeId,
-        // only send url if user typed something (or if link kind, allow empty->clears only if you want)
         url: url.trim() ? url.trim() : undefined,
         file: file ?? undefined,
       },
     });
 
     handleClose();
-  };
+  }, [pin, updatePin, title, modeId, url, file, handleClose]);
 
-  const handleConfirmDelete = async () => {
+  const handleConfirmDelete = useCallback(async () => {
     if (!pin) return;
     await deletePin.mutateAsync(String(pin.id));
     handleClose();
-  };
+  }, [pin, deletePin, handleClose]);
 
-  function onPickFile(e: React.ChangeEvent<HTMLInputElement>) {
+  const onPickFile = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.currentTarget.files?.[0] ?? null;
     setFile(f);
-    // if they pick a file, we typically want URL to stop competing
-    // (optional: keep url, but UI disables it while file selected)
-  }
+  }, []);
 
   function renderPreview(p: Pin | null) {
     if (!p) return null;
 
     if (p.kind === "image" && p.file) {
-      // eslint-disable-next-line @next/next/no-img-element
+      const src = p.thumbnail || p.file;
       return (
-        <img
-          src={p.thumbnail || p.file}
-          alt={p.title || "preview"}
-          className="max-h-56 w-full object-contain rounded-md bg-white"
-        />
+        <div className="relative max-h-56 w-full overflow-hidden rounded-md bg-white">
+          <Image
+            src={src}
+            alt={p.title || "preview"}
+            width={1400}
+            height={900}
+            className="max-h-56 w-full object-contain rounded-md bg-white"
+            sizes="(max-width: 768px) 90vw, 768px"
+            unoptimized
+          />
+        </div>
       );
     }
 
@@ -193,9 +222,7 @@ export default function EditPinDialog({ modes, modeColor }: Props) {
         <Dialog.Portal>
           <Dialog.Overlay className="fixed inset-0 z-40 bg-black/40 backdrop-blur-[2px]" />
 
-          {/* flex layout so footer padding always shows */}
           <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-full max-w-3xl h-[85vh] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-xl bg-white shadow-2xl flex flex-col">
-            {/* Top bar + left rail */}
             <div
               className="h-1.5 md:h-4 w-full"
               style={{ backgroundColor: resolvedModeColor, opacity: 0.3 }}
@@ -205,7 +232,6 @@ export default function EditPinDialog({ modes, modeColor }: Props) {
               style={{ backgroundColor: resolvedModeColor, opacity: 0.5 }}
             />
 
-            {/* Header */}
             <div
               className="flex items-start justify-between px-6 pt-5 pb-4 md:px-10 border-b-2 shrink-0"
               style={{ borderBottomColor: `${resolvedModeColor}` }}
@@ -228,12 +254,10 @@ export default function EditPinDialog({ modes, modeColor }: Props) {
               </Dialog.Close>
             </div>
 
-            {/* Body */}
             <div className="px-6 py-6 md:px-10 overflow-y-auto flex-1">
               <div className="grid gap-6">
                 {renderPreview(pin || null)}
 
-                {/* Mode */}
                 <div className="max-w-xl">
                   <EditorModeSelect
                     modes={safeModes}
@@ -244,7 +268,6 @@ export default function EditPinDialog({ modes, modeColor }: Props) {
                   />
                 </div>
 
-                {/* Title */}
                 <div className="max-w-xl grid gap-2">
                   <label className="text-sm font-semibold text-gray-900">
                     Title
@@ -258,13 +281,11 @@ export default function EditPinDialog({ modes, modeColor }: Props) {
                   />
                 </div>
 
-                {/* Replace content */}
                 <div className="max-w-xl grid gap-3">
                   <div className="text-sm font-semibold text-gray-900">
                     Replace content
                   </div>
 
-                  {/* URL (always shown; disabled if file chosen for non-link to avoid “dueling inputs”) */}
                   <div className="grid gap-2">
                     <label className="text-sm font-medium text-gray-800">
                       URL {kind === "link" ? "" : "(optional)"}
@@ -285,7 +306,6 @@ export default function EditPinDialog({ modes, modeColor }: Props) {
                     )}
                   </div>
 
-                  {/* File (not for link) */}
                   {kind && kind !== "link" && (
                     <div className="grid gap-2">
                       <label className="text-sm font-medium text-gray-800">
@@ -325,7 +345,6 @@ export default function EditPinDialog({ modes, modeColor }: Props) {
               </div>
             </div>
 
-            {/* Footer */}
             <div
               className="border-t-2 px-6 pt-5 pb-10 md:px-10 md:pt-6 md:pb-12 bg-white shrink-0"
               style={{ borderTopColor: `${resolvedModeColor}22` }}

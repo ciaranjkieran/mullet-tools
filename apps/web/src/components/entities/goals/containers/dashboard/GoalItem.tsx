@@ -15,7 +15,6 @@ import TaskSectionDashboard from "@/components/entities/tasks/containers/dashboa
 import MilestoneList, {
   type Container as MilestoneContainer,
 } from "@/components/entities/milestones/containers/dashboard/MilestoneList";
-import { buildMilestoneTree } from "@/components/entities/milestones/utils/MilestoneTreeBuilder";
 
 import ProjectList from "@/components/entities/projects/containers/dashboard/ProjectList";
 import { buildProjectTree } from "@/components/entities/projects/utils/buildProjectTree";
@@ -70,36 +69,39 @@ export default function GoalItem({
   projects,
   dragHandleProps,
 }: Props) {
-  // ---- SAFETY: ensure we have an id before anything else
-  const goalId = goal?.id;
-  if (!goalId) {
-    console.warn("GoalItem: missing goal.id", goal);
-    return null;
-  }
+  // ✅ Don't early return before hooks
+  const goalId = goal?.id ?? -1;
+  const hasValidGoalId = goalId > 0;
 
-  const collapsed = !!useEntityUIStore((s) => s.collapsed.goal?.[goalId]);
-  const modeColor = modes.find((m) => m.id === goal.modeId)?.color ?? "#000";
-
-  // Tasks directly under this goal (no project/milestone)
-  const goalTasks = useMemo(
-    () =>
-      tasks
-        .filter(
-          (t) =>
-            t.modeId === mode.id &&
-            t.goalId === goalId &&
-            t.projectId == null &&
-            t.milestoneId == null
-        )
-        .sort((a, b) => (a.position ?? 0) - (b.position ?? 0)),
-    [tasks, mode.id, goalId]
+  // Hooks must always run
+  const collapsed = useEntityUIStore((s) =>
+    hasValidGoalId ? !!s.collapsed.goal?.[goalId] : false
   );
 
-  // ...
+  const modeColor = useMemo(() => {
+    // safe even if goal.modeId is undefined-ish
+    return modes.find((m) => m.id === goal.modeId)?.color ?? "#000";
+  }, [modes, goal.modeId]);
+
+  // Tasks directly under this goal (no project/milestone)
+  const goalTasks = useMemo(() => {
+    if (!hasValidGoalId) return [];
+    return tasks
+      .filter(
+        (t) =>
+          t.modeId === mode.id &&
+          t.goalId === goalId &&
+          t.projectId == null &&
+          t.milestoneId == null
+      )
+      .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+  }, [tasks, mode.id, goalId, hasValidGoalId]);
 
   type NestedMilestone = Milestone & { children: NestedMilestone[] };
 
   const milestoneTree = useMemo(() => {
+    if (!hasValidGoalId) return [] as NestedMilestone[];
+
     const { byId: msById } = makeMilestoneMaps(milestones);
     const { byId: prById } = makeProjectMaps(projects);
 
@@ -125,17 +127,26 @@ export default function GoalItem({
     }
 
     return roots;
-  }, [milestones, projects, goalId]);
+  }, [milestones, projects, goalId, hasValidGoalId]);
 
   // Projects under THIS goal, including ones that inherit the goal via a parent project
   const projectTree = useMemo(() => {
+    if (!hasValidGoalId) return [];
+
     const byId = makeProjectIndex(projects);
     const belongToGoal = projects.filter((p) => {
       const eff = p.goalId ?? effectiveProjectGoalId(p.id, byId);
       return eff === goalId;
     });
+
     return buildProjectTree(belongToGoal, null);
-  }, [projects, goalId]);
+  }, [projects, goalId, hasValidGoalId]);
+
+  // ✅ Now it's safe to bail
+  if (!hasValidGoalId) {
+    console.warn("GoalItem: missing goal.id", goal);
+    return null;
+  }
 
   return (
     <div className="space-y-2" style={{ paddingLeft: depth * 16 }}>
@@ -148,7 +159,6 @@ export default function GoalItem({
 
       {!collapsed && (
         <div className="mt-2 space-y-4">
-          {/* Tasks directly under THIS goal */}
           <TaskSectionDashboard
             tasks={goalTasks}
             mode={mode}
@@ -156,7 +166,6 @@ export default function GoalItem({
             goalId={goalId}
           />
 
-          {/* Milestones under THIS goal (tree) */}
           {milestoneTree.length > 0 && (
             <MilestoneList
               parentId={null}
@@ -169,7 +178,6 @@ export default function GoalItem({
             />
           )}
 
-          {/* Projects under THIS goal (tree) */}
           {projectTree.length > 0 && (
             <ProjectList
               parentId={null}

@@ -20,12 +20,33 @@ interface Props {
   modes: Mode[];
 }
 
+// Local-only ids so we can add new modes before the backend returns a number id
+type TempModeId = `temp-${number}`;
+type ModeId = number | TempModeId;
+type LocalMode = Omit<Mode, "id"> & { id: ModeId };
+
+function isTempModeId(id: ModeId): id is TempModeId {
+  return typeof id === "string" && id.startsWith("temp-");
+}
+
+function isRealModeId(id: ModeId): id is number {
+  return typeof id === "number";
+}
+
+function isTempMode(m: LocalMode): m is LocalMode & { id: TempModeId } {
+  return isTempModeId(m.id);
+}
+
+function isRealMode(m: LocalMode): m is LocalMode & { id: number } {
+  return isRealModeId(m.id);
+}
+
 export default function EditModesModal({ isOpen, onClose, modes }: Props) {
-  const [localModes, setLocalModes] = useState<Mode[]>([]);
+  const [localModes, setLocalModes] = useState<LocalMode[]>([]);
   const [initialModes, setInitialModes] = useState<Mode[]>([]);
   const [newModeName, setNewModeName] = useState("");
   const [newModeColor, setNewModeColor] = useState("#000000");
-  const [showConfirmId, setShowConfirmId] = useState<number | null>(null);
+  const [showConfirmId, setShowConfirmId] = useState<ModeId | null>(null);
   const [showUnsavedConfirm, setShowUnsavedConfirm] = useState(false);
 
   const createMode = useCreateMode();
@@ -37,8 +58,10 @@ export default function EditModesModal({ isOpen, onClose, modes }: Props) {
 
   const isDirty = useMemo(() => {
     if (localModes.length !== initialModes.length) return true;
+
     const m1 = new Map(localModes.map((m) => [String(m.id), m]));
     const m0 = new Map(initialModes.map((m) => [String(m.id), m]));
+
     for (const [id, orig] of m0.entries()) {
       const curr = m1.get(id);
       if (!curr) return true;
@@ -46,21 +69,26 @@ export default function EditModesModal({ isOpen, onClose, modes }: Props) {
       if (orig.color !== curr.color) return true;
       if ((orig.position ?? 0) !== (curr.position ?? 0)) return true;
     }
+
     return false;
   }, [localModes, initialModes]);
 
   useEffect(() => {
     if (isOpen) {
       document.body.classList.add("modal-open");
+
       const clone = modes.map((m, i) => ({ ...m, position: m.position ?? i }));
       setLocalModes(clone);
       setInitialModes(clone.map((m) => ({ ...m })));
+
       setNewModeName("");
       setNewModeColor("#000000");
       setShowUnsavedConfirm(false);
+      setShowConfirmId(null);
     } else {
       document.body.classList.remove("modal-open");
     }
+
     return () => document.body.classList.remove("modal-open");
   }, [isOpen, modes]);
 
@@ -75,7 +103,7 @@ export default function EditModesModal({ isOpen, onClose, modes }: Props) {
   };
 
   const handleChange = (
-    id: number | string,
+    id: ModeId,
     field: "title" | "color",
     value: string
   ) => {
@@ -86,7 +114,7 @@ export default function EditModesModal({ isOpen, onClose, modes }: Props) {
     );
   };
 
-  const handleDelete = (id: number | string) => {
+  const handleDelete = (id: ModeId) => {
     setLocalModes((prev) =>
       prev.filter((mode) => String(mode.id) !== String(id))
     );
@@ -94,17 +122,20 @@ export default function EditModesModal({ isOpen, onClose, modes }: Props) {
 
   const handleAddNewMode = () => {
     if (!newModeName.trim()) return;
-    const tempId = `temp-${Date.now()}`;
+
+    const tempId: TempModeId = `temp-${Date.now()}`;
     const nextPosition =
       localModes.length > 0
         ? Math.max(...localModes.map((m) => m.position ?? -1)) + 1
         : 0;
-    const newMode: Mode = {
-      id: tempId as unknown as number,
+
+    const newMode: LocalMode = {
+      id: tempId,
       title: newModeName.trim(),
       color: newModeColor,
       position: nextPosition,
     };
+
     setLocalModes((prev) => [...prev, newMode]);
     setNewModeName("");
     setNewModeColor("#000000");
@@ -121,23 +152,26 @@ export default function EditModesModal({ isOpen, onClose, modes }: Props) {
     resetToInitial();
   };
 
-  function moveMode(id: number | string, delta: number) {
+  function moveMode(id: ModeId, delta: number) {
     setLocalModes((prev) => {
       const idx = prev.findIndex((m) => String(m.id) === String(id));
       if (idx === -1) return prev;
+
       const newIndex = idx + delta;
       if (newIndex < 0 || newIndex >= prev.length) return prev;
+
       const next = [...prev];
       const [item] = next.splice(idx, 1);
       next.splice(newIndex, 0, item);
+
       return next.map((m, i) => ({ ...m, position: i }));
     });
   }
 
-  // EditModesModal extract: replace handleSaveChanges with this async version
   const handleSaveChanges = async () => {
     const initialById = new Map(initialModes.map((m) => [String(m.id), m]));
 
+    // 1) deletions (only real ids exist in initialModes)
     const deleted = initialModes.filter(
       (im) => !localModes.find((lm) => String(lm.id) === String(im.id))
     );
@@ -146,61 +180,58 @@ export default function EditModesModal({ isOpen, onClose, modes }: Props) {
       deleteModeStore(m.id);
     }
 
-    const tempToReal = new Map<string, number>();
-    const added = localModes.filter(
-      (m) =>
-        typeof (m.id as any) === "string" && String(m.id).startsWith("temp-")
-    );
+    // 2) creations (temp ids)
+    const tempToReal = new Map<TempModeId, number>();
+    const added = localModes.filter(isTempMode);
+
     for (const m of added) {
       const created = await createMode.mutateAsync({
         title: m.title,
         color: m.color,
         position: m.position ?? 0,
       });
-      tempToReal.set(String(m.id), created.id);
+
+      const tempToReal = new Map<TempModeId, number>();
+
       addMode({
         id: created.id,
         title: created.title,
         color: created.color,
         position:
-          typeof created.position === "number"
-            ? created.position
-            : m.position ?? 0,
+          typeof created.position === "number" ? created.position : m.position,
       });
     }
 
-    const resolvedLocal = localModes.map((m) => {
-      if (
-        typeof (m.id as any) === "string" &&
-        String(m.id).startsWith("temp-")
-      ) {
-        const real = tempToReal.get(String(m.id));
-        return { ...m, id: real as number };
+    // 3) resolve temp ids to real ids for subsequent updates/reorder
+    const resolvedLocal: LocalMode[] = localModes.map((m) => {
+      if (isTempModeId(m.id)) {
+        const real = tempToReal.get(m.id);
+        return real != null ? { ...m, id: real } : m;
       }
       return m;
     });
 
-    for (let i = 0; i < resolvedLocal.length; i++) {
-      const m = resolvedLocal[i];
+    // 4) updates (only for real ids)
+    for (const m of resolvedLocal) {
+      if (!isRealModeId(m.id)) continue;
+
       const orig = initialById.get(String(m.id));
       const titleChanged = orig?.title !== m.title;
       const colorChanged = orig?.color !== m.color;
+
       if (titleChanged || colorChanged) {
         await updateMode.mutateAsync({
-          id: m.id as number,
+          id: m.id,
           title: m.title,
           color: m.color,
         });
       }
     }
 
-    const existing = resolvedLocal.filter(
-      (m) => typeof (m.id as any) === "number"
-    );
-    const orders = existing.map((m, idx) => ({
-      id: m.id as number,
-      position: idx,
-    }));
+    // 5) reorder (only real ids)
+    const existing = resolvedLocal.filter(isRealMode);
+    const orders = existing.map((m, idx) => ({ id: m.id, position: idx }));
+
     if (orders.length) {
       await reorderModes.mutateAsync({ orders });
     }
@@ -241,7 +272,7 @@ export default function EditModesModal({ isOpen, onClose, modes }: Props) {
                   <div className="grid grid-cols-[2.5rem_1fr_2.5rem_3.5rem] gap-3 items-center">
                     <div className="flex flex-col gap-1">
                       <button
-                        onClick={() => moveMode(mode.id as any, -1)}
+                        onClick={() => moveMode(mode.id, -1)}
                         disabled={index === 0}
                         className="h-6 w-6 flex items-center justify-center rounded 
                           bg-gray-700 text-white border border-transparent
@@ -253,7 +284,7 @@ export default function EditModesModal({ isOpen, onClose, modes }: Props) {
                         ↑
                       </button>
                       <button
-                        onClick={() => moveMode(mode.id as any, +1)}
+                        onClick={() => moveMode(mode.id, +1)}
                         disabled={index === localModes.length - 1}
                         className="h-6 w-6 flex items-center justify-center rounded 
                           bg-gray-700 text-white border border-transparent
@@ -270,7 +301,7 @@ export default function EditModesModal({ isOpen, onClose, modes }: Props) {
                       type="text"
                       value={mode.title}
                       onChange={(e) =>
-                        handleChange(mode.id as any, "title", e.target.value)
+                        handleChange(mode.id, "title", e.target.value)
                       }
                       className="w-full border border-gray-300 px-3 py-2 rounded-md text-sm text-gray-900 bg-white focus:outline-none focus:ring-1 focus:ring-gray-800 font-semibold"
                     />
@@ -278,22 +309,23 @@ export default function EditModesModal({ isOpen, onClose, modes }: Props) {
                     <ColorPickerPopover
                       initialColor={mode.color}
                       onSelect={(color) =>
-                        handleChange(mode.id as any, "color", color)
+                        handleChange(mode.id, "color", color)
                       }
                     />
 
                     <div>
                       <button
-                        onClick={() => setShowConfirmId(mode.id as number)}
+                        onClick={() => setShowConfirmId(mode.id)}
                         className="text-sm text-red-600 hover:underline font-semibold w-full text-left"
                       >
                         Delete
                       </button>
+
                       <ConfirmDialog
-                        open={showConfirmId === (mode.id as number)}
+                        open={showConfirmId === mode.id}
                         onClose={() => setShowConfirmId(null)}
                         onConfirm={() => {
-                          handleDelete(mode.id as any);
+                          handleDelete(mode.id);
                           setShowConfirmId(null);
                         }}
                         title={`Delete mode "${mode.title}"?`}

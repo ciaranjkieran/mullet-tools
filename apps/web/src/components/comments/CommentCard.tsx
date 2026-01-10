@@ -14,9 +14,10 @@ export default function CommentCard({ comment }: Props) {
   const { mutate: deleteComment } = useDeleteComment();
 
   const handleDelete = () => {
-    if (!comment.id) return;
     deleteComment(comment.id);
   };
+
+  const hasAttachments = comment.attachments.length > 0;
 
   return (
     <div className="bg-gray-100 rounded-lg p-3 text-sm text-gray-900 relative group mb-2">
@@ -32,19 +33,18 @@ export default function CommentCard({ comment }: Props) {
         </Linkify>
       </div>
 
-      {Array.isArray((comment as any).attachments) &&
-        (comment as any).attachments.length > 0 && (
-          <div className="mt-3 space-y-2">
-            {(comment as any).attachments.map((att: any) => (
-              <CommentAttachment
-                key={att.id}
-                url={att.url}
-                name={att.original_name}
-                mime={att.mime}
-              />
-            ))}
-          </div>
-        )}
+      {hasAttachments && (
+        <div className="mt-3 space-y-2">
+          {comment.attachments.map((att) => (
+            <CommentAttachment
+              key={att.id}
+              url={att.url}
+              name={att.original_name}
+              mime={att.mime}
+            />
+          ))}
+        </div>
+      )}
 
       <span className="text-xs text-gray-500 mt-2 block">
         {format(new Date(comment.created_at), "PPP p")}

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useCreatePin } from "@shared/api/hooks/boards/useCreatePin";
 import type { CreatePinInput, PinKind } from "@shared/types/Pin";
@@ -129,12 +130,18 @@ export default function BuildPinForm({
     if (kind === "image") {
       const src = file ? localPreview : url && looksLikeImage(url) ? url : "";
       if (!src) return null;
+
       return (
-        <img
-          src={src}
-          alt="preview"
-          className="max-h-64 w-full object-contain rounded-md border bg-white"
-        />
+        <div className="relative max-h-64 w-full overflow-hidden rounded-md border bg-white">
+          <Image
+            src={src}
+            alt="preview"
+            width={1400}
+            height={900}
+            className="max-h-64 w-full object-contain"
+            unoptimized
+          />
+        </div>
       );
     }
 
@@ -153,11 +160,16 @@ export default function BuildPinForm({
         const y = youtubeThumb(url);
         if (y) {
           return (
-            <img
-              src={y}
-              alt="video"
-              className="max-h-64 w-full object-contain rounded-md border bg-white"
-            />
+            <div className="relative max-h-64 w-full overflow-hidden rounded-md border bg-white">
+              <Image
+                src={y}
+                alt="video"
+                width={1400}
+                height={900}
+                className="max-h-64 w-full object-contain"
+                unoptimized
+              />
+            </div>
           );
         }
         return (
@@ -214,16 +226,27 @@ export default function BuildPinForm({
       if (!url) return null;
       const fav = faviconFor(url);
       const y = youtubeThumb(url);
+
       return (
         <div className="w-full rounded-md border bg-white p-3 flex items-center gap-3">
           {y ? (
-            <img
+            <Image
               src={y}
               alt="link"
+              width={80}
+              height={48}
               className="h-12 w-20 object-cover rounded"
+              unoptimized
             />
           ) : fav ? (
-            <img src={fav} alt="favicon" className="h-6 w-6 rounded" />
+            <Image
+              src={fav}
+              alt="favicon"
+              width={24}
+              height={24}
+              className="h-6 w-6 rounded"
+              unoptimized
+            />
           ) : null}
           <div className="text-sm break-all">{url}</div>
         </div>

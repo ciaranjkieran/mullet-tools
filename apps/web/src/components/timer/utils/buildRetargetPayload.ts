@@ -1,4 +1,4 @@
-function buildRetargetPayload(args: {
+export function buildRetargetPayload(args: {
   modeId: number | null | undefined;
   goalId: number | null | undefined;
   projectId: number | null | undefined;

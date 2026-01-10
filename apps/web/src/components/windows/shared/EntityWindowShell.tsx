@@ -1,7 +1,7 @@
 // components/windows/shared/EntityWindowShell.tsx
 "use client";
 
-import {
+import React, {
   Children,
   ReactElement,
   ReactNode,
@@ -9,7 +9,6 @@ import {
   useState,
 } from "react";
 import clsx from "clsx";
-import React from "react";
 
 type TabProps = {
   name: string;
@@ -30,6 +29,12 @@ type ShellProps = {
   /** content rendered below the vertical tab buttons in the right rail */
   railFooter?: ReactNode;
 };
+
+type IconLikeElement = ReactElement<{ className?: string }>;
+
+function isIconElement(node: ReactNode): node is IconLikeElement {
+  return isValidElement(node);
+}
 
 export default function EntityWindowShell({
   modeColor,
@@ -109,13 +114,10 @@ export default function EntityWindowShell({
                     color: isActive ? "white" : modeColor,
                   }}
                 >
-                  {isValidElement(tab.props.icon)
-                    ? React.cloneElement(
-                        tab.props.icon as React.ReactElement<any>,
-                        {
-                          className: "w-5 h-5",
-                        }
-                      )
+                  {isIconElement(tab.props.icon)
+                    ? React.cloneElement(tab.props.icon, {
+                        className: "w-5 h-5",
+                      })
                     : tab.props.name.charAt(0)}
                 </button>
               </div>
@@ -123,7 +125,7 @@ export default function EntityWindowShell({
           })}
         </div>
 
-        {/* Footer area: aligned in the same column, spaced below with a subtle divider */}
+        {/* Footer area */}
         {railFooter && (
           <div className="flex flex-col items-center w-full z-10">
             <div

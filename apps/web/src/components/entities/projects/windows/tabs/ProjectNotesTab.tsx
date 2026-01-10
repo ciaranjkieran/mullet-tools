@@ -6,6 +6,7 @@ import NoteCard from "@/components/notes/NoteCard";
 import NoteComposer from "@/components/notes/NoteComposer";
 import Spinner from "@/components/status/Spinner";
 import { Project } from "@shared/types/Project";
+import type { CSSProperties } from "react";
 
 type Props = {
   project: Project;
@@ -23,6 +24,9 @@ export default function ProjectNotesTab({ project, modeColor }: Props) {
 
   const composerRef = useRef<NoteComposerHandle | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+  const style: CSSProperties & { "--scrollbar-color"?: string } = {
+    "--scrollbar-color": modeColor,
+  };
 
   const refocusIfNonInteractive = (e: React.MouseEvent) => {
     const t = e.target as HTMLElement;
@@ -32,19 +36,11 @@ export default function ProjectNotesTab({ project, modeColor }: Props) {
     if (!interactive) composerRef.current?.focus();
   };
 
-  useEffect(() => {
-    const el = scrollContainerRef.current;
-    if (!el) return;
-    requestAnimationFrame(() => {
-      el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
-    });
-  }, [project.id, notes.length]);
-
   return (
     <div
       ref={scrollContainerRef}
       className="flex-1 flex flex-col overflow-y-auto scrollbar-thin mb-6"
-      style={{ ["--scrollbar-color" as any]: modeColor }}
+      style={style}
       onMouseDown={refocusIfNonInteractive}
     >
       <div className="flex flex-col h-full p-6 mt-4 space-y-6">
@@ -68,7 +64,6 @@ export default function ProjectNotesTab({ project, modeColor }: Props) {
           entityId={project.id}
           modeColor={modeColor}
           entityTitle={project.title}
-          autoFocus
         />
       </div>
     </div>

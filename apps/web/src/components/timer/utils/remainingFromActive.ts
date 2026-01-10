@@ -1,15 +1,34 @@
-function remainingFromActive(active: any, nowSec: number): number | null {
-  if (!active || active.kind !== "timer") return null;
+type ActiveTimerTimerLike = {
+  kind: "timer";
+  endsAt?: string | null;
+  plannedSeconds?: number | null;
+  startedAt?: string | null;
+};
 
-  const endsAtIso = (active as any).endsAt as string | null | undefined;
+function isTimerActive(x: unknown): x is ActiveTimerTimerLike {
+  return (
+    typeof x === "object" &&
+    x !== null &&
+    (x as { kind?: unknown }).kind === "timer"
+  );
+}
+
+export function remainingFromActive(
+  active: unknown,
+  nowSec: number
+): number | null {
+  if (!isTimerActive(active)) return null;
+
+  const endsAtIso = active.endsAt;
   if (endsAtIso) {
     const ends = Math.floor(new Date(endsAtIso).getTime() / 1000);
     return Math.max(0, ends - nowSec);
   }
 
-  // fallback if endsAt missing (shouldn’t happen with your backend)
-  const planned = (active as any).plannedSeconds as number | null | undefined;
-  const startedIso = (active as any).startedAt as string | null | undefined;
+  // fallback if endsAt missing
+  const planned = active.plannedSeconds;
+  const startedIso = active.startedAt;
+
   if (typeof planned === "number" && startedIso) {
     const started = Math.floor(new Date(startedIso).getTime() / 1000);
     const elapsed = Math.max(0, nowSec - started);

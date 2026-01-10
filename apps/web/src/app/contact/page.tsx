@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Mail, User, MessageSquare, Send, Phone } from "lucide-react";
+import { Mail, User, MessageSquare, Send } from "lucide-react";
 
 export default function ContactClient() {
   const [status, setStatus] = useState<

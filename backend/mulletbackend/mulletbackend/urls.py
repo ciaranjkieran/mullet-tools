@@ -4,17 +4,19 @@ from django.conf import settings
 from django.conf.urls.static import static
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('api/', include('core.urls')),
+    path("admin/", admin.site.urls),
+
+    path("api/auth/", include("accounts.urls")),
+    path("api/", include("core.urls")),
     path("api/", include("comments.urls")),
     path("api/", include("notes.urls")),
     path("api/", include("boards.urls")),
-    path('api/', include('templates.urls')),  # 🔥 Add this line
+    path("api/", include("templates.urls")),
     path("api/", include("timers.urls")),
-path("api/batch/", include("batch.urls")),
-    path('api/', include('accounts.urls')),
-          # or "apps.batch.urls" if the app lives in apps/
+    path("api/batch/", include("batch.urls")),
 ]
+         # or "apps.batch.urls" if the app lives in apps/
+
 
 # ✅ Serve media files in development
 if settings.DEBUG:

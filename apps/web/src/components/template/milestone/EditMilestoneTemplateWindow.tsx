@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import ModeInput from "@/components/timer/inputs/TimerModeSelect";
-import { Mode } from "@shared/types/Mode";
-import { Template, TemplateMilestoneData } from "@shared/types/Template";
+import type { Mode } from "@shared/types/Mode";
+import type { Template, TemplateMilestoneData } from "@shared/types/Template";
 import { usePatchTemplate } from "@shared/api/hooks/templates/usePatchTemplate";
 import MilestoneEditor from "./MilestoneEditor";
 
@@ -15,48 +15,76 @@ type Props = {
   modes: Mode[];
 };
 
+function buildNode(template: Template | null): TemplateMilestoneData {
+  return {
+    title: template?.title ?? "",
+    tasks: template?.data?.tasks ?? [],
+    subMilestones: template?.data?.subMilestones ?? [],
+  };
+}
+
+function resolveInitialModeId(
+  template: Template | null,
+  modes: Mode[]
+): number | null {
+  if (typeof template?.mode === "number") return template.mode;
+  if (modes.length > 0) return modes[0].id;
+  return null;
+}
+
 export default function EditMilestoneTemplateWindow({
   isOpen,
   onOpenChange,
   template,
   modes,
 }: Props) {
-  const [node, setNode] = useState<TemplateMilestoneData>({
-    title: template?.title || "",
-    tasks: template?.data?.tasks || [],
-    subMilestones: template?.data?.subMilestones || [],
-  });
-
-  const [modeId, setModeId] = useState<number>(template?.mode || modes[0].id);
   const patchTemplate = usePatchTemplate();
-  const modeColor = modes.find((m) => m.id === modeId)?.color || "#000";
 
-  // Handle body class for modal
+  const [node, setNode] = useState<TemplateMilestoneData>(() =>
+    buildNode(template)
+  );
+
+  const [modeId, setModeId] = useState<number | null>(() =>
+    resolveInitialModeId(template, modes)
+  );
+
+  const modeColor = useMemo(() => {
+    if (modeId == null) return "#000";
+    return modes.find((m) => m.id === modeId)?.color ?? "#000";
+  }, [modes, modeId]);
+
+  /** ----------------
+   * Body scroll lock
+   ----------------- */
   useEffect(() => {
     if (isOpen) document.body.classList.add("modal-open");
     else document.body.classList.remove("modal-open");
+
     return () => document.body.classList.remove("modal-open");
   }, [isOpen]);
 
   /** ----------------
-   * Sync when template changes
+   * Sync when template or modes change
    ----------------- */
   useEffect(() => {
-    if (template) {
-      setNode({
-        title: template.title || "",
-        tasks: template.data?.tasks || [],
-        subMilestones: template.data?.subMilestones || [],
-      });
-      setModeId(template.mode || modes[0].id);
-    }
-  }, [template]);
+    setNode(buildNode(template));
+
+    const nextModeId = resolveInitialModeId(template, modes);
+    if (nextModeId == null) return;
+
+    setModeId((prev) => {
+      const hasPrev = prev != null && modes.some((m) => m.id === prev);
+      return hasPrev ? prev : nextModeId;
+    });
+  }, [template, modes]);
 
   /** ----------------
    * SAVE
    ----------------- */
   const handleSave = () => {
     if (!template) return;
+    if (modeId == null) return;
+
     patchTemplate.mutate({
       id: template.id,
       updates: {
@@ -65,12 +93,10 @@ export default function EditMilestoneTemplateWindow({
         data: node,
       },
     });
+
     onOpenChange(false);
   };
 
-  /** ----------------
-   * MODAL RENDER
-   ----------------- */
   return (
     <Dialog.Root open={isOpen} onOpenChange={onOpenChange}>
       <Dialog.Portal>
@@ -98,30 +124,34 @@ export default function EditMilestoneTemplateWindow({
           </div>
 
           <div className="flex flex-col gap-6">
-            <ModeInput
-              modeId={modeId}
-              setModeId={setModeId}
-              modes={modes}
-              modeColor={modeColor}
-            />
+            {modeId == null ? (
+              <div className="text-sm text-gray-500">Loading modes…</div>
+            ) : (
+              <>
+                <ModeInput
+                  modeId={modeId}
+                  modes={modes}
+                  modeColor={modeColor}
+                />
 
-            {/* Recursive Milestone Editor */}
-            <MilestoneEditor
-              node={node}
-              onChange={setNode}
-              modeColor={modeColor}
-            />
+                <MilestoneEditor
+                  node={node}
+                  onChange={setNode}
+                  modeColor={modeColor}
+                />
 
-            {/* Footer */}
-            <div className="mt-6 flex justify-end">
-              <button
-                onClick={handleSave}
-                className="px-5 py-2 rounded-md text-white text-sm font-medium"
-                style={{ backgroundColor: modeColor }}
-              >
-                Save Template
-              </button>
-            </div>
+                <div className="mt-6 flex justify-end">
+                  <button
+                    onClick={handleSave}
+                    className="px-5 py-2 rounded-md text-white text-sm font-medium disabled:opacity-60 disabled:cursor-not-allowed"
+                    style={{ backgroundColor: modeColor }}
+                    disabled={patchTemplate.isPending}
+                  >
+                    {patchTemplate.isPending ? "Saving…" : "Save Template"}
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </Dialog.Content>
       </Dialog.Portal>

@@ -27,9 +27,11 @@ export default function GoalStructureTab({
   return (
     <div
       className="flex-1 flex flex-col overflow-y-auto scrollbar-thin mb-6"
-      style={{
-        ["--scrollbar-color" as any]: mode.color,
-      }}
+      style={
+        {
+          "--scrollbar-color": mode.color,
+        } as React.CSSProperties
+      }
     >
       <div className="flex-1 flex flex-col relative overflow-hidden rounded-lg">
         <div className="flex-1 flex flex-col overflow-y-auto scrollbar-thin pt-4 pl-4">

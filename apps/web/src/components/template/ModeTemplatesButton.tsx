@@ -1,17 +1,20 @@
 "use client";
 
 import { FileStack } from "lucide-react";
-import { useRouter } from "next/navigation";
 import clsx from "clsx";
+import { CSSProperties } from "react";
 
 type Props = {
   className?: string;
-  style?: React.CSSProperties;
+  style?: CSSProperties;
+  onClick?: () => void;
 };
 
-export default function ModeTemplatesButton({ className, style }: Props) {
-  const router = useRouter();
-
+export default function ModeTemplatesButton({
+  className,
+  style,
+  onClick,
+}: Props) {
   return (
     <div className="relative inline-flex items-center group">
       <span
@@ -25,7 +28,7 @@ export default function ModeTemplatesButton({ className, style }: Props) {
 
       <button
         type="button"
-        onClick={() => router.replace("/dashboard/templates")}
+        onClick={onClick}
         className={clsx(className)}
         style={style}
         aria-label="Switch to Templates View"

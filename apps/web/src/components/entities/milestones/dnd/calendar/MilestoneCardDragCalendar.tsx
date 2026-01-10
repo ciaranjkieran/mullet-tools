@@ -9,7 +9,6 @@ import MilestoneRendererCalendar from "../../renderers/calendar/MilestoneRendere
 type Props = {
   milestone: Milestone;
   mode: Mode | undefined;
-  onEdit?: (milestone: Milestone) => void;
   showModeTitle?: boolean;
   breadcrumb?: string;
 };
@@ -17,7 +16,6 @@ type Props = {
 export default function MilestoneCardDragCalendar({
   milestone,
   mode,
-  onEdit,
   showModeTitle,
   breadcrumb,
 }: Props) {

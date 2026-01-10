@@ -157,14 +157,22 @@ export default function ScrollJumper({
         (entries) => {
           const t = entries.find((e) => e.target === topSentinel.current);
           const b = entries.find((e) => e.target === bottomSentinel.current);
-          if (t) setShowTop((prev) => (showTopRef.current = !t.isIntersecting));
-          if (enableBottom && b)
-            setShowBottom(
-              (prev) => (showBottomRef.current = !b.isIntersecting)
-            );
+
+          if (t) {
+            const next = !t.isIntersecting;
+            showTopRef.current = next;
+            setShowTop(next);
+          }
+
+          if (enableBottom && b) {
+            const next = !b.isIntersecting;
+            showBottomRef.current = next;
+            setShowBottom(next);
+          }
         },
         { root, threshold: 0.01 }
       );
+
       if (topSentinel.current) observer.observe(topSentinel.current);
       if (enableBottom && bottomSentinel.current)
         observer.observe(bottomSentinel.current);

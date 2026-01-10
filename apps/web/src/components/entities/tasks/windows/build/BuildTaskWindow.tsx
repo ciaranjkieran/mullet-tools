@@ -4,7 +4,6 @@
 import * as Dialog from "@radix-ui/react-dialog";
 import { useEffect, useState } from "react";
 import { useCreateTask } from "@shared/api/hooks/tasks/useCreateTask";
-import { useTaskStore } from "@shared/store/useTaskStore";
 
 import { Mode } from "@shared/types/Mode";
 import { Goal } from "@shared/types/Goal";
@@ -75,15 +74,6 @@ export default function BuildTaskWindow({
   const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
     if (!title || !modeId) return;
-
-    const { tasks } = useTaskStore.getState();
-    const relevantTasks = tasks.filter(
-      (t) => t.modeId === modeId && (!t.dueDate || t.dueDate === dueDate)
-    );
-    const maxPosition = Math.max(
-      0,
-      ...relevantTasks.map((t) => t.position ?? 0)
-    );
 
     const norm = normalizeTaskAncestors(milestoneId, projectId, goalId);
 

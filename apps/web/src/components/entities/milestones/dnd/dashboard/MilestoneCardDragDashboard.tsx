@@ -10,16 +10,12 @@ import { useEntityUIStore } from "@/lib/store/useEntityUIStore";
 
 type Props = {
   milestone: Milestone;
-  onEdit?: (milestone: Milestone) => void; // kept for parity if you need it later
   dialogOpen?: boolean;
-  today?: Date;
   variant?: undefined | "title";
 };
 
 export default function MilestoneCardDragDashboard({
   milestone,
-  onEdit,
-  today,
   variant,
 }: Props) {
   const mode = useModeStore((s) =>

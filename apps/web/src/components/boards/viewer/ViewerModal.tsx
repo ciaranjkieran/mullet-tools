@@ -39,11 +39,6 @@ function getFileIconByExt(ext: string) {
   return FileGeneric;
 }
 
-function isPdf(pin: Pin) {
-  const ext = getExt(pin);
-  return ext === "pdf" || pin.mime_type === "application/pdf";
-}
-
 function isAudio(pin: Pin) {
   const ext = getExt(pin);
   return (
@@ -181,13 +176,15 @@ export default function ViewerModal() {
       if (favicon) {
         return (
           <div className="w-[300px] h-[200px] rounded shadow bg-black/10 flex items-center justify-center gap-3 px-4">
-            <img
+            <Image
               src={favicon}
               alt="favicon"
               width={28}
               height={28}
               className="rounded"
+              unoptimized
             />
+
             <div className="text-sm text-white/90 line-clamp-2 text-center">
               {pin.title || pin.url}
             </div>
@@ -314,13 +311,15 @@ export default function ViewerModal() {
         return (
           <div className="flex flex-col items-center gap-4">
             <div className="flex items-center gap-3">
-              <img
+              <Image
                 src={favicon}
                 alt="favicon"
                 width={32}
                 height={32}
                 className="rounded"
+                unoptimized
               />
+
               <div className="text-white text-lg max-w-3xl text-center break-words">
                 {pin.title || pin.url}
               </div>
@@ -407,11 +406,15 @@ export default function ViewerModal() {
         // use <img> to avoid next/image remote domain config issues
         return (
           <div className="flex flex-col items-center gap-4">
-            <img
+            <Image
               src={href}
               alt={filename}
+              width={1400}
+              height={900}
               className="max-h-[85vh] w-auto object-contain rounded"
+              unoptimized
             />
+
             <button
               onClick={() => openLink(href)}
               className="px-4 py-2 rounded bg-white text-black hover:bg-gray-200"

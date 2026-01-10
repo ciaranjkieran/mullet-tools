@@ -2,10 +2,9 @@
 "use client";
 
 import { useState, ReactNode } from "react";
-import { Goal } from "@/types/Goal";
+import { Goal } from "@shared/types/Goal";
 
 type Props = {
-  goals: Goal[];
   children: (state: {
     collapsedMap: Record<number, boolean>;
     composerOpenMap: Record<number, boolean>;
@@ -15,7 +14,7 @@ type Props = {
   }) => ReactNode;
 };
 
-export default function GoalTreeStateProvider({ goals, children }: Props) {
+export default function GoalTreeStateProvider({ children }: Props) {
   const [collapsedMap, setCollapsedMap] = useState<Record<number, boolean>>({});
   const [composerOpenMap, setComposerOpenMap] = useState<
     Record<number, boolean>

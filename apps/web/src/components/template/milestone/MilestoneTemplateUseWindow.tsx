@@ -10,6 +10,11 @@ import useApplyTemplate from "@shared/api/hooks/templates/useApplyTemplate";
 import MilestoneEditor from "./MilestoneEditor";
 import { useHomeFocusStore } from "@/lib/store/useNavFocusStore";
 
+type HomeFocusStoreLike = {
+  setActiveModeId?: (modeId: number) => void;
+  setTarget: (t: { kind: "milestone"; id: number; modeId: number }) => void;
+};
+
 export default function MilestoneTemplateUseWindow({
   isOpen,
   onOpenChange,
@@ -22,7 +27,10 @@ export default function MilestoneTemplateUseWindow({
   modes: Mode[];
 }) {
   const { applyTemplate } = useApplyTemplate();
+
   const actionTriggered = useRef(false);
+  const contentRef = useRef<HTMLDivElement>(null); // ✅ must be before any returns
+
   const [submitting, setSubmitting] = useState(false);
 
   const [milestone, setMilestone] = useState<TemplateMilestoneData>({
@@ -40,13 +48,15 @@ export default function MilestoneTemplateUseWindow({
   );
 
   useEffect(() => {
-    if (isOpen && template) {
-      const data = template.data as any;
+    if (isOpen && template && template.type === "milestone") {
+      const data = template.data as TemplateMilestoneData;
+
       setMilestone({
         title: template.title,
-        tasks: data?.tasks || [],
-        subMilestones: data?.subMilestones || [],
+        tasks: data?.tasks ?? [],
+        subMilestones: data?.subMilestones ?? [],
       });
+
       actionTriggered.current = false;
       setSubmitting(false);
     }
@@ -77,7 +87,8 @@ export default function MilestoneTemplateUseWindow({
       const created = (await applyTemplate(customTemplate)) as Milestone;
       if (!created?.id) return;
 
-      const store = useHomeFocusStore.getState() as any;
+      const store =
+        useHomeFocusStore.getState() as unknown as HomeFocusStoreLike;
       store.setActiveModeId?.(created.modeId);
       store.setTarget({
         kind: "milestone",
@@ -87,14 +98,12 @@ export default function MilestoneTemplateUseWindow({
 
       onOpenChange(false);
       document.body.classList.remove("modal-open");
-    } catch (err) {
+    } catch (_err) {
       actionTriggered.current = false;
     } finally {
       setSubmitting(false);
     }
   };
-
-  const contentRef = useRef<HTMLDivElement>(null);
 
   return (
     <Dialog.Root open={isOpen} onOpenChange={onOpenChange}>
@@ -113,6 +122,10 @@ export default function MilestoneTemplateUseWindow({
           <Dialog.Title className="sr-only">
             Use Milestone Template
           </Dialog.Title>
+          <p id="milestone-template-desc" className="sr-only">
+            Create a milestone from the selected template.
+          </p>
+
           <div className="p-8 space-y-8">
             <div className="flex items-center gap-4">
               <span

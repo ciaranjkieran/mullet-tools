@@ -48,10 +48,6 @@ export default function HomeView({
   const isAll = (selectedMode as MaybeAll) === "All";
   const activeMode = isAll ? null : (selectedMode as Mode);
 
-  const [expandedModeStates] = useState<
-    Record<number, { scheduled: boolean; unscheduled: boolean }>
-  >({});
-
   const activeModes = useMemo(() => {
     if (isAll) {
       const withContent = modes.filter((m) => {
@@ -82,7 +78,6 @@ export default function HomeView({
     if (!target) return;
     if (processedNonces.current.has(target.nonce)) return; // already handled
 
-    // Wait until the right mode is visible (or in All)
     const modeReady =
       isAll ||
       (target.modeId != null &&
@@ -109,14 +104,9 @@ export default function HomeView({
 
       const el = document.getElementById(domId) as HTMLElement | null;
       if (el) {
-        // stop future handling of this request
         processedNonces.current.add(target.nonce);
-
-        // Smooth scroll
         el.scrollIntoView({ behavior: "smooth", block: "center" });
 
-        // 🔦 Flashlight (no global CSS): fade a ring using outline + transition.
-        // We force a reflow between style writes so the transition runs reliably.
         const prevOutline = el.style.outline;
         const prevOutlineOffset = el.style.outlineOffset;
         const prevTransition = el.style.transition;
@@ -125,31 +115,23 @@ export default function HomeView({
           "outline-color 300ms ease, outline-offset 300ms ease";
         el.style.outline = "3px solid rgba(59,130,246,0.6)";
         el.style.outlineOffset = "6px";
-        // reflow
         void el.offsetWidth;
-        // fade out
         setTimeout(() => {
           el.style.outlineColor = "rgba(59,130,246,0)";
           el.style.outlineOffset = "0px";
         }, 60);
-        // cleanup after 900ms
         setTimeout(() => {
           el.style.outline = prevOutline;
           el.style.outlineOffset = prevOutlineOffset;
           el.style.transition = prevTransition;
         }, 900);
 
-        // Clear only after success (prevents effect loop)
         clearTarget();
         return;
       }
 
       const elapsed = performance.now() - start;
-      if (elapsed < 2500) {
-        requestAnimationFrame(tryFind);
-      }
-      // If we time out, we do NOT clearTarget. Leaving it set lets
-      // a future data render or tab switch succeed without re-dispatch.
+      if (elapsed < 2500) requestAnimationFrame(tryFind);
     };
 
     requestAnimationFrame(tryFind);
@@ -157,7 +139,7 @@ export default function HomeView({
       cancelled = true;
     };
   }, [
-    target?.nonce,
+    target,
     isAll,
     activeMode,
     tasks,
@@ -239,11 +221,6 @@ export default function HomeView({
         );
 
         const goalsInMode = goals.filter((g) => g.modeId === mode.id);
-
-        const expanded = expandedModeStates[mode.id] ?? {
-          scheduled: true,
-          unscheduled: true,
-        };
 
         return (
           <div key={mode.id} className="space-y-6">

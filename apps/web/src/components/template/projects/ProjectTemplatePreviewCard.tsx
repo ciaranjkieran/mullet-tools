@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import type { CSSProperties } from "react";
 import { Template, TemplateProjectData } from "@shared/types/Template";
 import { Mode } from "@shared/types/Mode";
 import { useDeleteTemplate } from "@shared/api/hooks/templates/useDeleteTemplate";
@@ -156,6 +157,7 @@ export default function ProjectTemplatePreviewCard({
   const MAX = 5;
   const nodes: React.ReactNode[] = [];
   let hiddenCount = 0;
+
   if (template.data) {
     const res = renderLimited(
       template.data as TemplateProjectData,
@@ -195,10 +197,12 @@ export default function ProjectTemplatePreviewCard({
 
       <div
         className="mt-auto flex justify-end gap-2"
-        style={{
-          ["--mc" as any]: modeColor,
-          ["--ct" as any]: getContrastingText(modeColor),
-        }}
+        style={
+          {
+            ["--mc"]: modeColor,
+            ["--ct"]: getContrastingText(modeColor),
+          } as CSSProperties
+        }
       >
         <button
           onClick={handleUse}

@@ -2,7 +2,7 @@
 "use client";
 
 import { useState } from "react";
-import { format, isAfter, parseISO } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { Mode } from "@shared/types/Mode";
 import { Milestone } from "@shared/types/Milestone";
 import { Task } from "@shared/types/Task";
@@ -35,7 +35,6 @@ export default function LookingAheadSection({
   selectedMode,
   maps,
 }: Props) {
-  const [show, setShow] = useState(false);
   const { isOpen, toggle } = useSectionOpen(lookingAheadKey(), true); // default closed
 
   const endOfWeekStr = format(endOfDisplayedWeek, "yyyy-MM-dd");

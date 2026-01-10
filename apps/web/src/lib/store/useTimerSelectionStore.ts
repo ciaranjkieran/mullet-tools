@@ -1,6 +1,10 @@
 // lib/store/useTimerSelectionStore.ts
 import { create } from "zustand";
-import { persist, createJSONStorage } from "zustand/middleware";
+import {
+  persist,
+  createJSONStorage,
+  type PersistOptions,
+} from "zustand/middleware";
 
 type SelId = number | null;
 
@@ -42,6 +46,8 @@ type Actions = {
   resetAll: () => void;
 };
 
+type Store = State & Actions;
+
 const initial: State = {
   modeId: -1,
   goalId: null,
@@ -77,7 +83,10 @@ function traceClears(
   } catch {}
 }
 
-export const useTimerSelectionStore = create<State & Actions>()(
+// ✅ Strongly-typed persist options (lets us safely access .persist below)
+type TimerPersist = PersistOptions<Store, Partial<Store>>;
+
+export const useTimerSelectionStore = create<Store>()(
   persist(
     (set, get) => ({
       ...initial,
@@ -89,7 +98,7 @@ export const useTimerSelectionStore = create<State & Actions>()(
        */
       setRaw: (patch) => {
         set((prev) => {
-          let next: State = { ...prev };
+          const next: State = { ...prev };
 
           // modeId (keeps existing "change clears everything" behaviour)
           if ("modeId" in patch && typeof patch.modeId === "number") {
@@ -109,23 +118,15 @@ export const useTimerSelectionStore = create<State & Actions>()(
             next.goalId = newGoal;
 
             // project/milestone/task come from patch if provided, else null
-            if ("projectId" in patch) {
-              next.projectId = patch.projectId ?? null;
-            } else {
-              next.projectId = null;
-            }
+            if ("projectId" in patch) next.projectId = patch.projectId ?? null;
+            else next.projectId = null;
 
-            if ("milestoneId" in patch) {
+            if ("milestoneId" in patch)
               next.milestoneId = patch.milestoneId ?? null;
-            } else {
-              next.milestoneId = null;
-            }
+            else next.milestoneId = null;
 
-            if ("taskId" in patch) {
-              next.taskId = patch.taskId ?? null;
-            } else {
-              next.taskId = null;
-            }
+            if ("taskId" in patch) next.taskId = patch.taskId ?? null;
+            else next.taskId = null;
 
             traceClears(prev, next, "setRaw(goalId)");
             return next;
@@ -136,17 +137,12 @@ export const useTimerSelectionStore = create<State & Actions>()(
             const newProj = patch.projectId ?? null;
             next.projectId = newProj;
 
-            if ("milestoneId" in patch) {
+            if ("milestoneId" in patch)
               next.milestoneId = patch.milestoneId ?? null;
-            } else {
-              next.milestoneId = null;
-            }
+            else next.milestoneId = null;
 
-            if ("taskId" in patch) {
-              next.taskId = patch.taskId ?? null;
-            } else {
-              next.taskId = null;
-            }
+            if ("taskId" in patch) next.taskId = patch.taskId ?? null;
+            else next.taskId = null;
 
             traceClears(prev, next, "setRaw(projectId)");
             return next;
@@ -157,11 +153,8 @@ export const useTimerSelectionStore = create<State & Actions>()(
             const newMs = patch.milestoneId ?? null;
             next.milestoneId = newMs;
 
-            if ("taskId" in patch) {
-              next.taskId = patch.taskId ?? null;
-            } else {
-              next.taskId = null;
-            }
+            if ("taskId" in patch) next.taskId = patch.taskId ?? null;
+            else next.taskId = null;
 
             traceClears(prev, next, "setRaw(milestoneId)");
             return next;
@@ -296,7 +289,10 @@ export const useTimerSelectionStore = create<State & Actions>()(
       name: "timer-selection",
       version: 3,
       storage: createJSONStorage(() => localStorage),
-      migrate: (state) => state as any,
+
+      // ✅ No `any`: accept unknown and return the shape we expect
+      migrate: (persisted: unknown) => persisted as Partial<Store>,
+
       partialize: (s) => ({
         modeId: s.modeId,
         goalId: s.goalId,
@@ -306,10 +302,11 @@ export const useTimerSelectionStore = create<State & Actions>()(
         snapshotsByMode: s.snapshotsByMode,
         hydratedSessionId: s.hydratedSessionId,
       }),
-    }
+    } satisfies TimerPersist
   )
 );
 
-(useTimerSelectionStore as any).persist?.onFinishHydration(() => {
+// ✅ No `any`: persist is part of the middleware typing
+useTimerSelectionStore.persist.onFinishHydration(() => {
   useTimerSelectionStore.setState({ _hasHydrated: true });
 });

@@ -1,19 +1,21 @@
 "use client";
 
-import { Mode } from "@shared/types/Mode";
-import { Milestone } from "@shared/types/Milestone";
-import { Task } from "@shared/types/Task";
-import { Project } from "@shared/types/Project";
-import { Goal } from "@shared/types/Goal";
+import { useViewStore } from "@shared/store/useViewStore";
+
+import type { Mode } from "@shared/types/Mode";
+import type { Milestone } from "@shared/types/Milestone";
+import type { Task } from "@shared/types/Task";
+import type { Project } from "@shared/types/Project";
+import type { Goal } from "@shared/types/Goal";
+
 import ModeNotesView from "@/components/notes/ModeNotesView";
 import ModeBoardsView from "@/components/boards/ModeBoardsView";
 import AllModeBoardsView from "@/components/boards/AllModeBoardsView";
-import ModeTemplatesView from "../template/TemplatesView";
+import ModeTemplatesView from "@/components/template/TemplatesView";
 import CalendarView from "@/components/views/calendar/CalendarView";
 import HomeView from "@/components/views/home/HomeView";
 import TimerView from "@/components/timer/TimerView/TimerView";
-import StatsView from "@/components/stats/StatsView"; // 👈 NEW
-import { useViewStore } from "@shared/store/useViewStore";
+import StatsView from "@/components/stats/StatsView";
 import ModeCommentsView from "@/components/comments/ModeCommentsView";
 
 type Props = {
@@ -23,7 +25,7 @@ type Props = {
   milestones: Milestone[];
   modes: Mode[];
   selectedMode: Mode | "All";
-  setSelectedMode: (next: Mode | "All") => void; // 👈 NEW
+  setSelectedMode: (next: Mode | "All") => void;
   showModeTitle: boolean;
   isTodayFocus: boolean;
   setIsTodayFocus: (fn: (prev: boolean) => boolean) => void;
@@ -36,25 +38,48 @@ export default function ViewHandler({
   milestones,
   modes,
   selectedMode,
-  setSelectedMode, // 👈 NEW
+  setSelectedMode,
   showModeTitle,
   isTodayFocus,
   setIsTodayFocus,
 }: Props) {
-  const viewType = useViewStore((s) => s.viewType);
+  const viewType = useViewStore((s) => s.viewType) as any;
+
+  // Back-compat: if your store still uses "dashboard" for home, treat it as "home"
+  const view = viewType === "dashboard" ? "home" : viewType;
+
   const modeColor = selectedMode === "All" ? "#000" : selectedMode.color;
 
-  // 👇 Helper the timer will call to sync the page filter
-  function setFilterModeById(id: number) {
-    if (id === -1) {
-      setSelectedMode("All");
-      return;
-    }
-    const mode = modes.find((m) => m.id === id);
-    if (mode) setSelectedMode(mode);
+  if (view === "home") {
+    return (
+      <HomeView
+        tasks={tasks}
+        goals={goals}
+        projects={projects}
+        milestones={milestones}
+        modes={modes}
+        selectedMode={selectedMode}
+      />
+    );
   }
 
-  if (viewType === "comments") {
+  if (view === "calendar") {
+    return (
+      <CalendarView
+        tasks={tasks}
+        goals={goals}
+        projects={projects}
+        milestones={milestones}
+        modes={modes}
+        selectedMode={selectedMode}
+        showModeTitle={showModeTitle}
+        isTodayFocus={isTodayFocus}
+        setIsTodayFocus={setIsTodayFocus}
+      />
+    );
+  }
+
+  if (view === "comments") {
     return (
       <ModeCommentsView
         tasks={tasks}
@@ -67,7 +92,7 @@ export default function ViewHandler({
     );
   }
 
-  if (viewType === "notes") {
+  if (view === "notes") {
     return (
       <ModeNotesView
         mode={selectedMode}
@@ -80,7 +105,7 @@ export default function ViewHandler({
     );
   }
 
-  if (viewType === "boards") {
+  if (view === "boards") {
     return selectedMode === "All" ? (
       <AllModeBoardsView modes={modes} />
     ) : (
@@ -88,11 +113,11 @@ export default function ViewHandler({
     );
   }
 
-  if (viewType === "templates") {
+  if (view === "templates") {
     return <ModeTemplatesView modes={modes} selectedMode={selectedMode} />;
   }
 
-  if (viewType === "stats") {
+  if (view === "stats") {
     return (
       <StatsView
         modes={modes}
@@ -105,7 +130,7 @@ export default function ViewHandler({
     );
   }
 
-  if (viewType === "timer") {
+  if (view === "timer") {
     return (
       <TimerView
         modes={modes}
@@ -114,7 +139,6 @@ export default function ViewHandler({
         projects={projects}
         milestones={milestones}
         tasks={tasks}
-        // 👇 this connects the timer's Mode dropdown to the page filter
         onRequestFilterMode={(modeId) => {
           const m = modes.find((mm) => mm.id === modeId);
           if (m) setSelectedMode(m);
@@ -123,19 +147,8 @@ export default function ViewHandler({
     );
   }
 
-  return viewType === "calendar" ? (
-    <CalendarView
-      tasks={tasks}
-      goals={goals}
-      projects={projects}
-      milestones={milestones}
-      modes={modes}
-      selectedMode={selectedMode}
-      showModeTitle={showModeTitle}
-      isTodayFocus={isTodayFocus}
-      setIsTodayFocus={setIsTodayFocus}
-    />
-  ) : (
+  // Safe fallback
+  return (
     <HomeView
       tasks={tasks}
       goals={goals}

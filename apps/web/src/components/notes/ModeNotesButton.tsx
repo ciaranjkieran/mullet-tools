@@ -1,17 +1,15 @@
 "use client";
 
 import { NotebookPen } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { CSSProperties } from "react";
 
 type Props = {
   style?: CSSProperties;
   className?: string;
+  onClick?: () => void;
 };
 
-export default function ModeNotesButton({ style, className }: Props) {
-  const router = useRouter();
-
+export default function ModeNotesButton({ style, className, onClick }: Props) {
   return (
     <div className="relative inline-flex items-center group">
       <span
@@ -25,7 +23,7 @@ export default function ModeNotesButton({ style, className }: Props) {
 
       <button
         type="button"
-        onClick={() => router.push("/dashboard/notes")}
+        onClick={onClick}
         className={className}
         style={style}
         aria-label="Open Notes View"

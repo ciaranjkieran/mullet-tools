@@ -3,12 +3,11 @@
 
 import { Goal } from "@shared/types/Goal";
 import { Mode } from "@shared/types/Mode";
-import { TargetIcon } from "lucide-react";
 import clsx from "clsx";
 import { format, parseISO } from "date-fns";
 import { useDialogStore } from "@/lib/dialogs/useDialogStore";
 import { useDeleteGoal } from "@shared/api/hooks/goals/useDeleteGoal";
-// components/entities/goals/renderers/dashboard/GoalRendererDashboard.tsx
+
 import Icon from "../../UI/GoalIcon";
 import GoalTarget from "../../UI/GoalTarget";
 import { PencilSquareIcon } from "@heroicons/react/24/outline";
@@ -19,14 +18,12 @@ import { useEntityUIStore } from "@/lib/store/useEntityUIStore";
 
 type Props = {
   goal: Goal;
-  mode: Mode;
-  // optional overrides (used by overlays/testing)
+  mode: Mode; // kept for API compatibility even if unused here
   collapsed?: boolean;
   onToggleCollapse?: () => void;
   onEdit?: (goal: Goal) => void;
   modeColor?: string;
   variant?: "dashboard" | "title";
-  // dnd
   dragHandleProps?: React.HTMLAttributes<HTMLButtonElement>;
 };
 
@@ -40,6 +37,9 @@ export default function GoalRendererDashboard({
   variant = "dashboard",
   dragHandleProps,
 }: Props) {
+  // avoid unused-var lint without changing the public API
+  void mode;
+
   const { setGoalToEdit, setIsGoalDialogOpen } = useDialogStore();
   const { mutate: deleteGoal } = useDeleteGoal();
   const isTitle = variant === "title";
@@ -47,7 +47,7 @@ export default function GoalRendererDashboard({
   // selection
   const isSelected = useSelectionStore((s) => s.isSelected("goal", goal.id));
 
-  // ✅ collapse (store with optional overrides)
+  // collapse (store with optional overrides)
   const storeCollapsed = useEntityUIStore((s) => !!s.collapsed.goal?.[goal.id]);
   const toggleInStore = () =>
     useEntityUIStore.getState().toggleCollapsed("goal", goal.id);
@@ -90,7 +90,7 @@ export default function GoalRendererDashboard({
             entityId={goal.id}
             canDrag={!!dragHandleProps}
             className="p-1 rounded"
-            {...(dragHandleProps as any)}
+            {...dragHandleProps}
           />
         )}
 
@@ -152,9 +152,11 @@ export default function GoalRendererDashboard({
               <PencilSquareIcon className="h-4 w-4 text-gray-400 opacity-0 group-hover/edit:opacity-100 transition-opacity" />
             )}
           </div>
+
           {goal.description && !isCollapsed && (
             <p className="text-xs text-gray-600">{goal.description}</p>
           )}
+
           {goal.dueDate && (
             <p className="text-xs text-gray-500">
               Due: {format(parseISO(goal.dueDate), "EEE, MMM d")}

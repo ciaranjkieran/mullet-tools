@@ -1,12 +1,12 @@
 "use client";
 
 import { useMemo } from "react";
-import { Note } from "@shared/types/Note";
-import { Task } from "@shared/types/Task";
-import { Milestone } from "@shared/types/Milestone";
-import { Project } from "@shared/types/Project";
-import { Goal } from "@shared/types/Goal";
-import { Mode } from "@shared/types/Mode";
+import type { Note } from "@shared/types/Note";
+import type { Task } from "@shared/types/Task";
+import type { Milestone } from "@shared/types/Milestone";
+import type { Project } from "@shared/types/Project";
+import type { Goal } from "@shared/types/Goal";
+import type { Mode } from "@shared/types/Mode";
 
 import NoteCard from "./NoteCard";
 import { getEntityBreadcrumb } from "@shared/utils/getEntityBreadcrumb";
@@ -18,7 +18,6 @@ type Props = {
   projects?: Project[];
   goals?: Goal[];
   modes: Mode[];
-  selectedMode: Mode | null;
 };
 
 export default function EntityNotesPreview({
@@ -28,7 +27,6 @@ export default function EntityNotesPreview({
   projects,
   goals,
   modes,
-  selectedMode,
 }: Props) {
   const taskMap = useMemo(
     () => Object.fromEntries(tasks.map((t) => [String(t.id), t])),
@@ -52,25 +50,23 @@ export default function EntityNotesPreview({
       : {};
   }, [goals]);
 
-  const modeMap = useMemo(
-    () => Object.fromEntries(modes.map((m) => [m.id, m])),
-    [modes]
-  );
+  // (modes is currently not needed here, but kept in props for the parent API)
+  void modes;
 
   const grouped = useMemo(() => {
     const out: Record<string, Note[]> = {};
     for (const note of notes) {
-      const key = `${note.content_type}-${note.object_id}`;
-      if (!out[key]) out[key] = [];
-      out[key].push(note);
+      const k = `${note.content_type}-${note.object_id}`;
+      if (!out[k]) out[k] = [];
+      out[k].push(note);
     }
     return out;
   }, [notes]);
 
   return (
     <section className="space-y-4 mt-6">
-      {Object.entries(grouped).map(([key, group]) => {
-        const { content_type, object_id } = group[0];
+      {Object.entries(grouped).map(([, group]) => {
+        const { object_id } = group[0];
         const id = String(object_id);
 
         let entity: Task | Milestone | Project | Goal | null = null;
@@ -99,7 +95,12 @@ export default function EntityNotesPreview({
         }).trim();
 
         return group.map((note) => (
-          <NoteCard key={note.id} note={note} breadcrumb={breadcrumb} />
+          <NoteCard
+            key={note.id}
+            note={note}
+            breadcrumb={breadcrumb}
+            modeLevel={false}
+          />
         ));
       })}
     </section>

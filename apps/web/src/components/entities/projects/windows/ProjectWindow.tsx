@@ -112,7 +112,15 @@ export default function ProjectWindow({
     setParentId(project.parentId ?? null);
     setDueDate(project.dueDate ?? "");
     setDueTime(project.dueTime ?? "");
-  }, [project.id]);
+  }, [
+    project.id,
+    project.title,
+    project.modeId,
+    project.goalId,
+    project.parentId,
+    project.dueDate,
+    project.dueTime,
+  ]);
 
   const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();

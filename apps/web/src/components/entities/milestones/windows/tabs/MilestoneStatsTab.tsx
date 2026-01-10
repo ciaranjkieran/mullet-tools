@@ -37,6 +37,23 @@ type ChildRow = {
   parentTitle: string | null;
 };
 
+type UnknownRecord = Record<string, unknown>;
+
+function asRecord(value: unknown): UnknownRecord {
+  return value && typeof value === "object" ? (value as UnknownRecord) : {};
+}
+
+function getString(obj: unknown, path: string[]): string | undefined {
+  let cur: unknown = obj;
+
+  for (const key of path) {
+    cur = asRecord(cur)[key];
+    if (cur == null) return undefined;
+  }
+
+  return typeof cur === "string" ? cur : undefined;
+}
+
 export default function MilestoneStatsTab({ milestone, modeColor }: Props) {
   const { range, setRange } = useStatsFilterStore();
   const from = range.from ?? null;
@@ -437,29 +454,26 @@ function extractNodeAllTimeRange(
   node: StatsNode
 ): { from: string; to: string } | null {
   const todayIso = toISODate(new Date());
-  const anyNode: any = node as any;
 
-  const first: string | undefined =
-    anyNode.firstDate ||
-    anyNode.earliestDate ||
-    anyNode.rangeFrom ||
-    anyNode.from ||
-    anyNode.meta?.firstDate ||
-    anyNode.meta?.earliestDate ||
-    anyNode.meta?.rangeFrom ||
-    anyNode.meta?.from ||
-    undefined;
+  const first =
+    getString(node, ["firstDate"]) ??
+    getString(node, ["earliestDate"]) ??
+    getString(node, ["rangeFrom"]) ??
+    getString(node, ["from"]) ??
+    getString(node, ["meta", "firstDate"]) ??
+    getString(node, ["meta", "earliestDate"]) ??
+    getString(node, ["meta", "rangeFrom"]) ??
+    getString(node, ["meta", "from"]);
 
-  const last: string | undefined =
-    anyNode.lastDate ||
-    anyNode.latestDate ||
-    anyNode.rangeTo ||
-    anyNode.to ||
-    anyNode.meta?.lastDate ||
-    anyNode.meta?.latestDate ||
-    anyNode.meta?.rangeTo ||
-    anyNode.meta?.to ||
-    undefined;
+  const last =
+    getString(node, ["lastDate"]) ??
+    getString(node, ["latestDate"]) ??
+    getString(node, ["rangeTo"]) ??
+    getString(node, ["to"]) ??
+    getString(node, ["meta", "lastDate"]) ??
+    getString(node, ["meta", "latestDate"]) ??
+    getString(node, ["meta", "rangeTo"]) ??
+    getString(node, ["meta", "to"]);
 
   if (!first && !last) return null;
 
@@ -472,21 +486,19 @@ function extractNodeAllTimeRange(
 function extractAllTimeRange(tree: StatsTree) {
   const todayIso = toISODate(new Date());
 
-  const container: any = tree as any;
-  const metaSource = container.meta ?? container;
+  const metaSource = asRecord(tree).meta ?? tree;
 
-  const first: string | undefined =
-    metaSource.firstDate ||
-    metaSource.earliestDate ||
-    metaSource.rangeFrom ||
-    metaSource.from ||
-    undefined;
+  const first =
+    getString(metaSource, ["firstDate"]) ??
+    getString(metaSource, ["earliestDate"]) ??
+    getString(metaSource, ["rangeFrom"]) ??
+    getString(metaSource, ["from"]);
 
-  const last: string | undefined =
-    metaSource.lastDate ||
-    metaSource.latestDate ||
-    metaSource.rangeTo ||
-    metaSource.to ||
+  const last =
+    getString(metaSource, ["lastDate"]) ??
+    getString(metaSource, ["latestDate"]) ??
+    getString(metaSource, ["rangeTo"]) ??
+    getString(metaSource, ["to"]) ??
     todayIso;
 
   return {

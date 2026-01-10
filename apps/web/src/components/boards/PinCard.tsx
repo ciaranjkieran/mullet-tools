@@ -163,13 +163,15 @@ export default function PinCard({ pin, onClick, onEditClick }: Props) {
           </div>
         ) : favicon ? (
           <div className="flex items-center gap-3 px-4">
-            <img
+            <Image
               src={favicon}
               alt="favicon"
               width={32}
               height={32}
               className="rounded"
+              unoptimized
             />
+
             <div className="min-w-0">
               <div className="text-sm font-medium line-clamp-2">{text}</div>
               {pin.url && (

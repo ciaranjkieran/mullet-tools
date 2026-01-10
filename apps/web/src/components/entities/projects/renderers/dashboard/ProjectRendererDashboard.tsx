@@ -2,7 +2,6 @@
 "use client";
 
 import { Project } from "@shared/types/Project";
-import { Mode } from "@shared/types/Mode";
 import { PencilSquareIcon } from "@heroicons/react/24/outline";
 import { Folder as OutlineFolderIcon } from "lucide-react";
 import clsx from "clsx";
@@ -16,7 +15,6 @@ import { useEntityUIStore } from "@/lib/store/useEntityUIStore";
 
 interface Props {
   project: Project;
-  mode: Mode;
   // optional overrides (used by overlays/testing)
   collapsed?: boolean;
   onToggleCollapse?: () => void;
@@ -29,7 +27,6 @@ interface Props {
 
 export default function ProjectRenderer({
   project,
-  mode,
   collapsed,
   onToggleCollapse,
   onEdit,
@@ -46,7 +43,7 @@ export default function ProjectRenderer({
     s.isSelected("project", project.id)
   );
 
-  // ✅ collapse (store with optional overrides)
+  // collapse (store with optional overrides)
   const storeCollapsed = useEntityUIStore(
     (s) => !!s.collapsed.project?.[project.id]
   );
@@ -90,7 +87,7 @@ export default function ProjectRenderer({
             entityId={project.id}
             canDrag={!!dragHandleProps}
             className="p-1 rounded"
-            {...(dragHandleProps as any)}
+            {...dragHandleProps}
           />
         )}
 
@@ -139,6 +136,7 @@ export default function ProjectRenderer({
               <PencilSquareIcon className="h-4 w-4 text-gray-400 opacity-0 group-hover/edit:opacity-100 transition-opacity" />
             )}
           </div>
+
           {project.dueDate && (
             <p className="text-xs text-gray-500">
               Due: {format(parseISO(project.dueDate), "EEE, MMM d")}

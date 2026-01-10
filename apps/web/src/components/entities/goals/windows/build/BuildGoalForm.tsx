@@ -31,11 +31,9 @@ export default function BuildGoalForm({
   dueDate,
   dueTime,
   modeId,
-  onCancel,
   setTitle,
   setDueDate,
   setDueTime,
-  setModeId,
   handleSubmit,
   modes,
 }: Props) {
@@ -82,12 +80,7 @@ export default function BuildGoalForm({
 
         {/* RIGHT */}
         <div className="flex flex-col gap-6">
-          <ModeInput
-            modeId={modeId}
-            setModeId={setModeId}
-            modes={modes}
-            modeColor={modeColor}
-          />
+          <ModeInput modeId={modeId} modes={modes} modeColor={modeColor} />
         </div>
       </div>
 

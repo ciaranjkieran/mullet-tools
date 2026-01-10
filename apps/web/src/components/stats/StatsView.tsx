@@ -473,23 +473,34 @@ function toISODate(d: Date): string {
  * Read an "all-time" range from a StatsTree.
  * Expects backend to expose firstDate / lastDate on the root, or under .meta.
  */
+/**
+ * Read an "all-time" range from a StatsTree.
+ * Expects backend to expose firstDate / lastDate on the root, or under .meta.
+ */
 function extractAllTimeRange(tree: StatsTree): { from: string; to: string } {
   const todayIso = toISODate(new Date());
-  const container: any = tree as any;
-  const metaSource = container.meta ?? container;
 
-  const first: string | undefined =
-    metaSource.firstDate ||
-    metaSource.earliestDate ||
-    metaSource.rangeFrom ||
-    metaSource.from ||
-    undefined;
+  const container = tree as unknown as Record<string, unknown>;
+  const meta = container["meta"];
+  const metaSource =
+    meta && typeof meta === "object"
+      ? (meta as Record<string, unknown>)
+      : container;
 
-  const last: string | undefined =
-    metaSource.lastDate ||
-    metaSource.latestDate ||
-    metaSource.rangeTo ||
-    metaSource.to ||
+  const pickString = (v: unknown): string | undefined =>
+    typeof v === "string" && v.length > 0 ? v : undefined;
+
+  const first =
+    pickString(metaSource["firstDate"]) ??
+    pickString(metaSource["earliestDate"]) ??
+    pickString(metaSource["rangeFrom"]) ??
+    pickString(metaSource["from"]);
+
+  const last =
+    pickString(metaSource["lastDate"]) ??
+    pickString(metaSource["latestDate"]) ??
+    pickString(metaSource["rangeTo"]) ??
+    pickString(metaSource["to"]) ??
     todayIso;
 
   return {

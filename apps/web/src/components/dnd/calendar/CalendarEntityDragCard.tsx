@@ -1,4 +1,3 @@
-// src/components/dnd/calendar/CalendarEntityDragCard.tsx
 "use client";
 
 import * as React from "react";
@@ -25,20 +24,18 @@ type AnyListeners = DragListeners | SortableListeners | undefined;
 type DraggableBindings = {
   setNodeRef: NodeRef;
 
-  // canonical names
   attributes?: AnyAttributes;
   listeners?: AnyListeners;
 
-  // aliases (compat with existing children)
+  // aliases (compat)
   dragAttributes?: AnyAttributes;
   dragListeners?: AnyListeners;
 
-  // present when variant === "sortable"
+  // sortable-only
   transform?: React.CSSProperties["transform"];
   transition?: React.CSSProperties["transition"];
   setActivatorNodeRef?: ActivatorNodeRef;
 
-  // optional flags (safe if unused)
   isDragging?: boolean;
   isSorting?: boolean;
 };
@@ -50,83 +47,110 @@ type Props = {
   children: (bindings: DraggableBindings) => React.ReactNode;
 };
 
+function DraggableCard({
+  meta,
+  disabled,
+  children,
+}: {
+  meta: DragMeta;
+  disabled: boolean;
+  children: Props["children"];
+}) {
+  const id = `${meta.entityType}:${meta.id}`;
+
+  const draggable = useDraggable({
+    id,
+    data: meta,
+    disabled,
+  });
+
+  const attributes = draggable.attributes as DragAttributes | undefined;
+  const listeners = draggable.listeners as DragListeners | undefined;
+
+  return (
+    <div
+      ref={draggable.setNodeRef}
+      data-dnd-variant="draggable"
+      data-dnd-entity={id}
+    >
+      {children({
+        setNodeRef: draggable.setNodeRef as NodeRef,
+        attributes,
+        listeners,
+        dragAttributes: attributes,
+        dragListeners: listeners,
+      })}
+    </div>
+  );
+}
+
+function SortableCard({
+  meta,
+  disabled,
+  children,
+}: {
+  meta: DragMeta;
+  disabled: boolean;
+  children: Props["children"];
+}) {
+  const id = `${meta.entityType}:${meta.id}`;
+
+  const sortable = useSortable({
+    id,
+    data: meta,
+    disabled,
+  });
+
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(sortable.transform),
+    transition: sortable.transition,
+    opacity: sortable.isDragging ? 0 : 1, // gap so siblings slide smoothly
+  };
+
+  const attributes = sortable.attributes as SortableAttributes | undefined;
+  const listeners = sortable.listeners as SortableListeners | undefined;
+
+  return (
+    <div
+      ref={sortable.setNodeRef}
+      style={style}
+      className="will-change-transform transition-transform"
+      data-dnd-variant="sortable"
+      data-dnd-entity={id}
+    >
+      {children({
+        setNodeRef: sortable.setNodeRef as NodeRef,
+        attributes,
+        listeners,
+        dragAttributes: attributes,
+        dragListeners: listeners,
+        transform: style.transform,
+        transition: style.transition,
+        setActivatorNodeRef: sortable.setActivatorNodeRef,
+        isDragging: sortable.isDragging,
+        isSorting: sortable.isSorting,
+      })}
+    </div>
+  );
+}
+
 export default function CalendarEntityDragCard({
   meta,
   variant = "draggable",
   disabled = false,
   children,
 }: Props) {
-  const draggableId = `${meta.entityType}:${meta.id}`;
-
   if (variant === "sortable") {
-    const {
-      attributes,
-      listeners,
-      setNodeRef,
-      setActivatorNodeRef,
-      transform,
-      transition,
-      isDragging,
-      isSorting,
-    } = useSortable({
-      id: draggableId,
-      data: meta,
-      disabled,
-    });
-
-    const style: React.CSSProperties = {
-      transform: CSS.Transform.toString(transform),
-      transition,
-      // 👇 leave a gap so siblings slide smoothly
-      opacity: isDragging ? 0 : 1,
-    };
-
     return (
-      <div
-        ref={setNodeRef}
-        style={style}
-        className="will-change-transform transition-transform"
-        data-dnd-variant="sortable"
-        data-dnd-entity={`${meta.entityType}:${meta.id}`}
-      >
-        {children({
-          setNodeRef: setNodeRef as NodeRef,
-          attributes,
-          listeners,
-          // aliases for compatibility
-          dragAttributes: attributes,
-          dragListeners: listeners,
-          transform: style.transform,
-          transition: style.transition,
-          setActivatorNodeRef,
-          isDragging,
-          isSorting,
-        })}
-      </div>
+      <SortableCard meta={meta} disabled={disabled}>
+        {children}
+      </SortableCard>
     );
   }
 
-  // variant === "draggable"
-  const { attributes, listeners, setNodeRef } = useDraggable({
-    id: draggableId,
-    data: meta,
-    disabled,
-  });
-
   return (
-    <div
-      ref={setNodeRef}
-      data-dnd-variant="draggable"
-      data-dnd-entity={`${meta.entityType}:${meta.id}`}
-    >
-      {children({
-        setNodeRef: setNodeRef as NodeRef,
-        attributes,
-        listeners,
-        // aliases for compatibility
-        dragAttributes: attributes,
-        dragListeners: listeners,
-      })}
-    </div>
+    <DraggableCard meta={meta} disabled={disabled}>
+      {children}
+    </DraggableCard>
   );
 }

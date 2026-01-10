@@ -9,6 +9,7 @@ import TitleInput from "@/components/inputs/TitleInput";
 import DueDateInput from "@/components/inputs/DueDateInput";
 import DueTimeInput from "@/components/inputs/DueTimeInput";
 import EditorEntityInputs from "@/components/inputs/editor/EditorEntityInputs";
+import type { Milestone } from "@shared/types/Milestone";
 
 import { getContrastingText } from "@shared/utils/getContrastingText";
 import {
@@ -93,7 +94,7 @@ export default function BuildProjectForm({
   );
 
   const datasets = useMemo<EditorDatasets>(
-    () => ({ modes, goals, projects, milestones: [] as any }),
+    () => ({ modes, goals, projects, milestones: [] }),
     [modes, goals, projects]
   );
 

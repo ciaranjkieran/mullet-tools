@@ -256,7 +256,7 @@ export default function ProjectUnscheduledDnd({
       <SortableContext items={ids} strategy={verticalListSortingStrategy}>
         <div className="space-y-2">
           {safeProjects.map((p) => {
-            const collapsed = isCollapsedApi("project", p.id); // safe accessor
+            const collapsed = isCollapsedApi("project", p.id);
             return (
               <SortableWithHandle
                 key={`project-${p.id}`}
@@ -272,9 +272,10 @@ export default function ProjectUnscheduledDnd({
                     modes={modes}
                     tasks={tasks}
                     milestones={milestones}
-                    // Only pass DnD listeners/attrs when collapsed (draggable)
                     dragHandleProps={
-                      collapsed ? (handleProps as any) : undefined
+                      collapsed
+                        ? (handleProps as React.HTMLAttributes<HTMLButtonElement>)
+                        : undefined
                     }
                   />
                 )}
@@ -293,7 +294,6 @@ export default function ProjectUnscheduledDnd({
           <div className="pointer-events-none rounded-md border border-gray-200 dark:border-white/10 bg-white shadow-sm">
             <ProjectRenderer
               project={activeProject}
-              mode={mode}
               collapsed
               modeColor={mode.color}
             />

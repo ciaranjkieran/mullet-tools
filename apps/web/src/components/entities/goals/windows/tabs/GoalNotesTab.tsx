@@ -6,6 +6,7 @@ import NoteCard from "@/components/notes/NoteCard";
 import NoteComposer from "@/components/notes/NoteComposer";
 import Spinner from "@/components/status/Spinner";
 import { Goal } from "@shared/types/Goal";
+import type { CSSProperties } from "react";
 
 type Props = {
   goal: Goal;
@@ -20,6 +21,9 @@ export default function GoalNotesTab({ goal, modeColor }: Props) {
 
   const composerRef = useRef<NoteComposerHandle | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+  const scrollbarStyle: CSSProperties & { "--scrollbar-color"?: string } = {
+    "--scrollbar-color": modeColor,
+  };
 
   const refocusIfNonInteractive = (e: React.MouseEvent) => {
     const t = e.target as HTMLElement;
@@ -41,7 +45,7 @@ export default function GoalNotesTab({ goal, modeColor }: Props) {
     <div
       ref={scrollContainerRef}
       className="flex-1 flex flex-col overflow-y-auto scrollbar-thin mb-6"
-      style={{ ["--scrollbar-color" as any]: modeColor }}
+      style={scrollbarStyle}
       onMouseDown={refocusIfNonInteractive}
     >
       <div className="flex flex-col h-full p-6 mt-4 space-y-6">

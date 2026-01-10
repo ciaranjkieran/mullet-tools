@@ -6,7 +6,6 @@ import {
   TemplateMilestoneData,
 } from "@shared/types/Template";
 import MilestoneEditor from "../milestone/MilestoneEditor";
-import { FolderIcon as OutlineFolderIcon } from "lucide-react";
 import {
   addTask,
   removeTask,

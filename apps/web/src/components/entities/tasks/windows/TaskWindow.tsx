@@ -99,7 +99,7 @@ export default function TaskWindow({
     setMilestoneId(task.milestoneId ?? null);
     setProjectId(task.projectId ?? null);
     setGoalId(task.goalId ?? null);
-  }, [task.id]);
+  }, [task]);
 
   function normalizeTaskAncestors(
     mid: number | null | undefined,

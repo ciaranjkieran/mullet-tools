@@ -1,3 +1,4 @@
+// src/components/entities/milestones/containers/calendar/MilestoneListCalendar.tsx
 "use client";
 
 import { format, parseISO } from "date-fns";
@@ -8,6 +9,11 @@ import { Maps } from "@shared/types/Maps";
 
 import MilestoneRendererCalendar from "@/components/entities/milestones/renderers/calendar/MilestoneRendererCalendar";
 import CalendarEntityDragCard from "../../../../dnd/calendar/CalendarEntityDragCard";
+
+import type {
+  DragAttributes,
+  DragListeners,
+} from "@/components/dnd/calendar/dragTypes";
 
 type Props = {
   milestones: Milestone[];
@@ -55,7 +61,6 @@ export default function MilestoneListCalendar({
               : null,
             title: milestone.title,
           }}
-          // ✅ Draggable for cross-date/parent moves; no sortable anywhere
           variant="draggable"
         >
           {({ dragAttributes, dragListeners, setActivatorNodeRef }) => (
@@ -67,9 +72,8 @@ export default function MilestoneListCalendar({
               breadcrumb={getEntityBreadcrumb(milestone, maps, {
                 immediateOnly: true,
               })}
-              // Draggable requires both attrs + listeners
-              dragAttributes={dragAttributes as any}
-              dragListeners={dragListeners as any}
+              dragAttributes={dragAttributes as DragAttributes | undefined}
+              dragListeners={dragListeners as DragListeners | undefined}
               activatorRef={setActivatorNodeRef}
             />
           )}

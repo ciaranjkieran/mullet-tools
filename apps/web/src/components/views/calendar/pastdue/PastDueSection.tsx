@@ -1,7 +1,6 @@
 // src/components/views/calendar/past-due/PastDueSection.tsx
 "use client";
 
-import { useState } from "react";
 import { Mode } from "@shared/types/Mode";
 import { Milestone } from "@shared/types/Milestone";
 import { Task } from "@shared/types/Task";
@@ -30,7 +29,6 @@ type Props = {
 };
 
 export default function PastDueSection({
-  todayStr,
   modes,
   selectedMode,
   milestones,
@@ -40,7 +38,6 @@ export default function PastDueSection({
   showModeTitle,
   maps,
 }: Props) {
-  const [show, setShow] = useState(true);
   const { mutate: bulkMoveTasks } = useBulkMoveTasks();
   const { mutate: bulkMoveMilestones } = useBulkMoveMilestones();
   const { mutate: bulkMoveProjects } = useBulkMoveProjects();

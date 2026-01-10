@@ -7,6 +7,11 @@ import { Mode } from "@shared/types/Mode";
 import CalendarEntityDragCard from "../../../../dnd/calendar/CalendarEntityDragCard";
 import GoalRendererCalendar from "@/components/entities/goals/renderers/calendar/GoalRendererCalendar";
 
+import type {
+  DragAttributes,
+  DragListeners,
+} from "@/components/dnd/calendar/dragTypes";
+
 type Props = {
   goals: Goal[];
   mode: Mode | undefined;
@@ -58,8 +63,8 @@ export default function GoalListCalendar({
               mode={mode}
               onEdit={onEdit}
               showModeTitle={showModeTitle}
-              dragAttributes={dragAttributes as any}
-              dragListeners={dragListeners as any}
+              dragAttributes={dragAttributes as DragAttributes | undefined}
+              dragListeners={dragListeners as DragListeners | undefined}
               activatorRef={setActivatorNodeRef}
             />
           )}

@@ -27,13 +27,7 @@ function MilestoneEditor({
   depth = 0,
   modeColor,
   onRemove,
-}: {
-  node: TemplateMilestoneData;
-  onChange: (updated: TemplateMilestoneData) => void;
-  depth?: number;
-  modeColor: string;
-  onRemove?: () => void;
-}) {
+}: Props) {
   const handleTitleChange = (value: string) => {
     onChange({ ...node, title: value });
   };
@@ -85,14 +79,14 @@ function MilestoneEditor({
             type="text"
             value={node.title}
             onChange={(e) => handleTitleChange(e.target.value)}
-            placeholder="Sub‑Milestone Title"
+            placeholder="Sub-Milestone Title"
             className="flex-1 px-3 py-2 focus:outline-none text-lg font-medium"
           />
           {onRemove && (
             <button
               onClick={onRemove}
               className="text-gray-400 hover:text-red-600 ml-2"
-              aria-label="Remove sub‑milestone"
+              aria-label="Remove sub-milestone"
             >
               <Trash2 className="w-5 h-5" />
             </button>
@@ -133,7 +127,7 @@ function MilestoneEditor({
         <Plus className="w-4 h-4" /> Add Task
       </button>
 
-      {/* Sub‑Milestones */}
+      {/* Sub-Milestones */}
       {node.subMilestones?.map((sub, i) => (
         <div
           key={i}
@@ -155,7 +149,7 @@ function MilestoneEditor({
         className="flex items-center gap-2 text-sm font-medium mt-2"
         style={{ color: modeColor }}
       >
-        <Plus className="w-4 h-4" /> Add Sub‑Milestone
+        <Plus className="w-4 h-4" /> Add Sub-Milestone
       </button>
     </div>
   );

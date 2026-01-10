@@ -30,7 +30,7 @@ export default function AboutPage() {
           <section className="space-y-6 text-base leading-relaxed text-neutral-800">
             <p>Mullet started with a simple frustration.</p>
 
-            <p>I couldn’t find a system that fit my life very well.</p>
+            <p>I couldn&apos;t find a system that fit my life very well.</p>
 
             <p>
               Everything felt either too rigid or too loose.
@@ -48,9 +48,10 @@ export default function AboutPage() {
           {/* Built from use */}
           <section className="space-y-6 text-base leading-relaxed text-neutral-800">
             <p>
-              Mullet wasn’t designed on a whiteboard. It grew out of daily use —
-              planning work, tracking time, thinking things through, changing
-              priorities, and trying to stay clear-headed along the way.
+              Mullet wasn&apos;t designed on a whiteboard. It grew out of daily
+              use — planning work, tracking time, thinking things through,
+              changing priorities, and trying to stay clear-headed along the
+              way.
             </p>
 
             <p>
@@ -62,14 +63,16 @@ export default function AboutPage() {
               </span>
             </p>
 
-            <p>That’s the idea Mullet is built around.</p>
+            <p>That&apos;s the idea Mullet is built around.</p>
           </section>
 
           <Divider />
 
           {/* Stays out of the way */}
           <section className="space-y-6 text-base leading-relaxed text-neutral-800">
-            <p>I don’t believe productivity tools should demand attention.</p>
+            <p>
+              I don&apos;t believe productivity tools should demand attention.
+            </p>
             <p>They should create space for it.</p>
 
             <p>
@@ -88,13 +91,13 @@ export default function AboutPage() {
             </h2>
 
             <p>
-              Its a work in progress, shaped by iteration, reflection, and
+              It&apos;s a work in progress, shaped by iteration, reflection, and
               repetition.
             </p>
 
             <p>
-              If you have thoughts, ideas, or feedback while using the app, I’d
-              love to hear them.
+              If you have thoughts, ideas, or feedback while using the app,
+              I&apos;d love to hear them.
               <br />
               You can get in touch{" "}
               <a
@@ -135,14 +138,14 @@ export default function AboutPage() {
             </p>
 
             <p>
-              Try Mullet and see your productivity let it's hair down a little —
+              Try Mullet and see your productivity let its hair down a little —
               while still keeping it tight.
             </p>
 
             <div className="pt-2">
               <Link
                 href="/login"
-                className="inline-flex items-center justify-center rounded-md bg-purple-600 px-6 py-3 text-base font-semibold text-white hover:bg-purple-700 transition"
+                className="inline-flex items-center justify-center rounded-md bg-purple-600 px-6 py-3 text-base font-semibold text-white transition hover:bg-purple-700"
               >
                 Log in / Sign up
               </Link>

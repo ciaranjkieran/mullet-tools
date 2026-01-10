@@ -1,11 +1,10 @@
-// MilestoneScheduledList.tsx
+// components/entities/milestones/containers/dashboard/MilestoneScheduledList.tsx
 "use client";
 
 import { NestedMilestone } from "../../utils/MilestoneTreeBuilder";
 import { Mode } from "@shared/types/Mode";
 import { Task } from "@shared/types/Task";
 import MilestoneItem from "./MilestoneItem";
-import { useEntityUIStore } from "@/lib/store/useEntityUIStore";
 
 type Props = {
   milestones: NestedMilestone[]; // SCHEDULED only (already filtered)

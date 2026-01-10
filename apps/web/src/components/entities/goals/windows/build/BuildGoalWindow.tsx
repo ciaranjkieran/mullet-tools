@@ -13,8 +13,6 @@ type Props = {
   onClose: () => void;
   defaultModeId: number | null;
   modes: Mode[];
-  goals: Goal[];
-  projects: Project[];
 };
 
 export default function BuildGoalWindow({
@@ -22,8 +20,6 @@ export default function BuildGoalWindow({
   onClose,
   defaultModeId,
   modes,
-  goals,
-  projects,
 }: Props) {
   const [title, setTitle] = useState("");
   const [dueDate, setDueDate] = useState("");

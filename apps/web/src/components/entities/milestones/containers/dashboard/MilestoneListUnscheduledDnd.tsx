@@ -55,6 +55,9 @@ export default function MilestoneUnscheduledDnd({
   tasks,
   container,
 }: Props) {
+  // keep prop for compatibility / future use
+  void container;
+
   // 1) Normalise / guard milestones
   const safeMilestones = useMemo(
     () =>
@@ -308,10 +311,9 @@ export default function MilestoneUnscheduledDnd({
                   mode={mode}
                   modes={modes}
                   tasks={tasks}
-                  // Only pass DnD listeners/attrs when collapsed (draggable)
                   dragHandleProps={
                     isCollapsedApi("milestone", m.id)
-                      ? (handleProps as any)
+                      ? (handleProps as React.HTMLAttributes<HTMLButtonElement>)
                       : undefined
                   }
                 />

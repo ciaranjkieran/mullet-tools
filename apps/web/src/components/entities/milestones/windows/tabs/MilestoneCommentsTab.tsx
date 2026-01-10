@@ -4,6 +4,7 @@ import { useCommentsByEntity } from "@shared/api/hooks/comments/useCommentsByEnt
 import CommentCard from "@/components/comments/CommentCard";
 import CommentComposer from "@/components/comments/CommentComposer";
 import Spinner from "@/components/status/Spinner";
+import type { CSSProperties } from "react";
 
 import { Milestone } from "@shared/types/Milestone";
 
@@ -17,11 +18,14 @@ export default function MilestoneCommentsTab({ milestone, modeColor }: Props) {
     "milestone",
     milestone.id
   );
+  const scrollbarStyle: CSSProperties & { "--scrollbar-color"?: string } = {
+    "--scrollbar-color": modeColor,
+  };
 
   return (
     <div
       className="flex-1 flex flex-col overflow-y-auto scrollbar-thin mb-6"
-      style={{ ["--scrollbar-color" as any]: modeColor }}
+      style={scrollbarStyle}
     >
       <div className="flex flex-col h-full p-6 mt-4 space-y-6">
         {/* 1. Flat Comments on Milestone */}

@@ -28,26 +28,35 @@ export default function MilestoneItem({
   tasks,
   dragHandleProps,
 }: Props) {
-  // ---- SAFETY: ensure we have an id before anything else
-  const milestoneId = (milestone as any)?.id as number | undefined;
-  if (!milestoneId) {
-    console.warn("MilestoneItem: missing milestone.id", milestone);
-    return null;
-  }
+  // keep prop for compatibility / future use
+  void parentId;
 
-  const collapsed = !!useEntityUIStore(
-    (s) => s.collapsed.milestone?.[milestoneId]
+  // ✅ no early return before hooks
+  const milestoneId = milestone?.id ?? -1;
+  const hasValidId = milestoneId > 0;
+
+  const collapsed = useEntityUIStore((s) =>
+    hasValidId ? !!s.collapsed.milestone?.[milestoneId] : false
   );
+
   const modeColor =
     modes.find((m) => m.id === milestone.modeId)?.color ?? "#000";
 
   // Children are already effective-tree’d by the list/builder.
-  const children = (milestone as any)?.children ?? [];
+  const children: NestedMilestone[] = milestone.children ?? [];
 
   // Tasks under THIS milestone
-  const childTasks = tasks
-    .filter((t) => t.modeId === mode.id && t.milestoneId === milestoneId)
-    .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+  const childTasks = hasValidId
+    ? tasks
+        .filter((t) => t.modeId === mode.id && t.milestoneId === milestoneId)
+        .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
+    : [];
+
+  // ✅ safe to bail after hooks
+  if (!hasValidId) {
+    console.warn("MilestoneItem: missing milestone.id", milestone);
+    return null;
+  }
 
   return (
     <div className="space-y-2" style={{ paddingLeft: depth * 16 }}>

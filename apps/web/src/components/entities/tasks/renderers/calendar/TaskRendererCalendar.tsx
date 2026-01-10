@@ -38,7 +38,6 @@ export default function TaskRendererCalendar({
   mode,
   showModeTitle = false,
   breadcrumb,
-  dragAttributes,
   dragListeners,
   activatorRef,
 }: Props) {

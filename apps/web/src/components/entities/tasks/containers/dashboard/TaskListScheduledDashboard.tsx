@@ -8,14 +8,12 @@ type Props = {
   mode: Mode;
   modes: Mode[];
   tasks: Task[];
-  onEditTask?: (task: Task) => void;
   showComposer?: boolean;
 };
 
 export default function TaskListScheduledDashboard({
   mode,
   tasks,
-  onEditTask,
   showComposer = false,
 }: Props) {
   if (!tasks.length && !showComposer) return null;

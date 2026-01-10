@@ -2,10 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useCreateTask } from "@shared/api/hooks/tasks/useCreateTask";
-import { Task } from "@shared/types/Task";
 import { getContrastingText } from "@shared/utils/getContrastingText";
 import CustomDateInput from "@/lib/utils/CustomDateInput";
-import { useTaskStore } from "@shared/store/useTaskStore";
 
 type Mode = {
   id: number;
@@ -82,18 +80,6 @@ export default function AddTaskInline({
       return;
     }
 
-    const { tasks } = useTaskStore.getState();
-    const relevantTasks = tasks.filter(
-      (t) =>
-        t.modeId === modeId &&
-        (!t.dueDate || t.dueDate === (dueDate?.trim() || null))
-    );
-    const maxPosition = Math.max(
-      0,
-      ...relevantTasks.map((t) => t.position ?? 0)
-    );
-    const newPosition = maxPosition + 1;
-
     createTask(
       {
         title: title.trim(),
@@ -117,7 +103,6 @@ export default function AddTaskInline({
   };
 
   if (!isComposing) {
-    const displayColor = inlineMode === "All" ? "#000000" : modeColor;
     return (
       <div className="mt-2">
         <div className="flex justify-end mt-4">

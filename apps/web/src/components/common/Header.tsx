@@ -70,7 +70,9 @@ export default function Header() {
               >
                 About
               </Link>
-
+              <Link href="/contact" className="hover:text-black transition">
+                Contact
+              </Link>
               <button
                 onClick={handleLogout}
                 className="hover:text-black transition"

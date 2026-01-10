@@ -1,5 +1,7 @@
 "use client";
 
+import type { CSSProperties } from "react";
+
 import { useCommentsByEntity } from "@shared/api/hooks/comments/useCommentsByEntity";
 import CommentCard from "@/components/comments/CommentCard";
 import CommentComposer from "@/components/comments/CommentComposer";
@@ -18,10 +20,14 @@ export default function GoalCommentsTab({ goal, modeColor }: Props) {
     goal.id
   );
 
+  const scrollbarStyle: CSSProperties & { "--scrollbar-color"?: string } = {
+    "--scrollbar-color": modeColor,
+  };
+
   return (
     <div
       className="flex-1 flex flex-col overflow-y-auto scrollbar-thin mb-6"
-      style={{ ["--scrollbar-color" as any]: modeColor }}
+      style={scrollbarStyle}
     >
       <div className="flex flex-col h-full p-6 mt-4 space-y-6">
         {/* 1. Flat Comments on Goal */}

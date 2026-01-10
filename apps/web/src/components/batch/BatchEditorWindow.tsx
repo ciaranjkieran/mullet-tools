@@ -16,7 +16,6 @@ import { useProjectStore } from "@shared/store/useProjectStore";
 import { useGoalStore } from "@shared/store/useGoalStore";
 import { getContrastingText } from "@shared/utils/getContrastingText";
 
-import ModeInput from "@/components/timer/inputs/TimerModeSelect";
 import EditorEntityInputs from "@/components/inputs/editor/EditorEntityInputs";
 
 import { EntityKind, ParentType } from "@shared/api/batch/types/types";
@@ -25,6 +24,7 @@ import { computeParentOptions } from "./parentingUtils";
 import { Goal } from "@shared/types/Goal";
 import { Milestone } from "@shared/types/Milestone";
 import { Project } from "@shared/types/Project";
+import type { Mode } from "@shared/types/Mode";
 
 import {
   filterEditorOptions,
@@ -35,8 +35,16 @@ import {
 
 type ParentOption = { id: number; type: ParentType; title: string };
 
-const EMPTY_ARR: any[] = [];
-const EMPTY_OBJ: Record<string, any> = Object.freeze({});
+type EntityWithMode = {
+  id: number;
+  title: string;
+  modeId?: number | null;
+  mode?: number | { id: number } | null;
+};
+
+// safer empties (no `any`)
+const EMPTY_ARR: readonly never[] = [];
+const EMPTY_OBJ: Readonly<Record<string, never>> = Object.freeze({});
 
 function fromModeMapOrFilter<T extends { id: number; modeId?: number | null }>(
   byModeMap: Record<string | number, T[]>,
@@ -58,40 +66,99 @@ export default function BatchEditorWindow() {
   const totalCount = useSelectionStore((s) => s.totalCount());
   const selected = useSelectionStore((s) => s.selected);
   const { apply, isApplying } = useBatchApply();
-  const clearAll = useSelectionStore((s) => s.clearAll); // ⬅️ add this
+  const clearAll = useSelectionStore((s) => s.clearAll);
 
-  const modesFromStore = useModeStore((s: any) => s.modes);
-  const modes = modesFromStore ?? EMPTY_ARR;
-
-  const tasksByIdFromStore = useTaskStore((s: any) => s.byId ?? s.tasksById);
-  const tasksById = tasksByIdFromStore ?? EMPTY_OBJ;
-  const tasksArrFromStore = useTaskStore((s: any) => s.tasks);
-  const tasksArr = tasksArrFromStore ?? EMPTY_ARR;
-
-  const milestonesByIdFromStore = useMilestoneStore(
-    (s: any) => s.byId ?? s.milestonesById
+  // --- Store reads (avoid `any` by narrowing unknown shapes) ---
+  const modesFromStore = useModeStore(
+    (s) => (s as unknown as { modes?: Mode[] }).modes
   );
-  const milestonesById = milestonesByIdFromStore ?? EMPTY_OBJ;
-  const milestonesArrFromStore = useMilestoneStore((s: any) => s.milestones);
-  const milestonesArr = milestonesArrFromStore ?? EMPTY_ARR;
-  const milestonesByModeFromStore = useMilestoneStore((s: any) => s.byModeId);
-  const milestonesByMode = milestonesByModeFromStore ?? EMPTY_OBJ;
+  const modes: Mode[] = modesFromStore ?? (EMPTY_ARR as unknown as Mode[]);
 
-  const projectsByIdFromStore = useProjectStore(
-    (s: any) => s.byId ?? s.projectsById
+  const tasksByIdFromStore = useTaskStore((s) => {
+    const st = s as unknown as {
+      byId?: Record<number, EntityWithMode>;
+      tasksById?: Record<number, EntityWithMode>;
+    };
+    return st.byId ?? st.tasksById;
+  });
+  const tasksById: Record<number, EntityWithMode> =
+    tasksByIdFromStore ??
+    (EMPTY_OBJ as unknown as Record<number, EntityWithMode>);
+  const tasksArrFromStore = useTaskStore(
+    (s) => (s as unknown as { tasks?: EntityWithMode[] }).tasks
   );
-  const projectsById = projectsByIdFromStore ?? EMPTY_OBJ;
-  const projectsArrFromStore = useProjectStore((s: any) => s.projects);
-  const projectsArr = projectsArrFromStore ?? EMPTY_ARR;
-  const projectsByModeFromStore = useProjectStore((s: any) => s.byModeId);
-  const projectsByMode = projectsByModeFromStore ?? EMPTY_OBJ;
+  const tasksArr: EntityWithMode[] =
+    tasksArrFromStore ?? (EMPTY_ARR as unknown as EntityWithMode[]);
 
-  const goalsByIdFromStore = useGoalStore((s: any) => s.byId ?? s.goalsById);
-  const goalsById = goalsByIdFromStore ?? EMPTY_OBJ;
-  const goalsArrFromStore = useGoalStore((s: any) => s.goals);
-  const goalsArr = goalsArrFromStore ?? EMPTY_ARR;
-  const goalsByModeFromStore = useGoalStore((s: any) => s.byModeId);
-  const goalsByMode = goalsByModeFromStore ?? EMPTY_OBJ;
+  const milestonesByIdFromStore = useMilestoneStore((s) => {
+    const st = s as unknown as {
+      byId?: Record<number, Milestone>;
+      milestonesById?: Record<number, Milestone>;
+    };
+    return st.byId ?? st.milestonesById;
+  });
+  const milestonesById: Record<number, Milestone> =
+    milestonesByIdFromStore ??
+    (EMPTY_OBJ as unknown as Record<number, Milestone>);
+  const milestonesArrFromStore = useMilestoneStore(
+    (s) => (s as unknown as { milestones?: Milestone[] }).milestones
+  );
+  const milestonesArr: Milestone[] =
+    milestonesArrFromStore ?? (EMPTY_ARR as unknown as Milestone[]);
+  const milestonesByModeFromStore = useMilestoneStore(
+    (s) =>
+      (s as unknown as { byModeId?: Record<string | number, Milestone[]> })
+        .byModeId
+  );
+  const milestonesByMode: Record<string | number, Milestone[]> =
+    milestonesByModeFromStore ??
+    (EMPTY_OBJ as unknown as Record<string | number, Milestone[]>);
+
+  const projectsByIdFromStore = useProjectStore((s) => {
+    const st = s as unknown as {
+      byId?: Record<number, Project>;
+      projectsById?: Record<number, Project>;
+    };
+    return st.byId ?? st.projectsById;
+  });
+  const projectsById: Record<number, Project> =
+    projectsByIdFromStore ?? (EMPTY_OBJ as unknown as Record<number, Project>);
+  const projectsArrFromStore = useProjectStore(
+    (s) => (s as unknown as { projects?: Project[] }).projects
+  );
+  const projectsArr: Project[] =
+    projectsArrFromStore ?? (EMPTY_ARR as unknown as Project[]);
+  const projectsByModeFromStore = useProjectStore(
+    (s) =>
+      (s as unknown as { byModeId?: Record<string | number, Project[]> })
+        .byModeId
+  );
+  const projectsByMode: Record<string | number, Project[]> =
+    projectsByModeFromStore ??
+    (EMPTY_OBJ as unknown as Record<string | number, Project[]>);
+
+  const goalsByIdFromStore = useGoalStore((s) => {
+    const st = s as unknown as {
+      byId?: Record<number, Goal>;
+      goalsById?: Record<number, Goal>;
+    };
+    return st.byId ?? st.goalsById;
+  });
+  const goalsById: Record<number, Goal> =
+    goalsByIdFromStore ?? (EMPTY_OBJ as unknown as Record<number, Goal>);
+  const goalsArrFromStore = useGoalStore(
+    (s) => (s as unknown as { goals?: Goal[] }).goals
+  );
+  const goalsArr: Goal[] =
+    goalsArrFromStore ?? (EMPTY_ARR as unknown as Goal[]);
+  const goalsByModeFromStore = useGoalStore(
+    (s) =>
+      (s as unknown as { byModeId?: Record<string | number, Goal[]> }).byModeId
+  );
+  const goalsByMode: Record<string | number, Goal[]> =
+    goalsByModeFromStore ??
+    (EMPTY_OBJ as unknown as Record<string | number, Goal[]>);
+
   const [clearDueDate, setClearDueDate] = useState(false);
 
   const kinds = useMemo<EntityKind[]>(() => {
@@ -105,22 +172,45 @@ export default function BatchEditorWindow() {
 
   const { sameMode, onlyModeId } = useMemo(() => {
     const ids = new Set<number>();
-    const addMode = (entity: any) => {
-      const mid = entity?.modeId ?? entity?.mode?.id ?? entity?.mode;
+
+    const addMode = (entity?: EntityWithMode) => {
+      const mid =
+        entity?.modeId ??
+        (typeof entity?.mode === "object" ? entity.mode?.id : entity?.mode);
       if (typeof mid === "number") ids.add(mid);
     };
-    selected.task.forEach((id) =>
-      addMode(tasksById[id] ?? tasksArr.find((t: any) => t.id === id))
+
+    selected.task.forEach((id: number) =>
+      addMode(
+        (tasksById[id] ?? tasksArr.find((t) => t.id === id)) as
+          | EntityWithMode
+          | undefined
+      )
     );
-    selected.milestone.forEach((id) =>
-      addMode(milestonesById[id] ?? milestonesArr.find((m: any) => m.id === id))
+    selected.milestone.forEach((id: number) =>
+      addMode(
+        (milestonesById[id] ??
+          milestonesArr.find((m) => m.id === id)) as unknown as
+          | EntityWithMode
+          | undefined
+      )
     );
-    selected.project.forEach((id) =>
-      addMode(projectsById[id] ?? projectsArr.find((p: any) => p.id === id))
+    selected.project.forEach((id: number) =>
+      addMode(
+        (projectsById[id] ??
+          projectsArr.find((p) => p.id === id)) as unknown as
+          | EntityWithMode
+          | undefined
+      )
     );
-    selected.goal.forEach((id) =>
-      addMode(goalsById[id] ?? goalsArr.find((g: any) => g.id === id))
+    selected.goal.forEach((id: number) =>
+      addMode(
+        (goalsById[id] ?? goalsArr.find((g) => g.id === id)) as unknown as
+          | EntityWithMode
+          | undefined
+      )
     );
+
     const same = ids.size === 1;
     return {
       sameMode: same,
@@ -153,8 +243,7 @@ export default function BatchEditorWindow() {
 
   const selectedModeId = targetModeId ?? onlyModeId ?? modes[0]?.id ?? null;
   const modeColor =
-    (selectedModeId &&
-      modes.find((m: any) => m.id === selectedModeId)?.color) ||
+    (selectedModeId && modes.find((m) => m.id === selectedModeId)?.color) ||
     "#333";
   const primaryFg = getContrastingText(modeColor);
 
@@ -182,36 +271,16 @@ export default function BatchEditorWindow() {
     () => fromModeMapOrFilter<Goal>(goalsByMode, goalsArr, effectiveModeId),
     [goalsByMode, goalsArr, effectiveModeId]
   );
-
   const { parentOptions, groupingReason } = useMemo(() => {
     return computeParentOptions({
       kinds,
       selected,
-      effectiveModeId,
       sameMode,
-      milestonesArr,
-      projectsArr,
-      goalsArr,
-      milestonesById,
-      projectsById,
-      milestonesByMode: { [effectiveModeId ?? ""]: msInMode },
-      projectsByMode: { [effectiveModeId ?? ""]: pjInMode },
-      goalsByMode: { [effectiveModeId ?? ""]: glInMode },
+      milestonesInMode: msInMode,
+      projectsInMode: pjInMode,
+      goalsInMode: glInMode,
     });
-  }, [
-    kinds,
-    selected,
-    effectiveModeId,
-    sameMode,
-    milestonesArr,
-    projectsArr,
-    goalsArr,
-    milestonesById,
-    projectsById,
-    msInMode,
-    pjInMode,
-    glInMode,
-  ]);
+  }, [kinds, selected, sameMode, msInMode, pjInMode, glInMode]);
 
   const selectionIncludesGoal = kinds.includes("goal");
   const groupingEnabled =
@@ -339,7 +408,7 @@ export default function BatchEditorWindow() {
   );
 
   const sortAlpha = useCallback(
-    <T extends { title: string }>(arr: T[]): T[] => {
+    <T extends { id: number; title: string }>(arr: T[]): T[] => {
       const none = arr.find((x) => x.title === "None");
       const rest = arr.filter(
         (x) => x.title !== "None" && !x.title.startsWith("Create")
@@ -357,13 +426,17 @@ export default function BatchEditorWindow() {
   const filteredSorted = useMemo(
     () => ({
       goals: sortAlpha(
-        filtered.goals.filter((g: any) => eligibleGoalIds.has(g.id))
+        filtered.goals.filter((g: { id: number }) => eligibleGoalIds.has(g.id))
       ),
       projects: sortAlpha(
-        filtered.projects.filter((p: any) => eligibleProjectIds.has(p.id))
+        filtered.projects.filter((p: { id: number }) =>
+          eligibleProjectIds.has(p.id)
+        )
       ),
       milestones: sortAlpha(
-        filtered.milestones.filter((m: any) => eligibleMilestoneIds.has(m.id))
+        filtered.milestones.filter((m: { id: number }) =>
+          eligibleMilestoneIds.has(m.id)
+        )
       ),
     }),
     [
@@ -379,8 +452,11 @@ export default function BatchEditorWindow() {
     if (selMilestoneId != null) {
       const m =
         milestonesById[selMilestoneId] ??
-        milestonesArr.find((x: any) => x.id === selMilestoneId) ??
-        filteredSorted.milestones.find((x: any) => x.id === selMilestoneId);
+        milestonesArr.find((x) => x.id === selMilestoneId) ??
+        filteredSorted.milestones.find(
+          (x: { id: number }) => x.id === selMilestoneId
+        );
+
       setTargetParent(
         m ? { id: m.id, type: "milestone", title: m.title } : null
       );
@@ -390,8 +466,11 @@ export default function BatchEditorWindow() {
     if (selProjectId != null) {
       const p =
         projectsById[selProjectId] ??
-        projectsArr.find((x: any) => x.id === selProjectId) ??
-        filteredSorted.projects.find((x: any) => x.id === selProjectId);
+        projectsArr.find((x) => x.id === selProjectId) ??
+        filteredSorted.projects.find(
+          (x: { id: number }) => x.id === selProjectId
+        );
+
       setTargetParent(p ? { id: p.id, type: "project", title: p.title } : null);
       return;
     }
@@ -399,8 +478,9 @@ export default function BatchEditorWindow() {
     if (selGoalId != null) {
       const g =
         goalsById[selGoalId] ??
-        goalsArr.find((x: any) => x.id === selGoalId) ??
-        filteredSorted.goals.find((x: any) => x.id === selGoalId);
+        goalsArr.find((x) => x.id === selGoalId) ??
+        filteredSorted.goals.find((x: { id: number }) => x.id === selGoalId);
+
       setTargetParent(g ? { id: g.id, type: "goal", title: g.title } : null);
       return;
     }
@@ -447,7 +527,6 @@ export default function BatchEditorWindow() {
     }
   }, [isBatchEditorOpen, sameMode, onlyModeId, effectiveModeId]);
 
-  // replace applyRec with this
   const applyRec = useCallback(
     (patch: Partial<EditorSelection>) => {
       const base: EditorSelection = {
@@ -469,12 +548,8 @@ export default function BatchEditorWindow() {
     [effectiveModeId, selGoalId, selProjectId, selMilestoneId, datasets]
   );
 
-  // keep other handlers the same, but ensure mode change is explicit
   const onModeChange = useCallback((nextModeId: number) => {
-    // store the explicit target mode for this batch
     setTargetModeId(nextModeId);
-
-    // reset any parent selection so it recalculates under the new mode
     setSelGoalId(null);
     setSelProjectId(null);
     setSelMilestoneId(null);
@@ -507,7 +582,7 @@ export default function BatchEditorWindow() {
     },
     [applyRec, effectiveProjectOfMilestone, effectiveGoalOfMilestone]
   );
-  // tighten the apply step so it skips no-op mode changes
+
   const onApply = async () => {
     const shouldChangeMode =
       targetModeId != null && targetModeId !== (onlyModeId ?? null);
@@ -525,10 +600,8 @@ export default function BatchEditorWindow() {
         doDelete,
       });
 
-      // 🔹 After a successful apply, clear selection
       clearAll();
     } finally {
-      // 🔹 Always close the batch editor UI
       setIsBatchEditorOpen(false);
     }
   };
@@ -536,16 +609,16 @@ export default function BatchEditorWindow() {
   const canApply =
     Boolean(targetParent) ||
     Boolean(targetModeId) ||
-    Boolean(setToday || dueDate || dueTime || clearDueDate) || // ✅ include it
+    Boolean(setToday || dueDate || dueTime || clearDueDate) ||
     Boolean(markComplete) ||
     Boolean(doDelete);
 
   return (
     <Dialog.Root open={isBatchEditorOpen} onOpenChange={setIsBatchEditorOpen}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 bg-black/30 backdrop-blur-[2px] z-[90]" />
+        <Dialog.Overlay className="fixed inset-0 z-[90] bg-black/30 backdrop-blur-[2px]" />
         <Dialog.Content
-          className="fixed top-16 left-1/2 -translate-x-1/2 bg-white rounded-xl shadow-xl w-[92vw] max-w-3xl z-[250]"
+          className="fixed left-1/2 top-16 z-[250] w-[92vw] max-w-3xl -translate-x-1/2 rounded-xl bg-white shadow-xl"
           data-batch-ui="true"
           onKeyDown={(e) => {
             if (
@@ -557,26 +630,26 @@ export default function BatchEditorWindow() {
           }}
         >
           <div
-            className="absolute top-0 left-0 w-full h-1.5 md:h-4 rounded-t-xl"
+            className="absolute left-0 top-0 h-1.5 w-full rounded-t-xl md:h-4"
             style={{ backgroundColor: modeColor }}
           />
-          <div className="flex items-center justify-between px-6 pt-5 pb-3">
-            <Dialog.Title className="text-xl md:text-2xl font-bold tracking-tight">
+          <div className="flex items-center justify-between px-6 pb-3 pt-5">
+            <Dialog.Title className="text-xl font-bold tracking-tight md:text-2xl">
               Batch Edit{" "}
               <span className="text-gray-500">({totalCount} Selected)</span>
             </Dialog.Title>
             <button
-              className="p-2 rounded hover:bg-gray-100"
+              className="rounded p-2 hover:bg-gray-100"
               onClick={() => setIsBatchEditorOpen(false)}
               aria-label="Close"
             >
-              <X className="w-5 h-5 text-gray-500" />
+              <X className="h-5 w-5 text-gray-500" />
             </button>
           </div>
 
           <div className="px-6 pb-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10">
-              <div className="flex flex-col gap-8 order-2 md:order-1">
+            <div className="grid grid-cols-1 gap-x-12 gap-y-10 md:grid-cols-2">
+              <div className="order-2 flex flex-col gap-8 md:order-1">
                 <section>
                   <div className="max-w-sm">
                     <EditorModeSelect
@@ -589,7 +662,7 @@ export default function BatchEditorWindow() {
                 </section>
 
                 <section>
-                  <div className="flex items-center justify-between mb-2">
+                  <div className="mb-2 flex items-center justify-between">
                     <h3 className="font-semibold">Group under</h3>
                     {!groupingEnabled && (
                       <span className="text-xs text-gray-500">
@@ -641,7 +714,7 @@ export default function BatchEditorWindow() {
                       {(selGoalId || selProjectId || selMilestoneId) && (
                         <button
                           type="button"
-                          className="text-xs underline text-gray-600 mt-2"
+                          className="mt-2 text-xs text-gray-600 underline"
                           onClick={() => {
                             onGoalChange(null);
                             onProjectChange(null);
@@ -657,11 +730,11 @@ export default function BatchEditorWindow() {
                 </section>
               </div>
 
-              <div className="flex flex-col gap-8 order-1 md:order-2">
+              <div className="order-1 flex flex-col gap-8 md:order-2">
                 <section>
-                  <h3 className="font-semibold mb-2">Schedule</h3>
-                  <div className="flex items-center gap-2 mb-3">
-                    <label className="flex items-center gap-2 text-sm text-blue-800 font-semibold">
+                  <h3 className="mb-2 font-semibold">Schedule</h3>
+                  <div className="mb-3 flex items-center gap-2">
+                    <label className="flex items-center gap-2 text-sm font-semibold text-blue-800">
                       <input
                         type="checkbox"
                         checked={setToday}
@@ -674,7 +747,7 @@ export default function BatchEditorWindow() {
                           }
 
                           if (v) {
-                            setClearDueDate(false); // ✅ mutually exclusive
+                            setClearDueDate(false);
                             setSetToday(true);
                             setDueDate(todayStr());
                           } else {
@@ -684,7 +757,7 @@ export default function BatchEditorWindow() {
                       />
                       Set to Today
                     </label>
-                    <label className="flex items-center gap-2 text-sm text-gray-700 font-medium">
+                    <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
                       <input
                         type="checkbox"
                         checked={clearDueDate}
@@ -699,7 +772,7 @@ export default function BatchEditorWindow() {
                           setClearDueDate(v);
 
                           if (v) {
-                            setSetToday(false); // ✅ mutually exclusive
+                            setSetToday(false);
                             setDueDate("");
                             setDueTime("");
                           }
@@ -708,7 +781,7 @@ export default function BatchEditorWindow() {
                       Clear due date
                     </label>
                   </div>
-                  <div className="flex items-center gap-2 mb-3">
+                  <div className="mb-3 flex items-center gap-2">
                     <span className="text-sm text-gray-600">Due date</span>
                     <input
                       type="date"
@@ -719,7 +792,7 @@ export default function BatchEditorWindow() {
                         if (!markComplete && !doDelete)
                           setSetToday(v === todayStr());
                       }}
-                      className="border rounded px-2 py-1 text-sm"
+                      className="rounded border px-2 py-1 text-sm"
                     />
                   </div>
                   <div className="flex items-center gap-2">
@@ -728,15 +801,15 @@ export default function BatchEditorWindow() {
                       type="time"
                       value={dueTime}
                       onChange={(e) => setDueTime(e.target.value)}
-                      className="border rounded px-2 py-1 text-sm"
+                      className="rounded border px-2 py-1 text-sm"
                     />
                   </div>
                 </section>
 
                 <section>
-                  <h3 className="font-semibold mb-2">Bulk actions</h3>
+                  <h3 className="mb-2 font-semibold">Bulk actions</h3>
                   <div className="flex flex-col gap-3 text-sm">
-                    <label className="flex items-center gap-2 text-green-800 font-semibold">
+                    <label className="flex items-center gap-2 font-semibold text-green-800">
                       <input
                         type="checkbox"
                         checked={markComplete}
@@ -752,7 +825,7 @@ export default function BatchEditorWindow() {
                       Mark all as complete (irreversible)
                     </label>
 
-                    <label className="flex items-center gap-2 text-red-700 font-semibold">
+                    <label className="flex items-center gap-2 font-semibold text-red-700">
                       <input
                         type="checkbox"
                         checked={doDelete}
@@ -772,10 +845,10 @@ export default function BatchEditorWindow() {
               </div>
             </div>
 
-            <div className="flex justify-end items-center gap-3 pt-8">
+            <div className="flex items-center justify-end gap-3 pt-8">
               <button
                 type="button"
-                className="px-4 py-2 text-sm rounded-md bg-gray-200 hover:bg-gray-300"
+                className="rounded-md bg-gray-200 px-4 py-2 text-sm hover:bg-gray-300"
                 onClick={() => setIsBatchEditorOpen(false)}
               >
                 Cancel
@@ -784,7 +857,7 @@ export default function BatchEditorWindow() {
                 type="button"
                 onClick={onApply}
                 disabled={!canApply || isApplying}
-                className="px-5 py-2 text-sm font-semibold rounded-md disabled:opacity-50"
+                className="rounded-md px-5 py-2 text-sm font-semibold disabled:opacity-50"
                 style={{ backgroundColor: modeColor, color: primaryFg }}
               >
                 {isApplying ? "Applying…" : "Apply"}

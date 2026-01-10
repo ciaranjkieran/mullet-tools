@@ -9,6 +9,8 @@
 import { useMemo } from "react";
 
 import type { Task } from "@shared/types/Task";
+import type { TimeEntryDTO } from "@shared/types/Timer";
+
 import { buildStartPayloadFromSelection } from "../utils/startTimerPayload";
 import {
   normalizePathIdsToSelection,
@@ -17,10 +19,12 @@ import {
 } from "../types/timerTypes";
 import { pathToIdPayload } from "../utils/timerPath";
 
+type StartPayload = ReturnType<typeof buildStartPayloadFromSelection>;
+
 type Args = {
   tasks: Task[];
   modeId: number;
-  startMut: { mutate: (payload: any) => void };
+  startMut: { mutate: (payload: StartPayload) => void };
   setBaselineSel: (sel: SelectionLike) => void;
 };
 
@@ -33,7 +37,7 @@ export function useTimerResumeFromEntry({
   const taskById = useMemo(() => new Map(tasks.map((t) => [t.id, t])), [tasks]);
 
   function handleResumeFromEntry(
-    entry: any,
+    entry: TimeEntryDTO,
     opts?: { remainingSeconds?: number }
   ) {
     const raw = pathToIdPayload(entry.path);
@@ -41,6 +45,7 @@ export function useTimerResumeFromEntry({
 
     let remaining =
       typeof opts?.remainingSeconds === "number" ? opts.remainingSeconds : null;
+
     if (remaining == null) {
       const planned = resolvePlannedSecondsForEntry(entry, taskById);
       if (typeof planned === "number") {
@@ -61,7 +66,7 @@ export function useTimerResumeFromEntry({
     }
   }
 
-  function resolvePlannedSeconds(entry: any): number | null {
+  function resolvePlannedSeconds(entry: unknown): number | null {
     return resolvePlannedSecondsForEntry(entry, taskById);
   }
 

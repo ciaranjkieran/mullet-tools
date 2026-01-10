@@ -11,12 +11,11 @@ import { useEntityUIStore } from "@/lib/store/useEntityUIStore";
 
 type Props = {
   goal: Goal;
-  onEdit?: (goal: Goal) => void;
   today?: Date;
   dialogOpen?: boolean;
 };
 
-export default function GoalCardDragDashboard({ goal, onEdit, today }: Props) {
+export default function GoalCardDragDashboard({ goal, today }: Props) {
   const mode = useModeStore((s) => s.modes.find((m) => m.id === goal.modeId));
   const modeColor = mode?.color || "#000";
 

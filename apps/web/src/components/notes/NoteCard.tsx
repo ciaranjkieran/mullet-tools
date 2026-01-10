@@ -25,6 +25,7 @@ type Props = {
   breadcrumb?: string;
   modeLevel: boolean;
 };
+const EMPTY: never[] = [];
 
 export default function NoteCard({ note, breadcrumb, modeLevel }: Props) {
   const [isEditing, setIsEditing] = useState(false);
@@ -75,11 +76,17 @@ export default function NoteCard({ note, breadcrumb, modeLevel }: Props) {
   const handleDeleteRequest = () => setConfirmOpen(true);
   const handleConfirmDelete = () => deleteNote.mutate(note.id);
 
-  const modes = useModeStore?.((s) => s.modes) ?? [];
-  const goals = useGoalStore?.((s) => s.goals) ?? [];
-  const projects = useProjectStore?.((s) => s.projects) ?? [];
-  const milestones = useMilestoneStore?.((s) => s.milestones) ?? [];
-  const tasks = useTaskStore?.((s) => s.tasks) ?? [];
+  const modesFromStore = useModeStore((s) => s.modes);
+  const goalsFromStore = useGoalStore((s) => s.goals);
+  const projectsFromStore = useProjectStore((s) => s.projects);
+  const milestonesFromStore = useMilestoneStore((s) => s.milestones);
+  const tasksFromStore = useTaskStore((s) => s.tasks);
+
+  const modes = modesFromStore ?? EMPTY;
+  const goals = goalsFromStore ?? EMPTY;
+  const projects = projectsFromStore ?? EMPTY;
+  const milestones = milestonesFromStore ?? EMPTY;
+  const tasks = tasksFromStore ?? EMPTY;
 
   const normalizeType = (t?: string) => {
     if (!t) return "";
@@ -123,8 +130,20 @@ export default function NoteCard({ note, breadcrumb, modeLevel }: Props) {
     }
   }, [ct, note.object_id, modes, goals, projects, milestones, tasks]);
 
+  type NoteTitleLike = {
+    display_title?: string | null;
+    displayTitle?: string | null;
+    entityTitle?: string | null;
+  };
+
+  const noteTitles = note as unknown as NoteTitleLike;
+
   const displayTitle =
-    liveTitle ?? (note as any).display_title ?? note.entityTitle ?? "";
+    liveTitle ??
+    noteTitles.display_title ??
+    noteTitles.displayTitle ??
+    noteTitles.entityTitle ??
+    "";
 
   return (
     <div className="rounded border bg-gray-50 p-4 shadow-sm text-sm text-gray-800 space-y-4">

@@ -41,14 +41,16 @@ export default function ProjectTemplateUseWindow({
   );
 
   useEffect(() => {
-    if (isOpen && template) {
-      const data = template.data as any;
+    if (isOpen && template && template.type === "project") {
+      const data = template.data as TemplateProjectData;
+
       setProject({
         title: template.title,
-        tasks: data?.tasks || [],
-        subProjects: data?.subProjects || [],
-        subMilestones: data?.subMilestones || [],
+        tasks: data?.tasks ?? [],
+        subProjects: data?.subProjects ?? [],
+        subMilestones: data?.subMilestones ?? [],
       });
+
       actionTriggered.current = false;
       setSubmitting(false);
     }
@@ -104,6 +106,8 @@ export default function ProjectTemplateUseWindow({
   };
 
   const contentRef = useRef<HTMLDivElement>(null);
+
+  if (!template) return null;
 
   return (
     <Dialog.Root open={isOpen} onOpenChange={onOpenChange}>

@@ -37,7 +37,6 @@ type Props = {
 
 export default function LaunchTimerRailButton(props: Props) {
   const {
-    title = "Launch in Timer",
     modeColor = "#555",
     className,
     entity,

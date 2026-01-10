@@ -30,7 +30,6 @@ export default function EntityBoardsTab({
     entity,
     String(entityId)
   );
-  const { open: openBuildDialog } = usePinDialogStore();
   const { open: openEditPin } = useEditPinDialogStore();
   const { openViewer, isOpen } = useViewerStore();
 

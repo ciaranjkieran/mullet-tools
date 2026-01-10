@@ -3,6 +3,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "@shared/api/axios";
 import { ensureCsrf } from "@shared/api/hooks/auth/ensureCsrf";
+import type { TimeEntryDTO } from "@shared/types/Timer";
 
 type EntityType = "task" | "milestone" | "project" | "goal";
 
@@ -12,7 +13,7 @@ type Payload = {
 };
 
 type Resp = {
-  stoppedEntry: any | null;
+  stoppedEntry: TimeEntryDTO | null;
   completed: { entityType: EntityType; entityId: number };
   next: null | {
     entityType: EntityType;
@@ -37,7 +38,7 @@ export function useCompleteNextTimer() {
       const { data } = await api.post<Resp>("/timer/complete-next", body);
       return data;
     },
-    onSuccess: async (data) => {
+    onSuccess: async (_data) => {
       // ✅ Optimistically reflect stop (most complete-next flows stop the session)
       qc.setQueryData(["activeTimer"], null);
       qc.setQueryData(["timer", "active"], null);

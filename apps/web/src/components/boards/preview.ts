@@ -96,7 +96,7 @@ export function isMp4File(pin: Pin): boolean {
   );
 }
 
-function truncateFilename(name: string, max = 40) {
+export function truncateFilename(name: string, max = 40) {
   if (name.length <= max) return name;
 
   const match = name.match(/(.+?)(\.[a-z0-9]+)$/i);

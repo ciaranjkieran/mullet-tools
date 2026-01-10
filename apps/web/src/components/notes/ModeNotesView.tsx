@@ -9,11 +9,14 @@ import { useNoteStore } from "@shared/store/useNoteStore";
 import NoteComposer from "./NoteComposer";
 import NoteCard from "./NoteCard";
 import { getEntityBreadcrumbFromNote } from "@shared/utils/getEntityBreadcrumbFromNote";
-import { Mode } from "@shared/types/Mode";
-import { Milestone } from "@shared/types/Milestone";
-import { Project } from "@shared/types/Project";
-import { Goal } from "@shared/types/Goal";
-import { Task } from "@shared/types/Task";
+
+import type { Note } from "@shared/types/Note";
+import type { Mode } from "@shared/types/Mode";
+import type { Milestone } from "@shared/types/Milestone";
+import type { Project } from "@shared/types/Project";
+import type { Goal } from "@shared/types/Goal";
+import type { Task } from "@shared/types/Task";
+
 import AllModeNoteSection from "./AllModeNoteSection";
 
 import {
@@ -31,41 +34,26 @@ type Props = {
 };
 
 /**
- * 🔧 Adjust these helpers to match your actual Note model fields.
- * We only need: entity type, entity id, entity title, created_at.
+ * Helpers based on your Note model:
+ * - content_type: string
+ * - object_id: number
+ * - display_title / entityTitle: optional titles
+ * - created_at: string
  */
-function getNoteEntityType(note: any): EntityType | null {
-  return rawToEntityType(
-    note?.entity_model ?? note?.content_type ?? note?.entity
-  );
+function getNoteEntityType(note: Note): EntityType | null {
+  return rawToEntityType(note.content_type);
 }
 
-function getNoteEntityId(note: any): number | null {
-  const v =
-    note?.object_id ??
-    note?.entity_id ??
-    note?.entityId ??
-    note?.objectId ??
-    null;
-
-  if (v == null) return null;
-  const n = Number(v);
-  return Number.isFinite(n) ? n : null;
+function getNoteEntityId(note: Note): number | null {
+  return typeof note.object_id === "number" ? note.object_id : null;
 }
 
-function getNoteEntityTitle(note: any): string {
-  return (
-    note?.entity_title ??
-    note?.entityTitle ??
-    note?.entity_name ??
-    note?.entityName ??
-    "(Untitled)"
-  );
+function getNoteEntityTitle(note: Note): string {
+  return note.display_title || note.entityTitle || "(Untitled)";
 }
 
-function getNoteCreatedAt(note: any): string {
-  const v = note?.created_at ?? note?.createdAt ?? "";
-  return typeof v === "string" ? v : String(v);
+function getNoteCreatedAt(note: Note): string {
+  return note.created_at;
 }
 
 export default function ModeNotesView({
@@ -77,13 +65,26 @@ export default function ModeNotesView({
   tasks,
 }: Props) {
   const isAll = mode === "All";
-  const goalMap = Object.fromEntries(goals.map((g) => [g.id, g]));
-  const projectMap = Object.fromEntries(projects.map((p) => [p.id, p]));
-  const milestoneMap = Object.fromEntries(milestones.map((m) => [m.id, m]));
-  const taskMap = Object.fromEntries(tasks.map((t) => [t.id, t]));
+
+  const goalMap = useMemo(
+    () => Object.fromEntries(goals.map((g) => [g.id, g])),
+    [goals]
+  );
+  const projectMap = useMemo(
+    () => Object.fromEntries(projects.map((p) => [p.id, p])),
+    [projects]
+  );
+  const milestoneMap = useMemo(
+    () => Object.fromEntries(milestones.map((m) => [m.id, m])),
+    [milestones]
+  );
+  const taskMap = useMemo(
+    () => Object.fromEntries(tasks.map((t) => [t.id, t])),
+    [tasks]
+  );
 
   const { setNotes } = useNoteStore();
-  const visibleNotes = useNoteStore((state) => state.notes);
+  const visibleNotes = useNoteStore((state) => state.notes) as Note[];
 
   const { data: notes, isLoading } = useFetchNotesByMode(
     !isAll && mode ? mode.id : 0
@@ -113,7 +114,7 @@ export default function ModeNotesView({
 
     const map = new Map<string, OptionWithMeta>();
 
-    for (const n of visibleNotes as any[]) {
+    for (const n of visibleNotes) {
       const type = getNoteEntityType(n);
       const id = getNoteEntityId(n);
       if (!type || id == null) continue;
@@ -142,7 +143,7 @@ export default function ModeNotesView({
     );
 
     return [...nonMode, ...modeOptions].map(
-      ({ latestCreatedAt, ...rest }) => rest
+      ({ latestCreatedAt: _latest, ...rest }) => rest
     );
   }, [visibleNotes]);
 
@@ -154,8 +155,8 @@ export default function ModeNotesView({
     if (!stillExists) setSelectedEntity(null);
   }, [entityOptions, selectedEntity]);
 
-  const filteredNotes = selectedEntity
-    ? visibleNotes.filter((n: any) => {
+  const filteredNotes: Note[] = selectedEntity
+    ? visibleNotes.filter((n) => {
         const type = getNoteEntityType(n);
         const id = getNoteEntityId(n);
         return (
@@ -206,6 +207,7 @@ export default function ModeNotesView({
             <button
               onClick={() => setShowFilterOptions((prev) => !prev)}
               className="flex items-center gap-2 text-md text-gray-700 font-semibold hover:underline"
+              type="button"
             >
               {showFilterOptions ? (
                 <ChevronDown className="w-4 h-4" />
@@ -219,6 +221,7 @@ export default function ModeNotesView({
               <button
                 onClick={() => setSelectedEntity(null)}
                 className="text-sm text-gray-500 hover:underline"
+                type="button"
               >
                 Clear filter
               </button>
@@ -265,6 +268,7 @@ export default function ModeNotesView({
                           e.currentTarget.style.backgroundColor = "transparent";
                         }
                       }}
+                      type="button"
                     >
                       {entity.title}
                     </button>
@@ -277,7 +281,7 @@ export default function ModeNotesView({
 
         {isLoading && <p className="text-gray-500">Loading notes...</p>}
 
-        {filteredNotes.map((note: any) => {
+        {filteredNotes.map((note) => {
           const breadcrumb = getEntityBreadcrumbFromNote(
             note,
             { goalMap, projectMap, milestoneMap, taskMap },
@@ -308,7 +312,7 @@ export default function ModeNotesView({
             key={`${modeObj.id}-${composerTarget.entity}-${composerTarget.entityId}`}
             modeId={modeObj.id}
             modeColor={modeObj.color}
-            entity={composerTarget.entity as any}
+            entity={composerTarget.entity}
             entityId={composerTarget.entityId}
             entityTitle={composerTarget.entityTitle}
           />

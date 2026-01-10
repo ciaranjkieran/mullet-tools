@@ -1,15 +1,19 @@
 "use client";
 
-import { Comment } from "@shared/types/Comment";
-import { Task } from "@shared/types/Task";
-import { Milestone } from "@shared/types/Milestone";
-import { Project } from "@shared/types/Project";
-import { Goal } from "@shared/types/Goal";
-import { Mode } from "@shared/types/Mode";
-
 import { useMemo } from "react";
+
+import type { Comment } from "@shared/types/Comment";
+import type { Task } from "@shared/types/Task";
+import type { Milestone } from "@shared/types/Milestone";
+import type { Project } from "@shared/types/Project";
+import type { Goal } from "@shared/types/Goal";
+import type { Mode } from "@shared/types/Mode";
+
 import CommentPreviewCard from "./CommentPreviewCard";
 import { getEntityBreadcrumb } from "../../../../../packages/shared/utils/getEntityBreadcrumb";
+
+type EntityType = "task" | "milestone" | "project" | "goal";
+type Entity = Task | Milestone | Project | Goal;
 
 type Props = {
   comments: Comment[];
@@ -18,8 +22,25 @@ type Props = {
   projects: Project[];
   goals: Goal[];
   modes: Mode[];
-  selectedMode: Mode;
 };
+
+function indexById<T extends { id: number }>(arr: T[]): Record<number, T> {
+  const out: Record<number, T> = {};
+  for (const item of arr) out[item.id] = item;
+  return out;
+}
+
+function getTitle(entity: Entity): string {
+  // All your entities have title in the types you shared
+  const t = entity.title;
+  return typeof t === "string" && t.trim() ? t : "[Untitled]";
+}
+
+function getModeId(entity: Entity): number | null {
+  // Your entities use modeId: number (based on your shared types)
+  const mid = entity.modeId;
+  return typeof mid === "number" && Number.isFinite(mid) ? mid : null;
+}
 
 export default function ModeEntityCommentsPreview({
   comments,
@@ -28,91 +49,91 @@ export default function ModeEntityCommentsPreview({
   projects,
   goals,
   modes,
-  selectedMode,
 }: Props) {
-  const taskMap = useMemo(
-    () => Object.fromEntries(tasks.map((t) => [t.id, t])),
-    [tasks]
-  );
-  const milestoneMap = useMemo(
-    () => Object.fromEntries(milestones.map((m) => [m.id, m])),
-    [milestones]
-  );
-  const projectMap = useMemo(
-    () => Object.fromEntries(projects.map((p) => [p.id, p])),
-    [projects]
-  );
-  const goalMap = useMemo(
-    () => Object.fromEntries(goals.map((g) => [g.id, g])),
-    [goals]
-  );
-  const modeMap = useMemo(
-    () => Object.fromEntries((modes ?? []).map((m) => [m.id, m])),
-    [modes]
-  );
+  const taskMap = useMemo(() => indexById(tasks), [tasks]);
+  const milestoneMap = useMemo(() => indexById(milestones), [milestones]);
+  const projectMap = useMemo(() => indexById(projects), [projects]);
+  const goalMap = useMemo(() => indexById(goals), [goals]);
+  const modeMap = useMemo(() => indexById(modes ?? []), [modes]);
+
+  // If your backend uses numeric ContentType IDs, keep them here:
+  const contentTypeMap: Record<number, EntityType> = {
+    2: "task",
+    12: "milestone",
+    10: "project",
+    11: "goal",
+  };
 
   const grouped = useMemo(() => {
     const out: Record<string, Comment[]> = {};
-    for (const comment of comments) {
-      if (comment.content_type === 0) continue; // Skip mode-level
-      const key = `${comment.content_type}-${comment.object_id}`;
-      if (!out[key]) out[key] = [];
-      out[key].push(comment);
+
+    for (const c of comments) {
+      // mode-level comments
+      if (c.content_type === 0) continue;
+
+      const ct = c.content_type;
+      const oid = c.object_id;
+
+      // your Comment type allows nulls
+      if (ct == null || oid == null) continue;
+
+      const type = contentTypeMap[ct];
+      if (!type) continue;
+
+      const key = `${type}-${oid}`;
+      (out[key] ??= []).push(c);
     }
+
     return out;
   }, [comments]);
 
   return (
     <section className="space-y-4 mt-6">
       {Object.entries(grouped).map(([key, group]) => {
-        const { content_type, object_id } = group[0];
+        const first = group[0];
+        if (!first) return null;
 
-        const contentTypeMap: Record<
-          number,
-          "task" | "milestone" | "project" | "goal"
-        > = {
-          2: "task",
-          12: "milestone",
-          10: "project",
-          11: "goal",
-        };
+        const ct = first.content_type;
+        const oid = first.object_id;
 
-        const type = contentTypeMap[content_type];
-        let entity: Task | Milestone | Project | Goal | null = null;
+        if (ct == null || oid == null) return null;
+
+        const type = contentTypeMap[ct];
+        if (!type) {
+          console.warn(`Unrecognized content_type: ${ct}`);
+          return null;
+        }
+
+        let entity: Entity | null = null;
 
         switch (type) {
           case "task":
-            entity = taskMap[object_id];
+            entity = taskMap[oid] ?? null;
             break;
           case "milestone":
-            entity = milestoneMap[object_id];
+            entity = milestoneMap[oid] ?? null;
             break;
           case "project":
-            entity = projectMap[object_id];
+            entity = projectMap[oid] ?? null;
             break;
           case "goal":
-            entity = goalMap[object_id];
+            entity = goalMap[oid] ?? null;
             break;
-          default:
-            console.warn(`Unrecognized content_type: ${content_type}`);
-            return null;
         }
 
-        if (!entity || !type) return null;
+        if (!entity) return null;
 
-        const title = (entity as any).title || "[Untitled]";
+        const title = getTitle(entity);
+
         const breadcrumb = getEntityBreadcrumb(
           entity,
-          {
-            goalMap,
-            projectMap,
-            milestoneMap,
-          },
+          { goalMap, projectMap, milestoneMap },
           { immediateOnly: true }
         ).trim();
 
-        const mode = modeMap[(entity as any).modeId];
-        const modeColor = mode?.color || "#ccc";
+        const modeId = getModeId(entity);
+        const modeColor =
+          modeId != null ? modeMap[modeId]?.color || "#ccc" : "#ccc";
 
         return (
           <CommentPreviewCard

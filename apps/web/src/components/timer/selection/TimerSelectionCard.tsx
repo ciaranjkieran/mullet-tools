@@ -51,18 +51,28 @@ type Props = {
 
   onRequestFilterMode?: (modeId: number) => void;
 
-  // ✅ NEW
   isActiveSession: boolean;
   isCompleting: boolean;
   onComplete: () => void;
 
-  // ✅ for label only (leaf title, not breadcrumb)
   completeLabelTitle: string;
 };
 
 // ─────────────────────────────────────────────
 // Local helpers
 // ─────────────────────────────────────────────
+
+/**
+ * Your runtime tasks appear to carry optional linkage fields (goalId/projectId/milestoneId),
+ * but the shared Task type doesn’t include them (hence the previous `any`).
+ *
+ * This keeps things type-safe without using `any`.
+ */
+type TaskWithLinks = Task & {
+  goalId?: number | null;
+  projectId?: number | null;
+  milestoneId?: number | null;
+};
 
 function projectIsDescendantOrSelf(
   candidateId: number,
@@ -125,7 +135,6 @@ export default function TimerSelectionCard({
   showSwitch,
   onSwitchToSelection,
   onRequestFilterMode,
-  // ✅ new
   isActiveSession,
   isCompleting,
   onComplete,
@@ -174,9 +183,13 @@ export default function TimerSelectionCard({
 
   const projMaps = useMemo(() => makeProjectMaps(projects), [projects]);
   const msMaps = useMemo(() => makeMilestoneMaps(milestones), [milestones]);
+
+  // Treat incoming tasks as TaskWithLinks for this component’s needs
+  const tasksWithLinks = useMemo(() => tasks as TaskWithLinks[], [tasks]);
+
   const tasksById = useMemo(
-    () => new Map(tasks.map((t) => [t.id, t])),
-    [tasks]
+    () => new Map(tasksWithLinks.map((t) => [t.id, t])),
+    [tasksWithLinks]
   );
 
   // ─────────────────────────────────────────────
@@ -186,11 +199,11 @@ export default function TimerSelectionCard({
   const tasksScoped = useMemo(() => {
     if (effectiveModeId == null || effectiveModeId === -1) return [];
 
-    const tInMode = tasks.filter((t) => t.modeId === effectiveModeId);
+    const tInMode = tasksWithLinks.filter((t) => t.modeId === effectiveModeId);
 
     if (milestoneId != null) {
       return tInMode.filter((t) => {
-        const tMs = (t as any).milestoneId as number | null | undefined;
+        const tMs = t.milestoneId ?? null;
         if (tMs == null) return false;
         return milestoneIsDescendantOrSelf(tMs, milestoneId, msMaps.byId);
       });
@@ -198,8 +211,8 @@ export default function TimerSelectionCard({
 
     if (projectId != null) {
       return tInMode.filter((t) => {
-        const tidMs = (t as any).milestoneId as number | null | undefined;
-        const tidPr = (t as any).projectId as number | null | undefined;
+        const tidMs = t.milestoneId ?? null;
+        const tidPr = t.projectId ?? null;
 
         if (tidPr != null) {
           if (projectIsDescendantOrSelf(tidPr, projectId, projMaps.byId)) {
@@ -228,9 +241,9 @@ export default function TimerSelectionCard({
 
     if (goalId != null) {
       return tInMode.filter((t) => {
-        const tidGo = (t as any).goalId as number | null | undefined;
-        const tidPr = (t as any).projectId as number | null | undefined;
-        const tidMs = (t as any).milestoneId as number | null | undefined;
+        const tidGo = t.goalId ?? null;
+        const tidPr = t.projectId ?? null;
+        const tidMs = t.milestoneId ?? null;
 
         if (tidGo === goalId) return true;
 
@@ -254,7 +267,7 @@ export default function TimerSelectionCard({
 
     return tInMode;
   }, [
-    tasks,
+    tasksWithLinks,
     effectiveModeId,
     goalId,
     projectId,
@@ -477,11 +490,13 @@ export default function TimerSelectionCard({
       return;
     }
 
-    const tMsId = (t as any).milestoneId as number | null | undefined;
-    const tPrId = (t as any).projectId as number | null | undefined;
-    const tGoId = (t as any).goalId as number | null | undefined;
+    const tMsId = t.milestoneId ?? null;
+    const tPrId = t.projectId ?? null;
+    const tGoId = t.goalId ?? null;
 
-    let nextMilestoneId = tMsId ?? milestoneId ?? null;
+    // prefer-const fix: this is never reassigned below
+    const nextMilestoneId = tMsId ?? milestoneId ?? null;
+
     let nextProjectId = tPrId ?? projectId ?? null;
     let nextGoalId = tGoId ?? goalId ?? null;
 
@@ -512,14 +527,11 @@ export default function TimerSelectionCard({
 
   // ─────────────────────────────────────────────
   // Sanitise selection when underlying entities disappear
-  // (e.g. after completing a task/project/milestone)
   // ─────────────────────────────────────────────
 
   useEffect(() => {
-    // ✅ Don’t touch dropdown state after the session ends
     if (!isActiveSession) return;
 
-    // If mode is invalid (e.g. archived), fall back to selectedMode or "none"
     if (
       effectiveModeId != null &&
       effectiveModeId !== -1 &&
@@ -558,7 +570,7 @@ export default function TimerSelectionCard({
       setTaskId(null);
     }
   }, [
-    isActiveSession, // ✅ add
+    isActiveSession,
     effectiveModeId,
     modes,
     goals,
@@ -640,7 +652,7 @@ export default function TimerSelectionCard({
               "disabled:opacity-50 disabled:cursor-not-allowed",
             ].join(" ")}
             style={{
-              backgroundColor: "#14532D", // dark green
+              backgroundColor: "#14532D",
               color: "#FFFFFF",
             }}
             onMouseEnter={(e) => {

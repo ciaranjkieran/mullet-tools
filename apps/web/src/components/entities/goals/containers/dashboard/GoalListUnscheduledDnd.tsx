@@ -1,3 +1,4 @@
+// src/components/entities/goals/containers/dashboard/GoalListUnscheduledDnd.tsx
 "use client";
 
 import React, { useMemo, useRef, useState } from "react";
@@ -58,14 +59,13 @@ export default function GoalListUnscheduledDnd({
   // Visible ids for this container (string-coded with gid)
   const ids = useMemo(() => goals.map((g) => gid(g.id)), [goals]);
 
-  // Collapse helpers — align with project behavior: only draggable when collapsed
+  // Collapse helpers — only draggable when collapsed
   const collapseMany = useEntityUIStore((s) => s.collapseMany);
   const setCollapsed = useEntityUIStore((s) => s.setCollapsed);
   const collapsedMap = useEntityUIStore((s) => s.collapsed.goal);
   const isCollapsed = (id: number) => !!collapsedMap?.[id];
 
   // Local reorder + server mutation
-  // (Preserves your existing local update util + bulk endpoint)
   const updateLocal = useGoalStore((s) => s.updateGoalPositionsLocally);
   const reorderMutation = useReorderGoalsHome();
 
@@ -112,12 +112,12 @@ export default function GoalListUnscheduledDnd({
       setActiveGoal(null);
     }
 
-    // Collapse siblings visually (project parity): collapse all, ensure active collapsed
+    // Collapse siblings visually
     collapseMany("goal", idsInScopeNums);
     setCollapsed("goal", activeId, true);
   };
 
-  // Find the nearest non-moving "over" id in the direction of travel if needed
+  // Find nearest non-moving "over" id
   function resolveStaticOverId(
     overIdStr: string,
     allIdsStr: string[],
@@ -138,7 +138,6 @@ export default function GoalListUnscheduledDnd({
         if (!movingStr.has(allIdsStr[i])) return allIdsStr[i];
       }
     }
-    // Fallback: no static neighbor found
     return null;
   }
 
@@ -153,36 +152,31 @@ export default function GoalListUnscheduledDnd({
       return;
     }
 
-    const allIdsStr = ids; // current visible order (strings)
+    const allIdsStr = ids;
     const movingNums = movingIdsRef.current.length
       ? movingIdsRef.current
       : [parseGid(String(active.id))];
     const movingStrSet = new Set(movingNums.map((n) => gid(n)));
 
-    // Direction from anchor indices
     const activeIdx = allIdsStr.indexOf(String(active.id));
     const overIdx = allIdsStr.indexOf(String(over.id));
     const movedDown = overIdx > activeIdx;
 
-    // Build static + moving lists
     const staticStr = allIdsStr.filter((idStr) => !movingStrSet.has(idStr));
     const movingStr = allIdsStr.filter((idStr) => movingStrSet.has(idStr));
 
-    // Ensure drop target is static
-    let targetOverStr = resolveStaticOverId(
+    const targetOverStr = resolveStaticOverId(
       String(over.id),
       allIdsStr,
       movingStrSet,
       movedDown
     );
 
-    // Insert index in STATIC list
     let insertAt = targetOverStr ? staticStr.indexOf(targetOverStr) : -1;
     if (insertAt < 0) insertAt = movedDown ? staticStr.length : 0;
 
     const targetIndex = insertAt + (movedDown ? 1 : 0);
 
-    // New order (strings)
     const newOrderStr = [
       ...staticStr.slice(0, targetIndex),
       ...movingStr,
@@ -192,10 +186,9 @@ export default function GoalListUnscheduledDnd({
     const newOrderNums = newOrderStr.map((s) => parseGid(s));
 
     // 1) Local optimistic update
-    // (Preserve your contiguous position approach)
     updateLocal(newOrderNums.map((id, position) => ({ id, position })));
 
-    // 2) Server persist (bulk) — goals live at mode scope
+    // 2) Server persist
     reorderMutation.mutate({
       modeId: mode.id,
       container: { kind: "mode", id: mode.id } as const,
@@ -221,7 +214,6 @@ export default function GoalListUnscheduledDnd({
             <SortableWithHandle
               key={g.id}
               id={gid(g.id)}
-              // Disable sortable when *not* collapsed (match project UX)
               disabled={!isCollapsed(g.id)}
             >
               {({ handleProps }) => (
@@ -233,9 +225,10 @@ export default function GoalListUnscheduledDnd({
                   tasks={tasks}
                   milestones={milestones}
                   projects={projects}
-                  // Only pass DnD listeners/attrs when collapsed (draggable)
                   dragHandleProps={
-                    isCollapsed(g.id) ? (handleProps as any) : undefined
+                    isCollapsed(g.id)
+                      ? (handleProps as React.HTMLAttributes<HTMLButtonElement>)
+                      : undefined
                   }
                 />
               )}
@@ -250,15 +243,7 @@ export default function GoalListUnscheduledDnd({
             {dragCount} goals
           </div>
         ) : activeGoal ? (
-          <div
-            className={`
-              pointer-events-none
-              rounded-md
-              border border-gray-200
-              dark:border-white/10
-              bg-white shadow-sm
-            `}
-          >
+          <div className="pointer-events-none rounded-md border border-gray-200 bg-white shadow-sm">
             <GoalRenderer
               goal={activeGoal}
               mode={mode}

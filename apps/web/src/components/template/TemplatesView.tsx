@@ -42,7 +42,7 @@ export default function TemplatesView({ modes, selectedMode }: Props) {
 
   const modeColor = useMemo(() => {
     if (selectedMode === "All") return "#000";
-    return modeColorFor(selectedMode.id);
+    return modes.find((m) => m.id === selectedMode.id)?.color || "#555";
   }, [selectedMode, modes]);
 
   // For single-mode view

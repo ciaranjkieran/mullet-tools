@@ -2,17 +2,19 @@
 
 import { CSSProperties } from "react";
 import { BarChart3 as StatsIcon } from "lucide-react";
-import { useRouter } from "next/navigation";
 
 type Props = {
   className?: string;
   style?: CSSProperties;
-  modeColor: string;
+  modeColor?: string; // keep optional for backwards compatibility
+  onClick?: () => void;
 };
 
-export default function ModeStatsButton({ className = "", style }: Props) {
-  const router = useRouter();
-
+export default function ModeStatsButton({
+  className = "",
+  style,
+  onClick,
+}: Props) {
   return (
     <div className="relative inline-flex items-center group">
       <span
@@ -26,7 +28,7 @@ export default function ModeStatsButton({ className = "", style }: Props) {
 
       <button
         type="button"
-        onClick={() => router.replace("/dashboard/stats")}
+        onClick={onClick}
         className={className}
         style={style}
         aria-label="Switch to Stats View"

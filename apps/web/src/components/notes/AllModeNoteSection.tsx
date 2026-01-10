@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useEffect, useState } from "react";
+import { useMemo, useEffect, useState, useCallback } from "react";
 import clsx from "clsx";
 import { ChevronDown, ChevronRight } from "lucide-react";
 
@@ -8,11 +8,12 @@ import { useFetchNotesByMode } from "@shared/api/hooks/notes/useFetchNotesByMode
 import NoteCard from "./NoteCard";
 import { getEntityBreadcrumbFromNote } from "@shared/utils/getEntityBreadcrumbFromNote";
 
-import { Mode } from "@shared/types/Mode";
-import { Task } from "@shared/types/Task";
-import { Milestone } from "@shared/types/Milestone";
-import { Project } from "@shared/types/Project";
-import { Goal } from "@shared/types/Goal";
+import type { Note } from "@shared/types/Note";
+import type { Mode } from "@shared/types/Mode";
+import type { Task } from "@shared/types/Task";
+import type { Milestone } from "@shared/types/Milestone";
+import type { Project } from "@shared/types/Project";
+import type { Goal } from "@shared/types/Goal";
 
 import {
   rawToEntityType,
@@ -27,28 +28,16 @@ type Props = {
   goals: Goal[];
 };
 
-function getNoteEntityType(note: any): EntityType | null {
-  return rawToEntityType(
-    note?.entity_model ?? note?.content_type ?? note?.entity
-  );
+function getNoteEntityType(note: Note): EntityType | null {
+  return rawToEntityType(note.content_type);
 }
 
-function getNoteEntityId(note: any): number | null {
-  const v =
-    note?.object_id ??
-    note?.entity_id ??
-    note?.entityId ??
-    note?.objectId ??
-    null;
-
-  if (v == null) return null;
-  const n = Number(v);
-  return Number.isFinite(n) ? n : null;
+function getNoteEntityId(note: Note): number | null {
+  return typeof note.object_id === "number" ? note.object_id : null;
 }
 
-function getNoteCreatedAt(note: any): string {
-  const v = note?.created_at ?? note?.createdAt ?? "";
-  return typeof v === "string" ? v : String(v);
+function getNoteCreatedAt(note: Note): string {
+  return note.created_at;
 }
 
 export default function AllModeNoteSection({
@@ -58,7 +47,10 @@ export default function AllModeNoteSection({
   projects,
   goals,
 }: Props) {
-  const { data: notes = [], isLoading } = useFetchNotesByMode(mode.id);
+  const { data: notes = [], isLoading } = useFetchNotesByMode(mode.id) as {
+    data?: Note[];
+    isLoading: boolean;
+  };
 
   const [isExpanded, setIsExpanded] = useState(true);
 
@@ -70,41 +62,43 @@ export default function AllModeNoteSection({
     title: string;
   } | null>(null);
 
-  // ✅ All hooks above this line will always run, regardless of data.
-
-  const goalMap = useMemo(
+  // Maps (id -> entity)
+  const goalMap = useMemo<Record<number, Goal>>(
     () => Object.fromEntries(goals.map((g) => [g.id, g])),
     [goals]
   );
-  const projectMap = useMemo(
+  const projectMap = useMemo<Record<number, Project>>(
     () => Object.fromEntries(projects.map((p) => [p.id, p])),
     [projects]
   );
-  const milestoneMap = useMemo(
+  const milestoneMap = useMemo<Record<number, Milestone>>(
     () => Object.fromEntries(milestones.map((m) => [m.id, m])),
     [milestones]
   );
-  const taskMap = useMemo(
+  const taskMap = useMemo<Record<number, Task>>(
     () => Object.fromEntries(tasks.map((t) => [t.id, t])),
     [tasks]
   );
 
-  const resolveEntityTitleFallback = (type: EntityType, id: number): string => {
-    switch (type) {
-      case "task":
-        return (taskMap as any)[id]?.title ?? "(Task)";
-      case "milestone":
-        return (milestoneMap as any)[id]?.title ?? "(Milestone)";
-      case "project":
-        return (projectMap as any)[id]?.title ?? "(Project)";
-      case "goal":
-        return (goalMap as any)[id]?.title ?? "(Goal)";
-      case "mode":
-        return mode.title;
-      default:
-        return "(Untitled)";
-    }
-  };
+  const resolveEntityTitleFallback = useCallback(
+    (type: EntityType, id: number): string => {
+      switch (type) {
+        case "task":
+          return taskMap[id]?.title ?? "(Task)";
+        case "milestone":
+          return milestoneMap[id]?.title ?? "(Milestone)";
+        case "project":
+          return projectMap[id]?.title ?? "(Project)";
+        case "goal":
+          return goalMap[id]?.title ?? "(Goal)";
+        case "mode":
+          return mode.title;
+        default:
+          return "(Untitled)";
+      }
+    },
+    [taskMap, milestoneMap, projectMap, goalMap, mode.title]
+  );
 
   const entityOptions = useMemo(() => {
     type OptionWithMeta = {
@@ -116,7 +110,7 @@ export default function AllModeNoteSection({
 
     const map = new Map<string, OptionWithMeta>();
 
-    for (const n of notes as any[]) {
+    for (const n of notes) {
       const type = getNoteEntityType(n);
       const id = getNoteEntityId(n);
       if (!type || id == null) continue;
@@ -124,16 +118,18 @@ export default function AllModeNoteSection({
       const key = `${type}-${id}`;
       const createdAtStr = getNoteCreatedAt(n);
 
+      // Prefer server-provided title if present, otherwise fallback
       const title =
-        (typeof n?.entity_title === "string" && n.entity_title.trim()
-          ? n.entity_title.trim()
+        (typeof n.display_title === "string" && n.display_title.trim()
+          ? n.display_title.trim()
           : null) ?? resolveEntityTitleFallback(type, id);
 
       const existing = map.get(key);
-      if (!existing)
+      if (!existing) {
         map.set(key, { type, id, title, latestCreatedAt: createdAtStr });
-      else if (createdAtStr > existing.latestCreatedAt)
+      } else if (createdAtStr > existing.latestCreatedAt) {
         map.set(key, { ...existing, latestCreatedAt: createdAtStr });
+      }
     }
 
     const all = Array.from(map.values());
@@ -145,10 +141,11 @@ export default function AllModeNoteSection({
       b.latestCreatedAt.localeCompare(a.latestCreatedAt)
     );
 
+    // drop meta field (rename to _latest so eslint doesn't complain)
     return [...nonMode, ...modeOptions].map(
-      ({ latestCreatedAt, ...rest }) => rest
+      ({ latestCreatedAt: _latest, ...rest }) => rest
     );
-  }, [notes, taskMap, milestoneMap, projectMap, goalMap, mode.title]);
+  }, [notes, resolveEntityTitleFallback]);
 
   useEffect(() => {
     if (!selectedEntity) return;
@@ -158,9 +155,10 @@ export default function AllModeNoteSection({
     if (!stillExists) setSelectedEntity(null);
   }, [entityOptions, selectedEntity]);
 
-  const filteredNotes = useMemo(() => {
+  const filteredNotes: Note[] = useMemo(() => {
     if (!selectedEntity) return notes;
-    return notes.filter((n: any) => {
+
+    return notes.filter((n) => {
       const type = getNoteEntityType(n);
       const id = getNoteEntityId(n);
       return (
@@ -171,7 +169,7 @@ export default function AllModeNoteSection({
 
   const shouldShowFilterUI = entityOptions.length > 1 && notes.length > 2;
 
-  // ✅ Decide render at the end (no hook mismatch)
+  // Decide render at the end (no hook mismatch)
   const shouldRenderSection = isLoading || notes.length > 0;
   if (!shouldRenderSection) return null;
 
@@ -188,6 +186,7 @@ export default function AllModeNoteSection({
       {notes.length > 0 && (
         <div className="flex items-center justify-between">
           <button
+            type="button"
             onClick={() => setIsExpanded((prev) => !prev)}
             className="flex items-center gap-2 text-md text-black-700 font-semibold hover:underline"
           >
@@ -206,6 +205,7 @@ export default function AllModeNoteSection({
 
           {selectedEntity && (
             <button
+              type="button"
               onClick={() => setSelectedEntity(null)}
               className="text-sm text-gray-500 hover:underline"
             >
@@ -218,6 +218,7 @@ export default function AllModeNoteSection({
       {isExpanded && shouldShowFilterUI && (
         <div className="mb-1">
           <button
+            type="button"
             onClick={() => setShowFilterOptions((prev) => !prev)}
             className="flex items-center gap-2 text-sm text-gray-700 font-semibold hover:underline"
           >
@@ -238,6 +239,7 @@ export default function AllModeNoteSection({
 
                 return (
                   <button
+                    type="button"
                     key={`${entity.type}-${entity.id}`}
                     onClick={() => setSelectedEntity(entity)}
                     className={clsx(
@@ -252,12 +254,14 @@ export default function AllModeNoteSection({
                         : "transparent",
                     }}
                     onMouseEnter={(e) => {
-                      if (!isSelected)
+                      if (!isSelected) {
                         e.currentTarget.style.backgroundColor = `${mode.color}22`;
+                      }
                     }}
                     onMouseLeave={(e) => {
-                      if (!isSelected)
+                      if (!isSelected) {
                         e.currentTarget.style.backgroundColor = "transparent";
+                      }
                     }}
                   >
                     {entity.title}
@@ -278,12 +282,13 @@ export default function AllModeNoteSection({
               No reflections{selectedEntity ? " for this item" : ""}.
             </p>
           ) : (
-            filteredNotes.map((note: any) => {
+            filteredNotes.map((note) => {
               const breadcrumb = getEntityBreadcrumbFromNote(
                 note,
                 { goalMap, projectMap, milestoneMap, taskMap },
                 { immediateOnly: true }
               );
+
               return (
                 <NoteCard
                   key={note.id}

@@ -1,4 +1,3 @@
-// src/components/dnd/calendar/CalendarDndProvider.tsx
 "use client";
 
 import {
@@ -28,6 +27,8 @@ import MilestoneRendererCalendar from "@/components/entities/milestones/renderer
 import ProjectRendererCalendar from "@/components/entities/projects/renderers/calendar/ProjectRendererCalendar";
 import GoalRendererCalendar from "@/components/entities/goals/renderers/calendar/GoalRendererCalendar";
 
+import CalendarDragOverlay from "./CalendarDragOverlay";
+
 // Stores
 import { useTaskStore } from "@shared/store/useTaskStore";
 import { useMilestoneStore } from "@shared/store/useMilestoneStore";
@@ -40,6 +41,29 @@ import { useUpdateTask } from "@shared/api/hooks/tasks/useUpdateTask";
 import { useUpdateMilestone } from "@shared/api/hooks/milestones/useUpdateMilestone";
 import { useUpdateProject } from "@shared/api/hooks/projects/useUpdateProject";
 import { useUpdateGoal } from "@shared/api/hooks/goals/useUpdateGoal";
+
+type DueDatePatch = { id: number; dueDate: string | null };
+
+type WithIdAndDueDate = { id: number; dueDate?: string | null };
+type Paginated<T> = { results: T[] };
+
+function isRecord(x: unknown): x is Record<string, unknown> {
+  return typeof x === "object" && x !== null;
+}
+function hasResultsArray(x: unknown): x is Paginated<unknown> {
+  return isRecord(x) && Array.isArray((x as Record<string, unknown>).results);
+}
+function isWithIdAndDueDate(x: unknown): x is WithIdAndDueDate {
+  return isRecord(x) && typeof (x as Record<string, unknown>).id === "number";
+}
+
+function normalizeSliceDate(dateStr: DragMeta["dateStr"]): string {
+  // In calendar view your meta.dateStr should be yyyy-MM-dd or null.
+  // If null/undefined, treat it as "today" for overlay purposes.
+  return typeof dateStr === "string" && dateStr.length > 0
+    ? dateStr
+    : format(startOfToday(), "yyyy-MM-dd");
+}
 
 export default function CalendarDndProvider({
   children,
@@ -77,7 +101,7 @@ export default function CalendarDndProvider({
     return () => el.classList.remove("cal-dragging");
   }, [isDragging]);
 
-  // ✅ Backend update hooks (clean usage)
+  // ✅ Backend update hooks
   const { mutateAsync: updateTask } = useUpdateTask();
   const { mutateAsync: updateMilestone } = useUpdateMilestone();
   const { mutateAsync: updateProject } = useUpdateProject();
@@ -85,32 +109,42 @@ export default function CalendarDndProvider({
 
   // Cache patch helper (optimistic)
   const patchDateInCache =
-    (_key: string[]) => (id: number, dateStr: string | null) => (old: any) => {
+    (id: number, dateStr: string | null) =>
+    (old: unknown): unknown => {
       if (!old) return old;
+
       if (Array.isArray(old)) {
-        return old.map((it: any) =>
-          it.id === id ? { ...it, dueDate: dateStr } : it
-        );
+        return old.map((it) => {
+          if (isWithIdAndDueDate(it) && it.id === id) {
+            return { ...it, dueDate: dateStr };
+          }
+          return it;
+        });
       }
-      if (old?.results && Array.isArray(old.results)) {
-        return {
-          ...old,
-          results: old.results.map((it: any) =>
-            it.id === id ? { ...it, dueDate: dateStr } : it
-          ),
-        };
+
+      if (hasResultsArray(old)) {
+        const results = old.results.map((it) => {
+          if (isWithIdAndDueDate(it) && it.id === id) {
+            return { ...it, dueDate: dateStr };
+          }
+          return it;
+        });
+        return { ...(old as Record<string, unknown>), results };
       }
+
       return old;
     };
 
-  // Optional: expand target list on drop
   const ensureListVisible = (
-    _entityType: EntityType,
-    _modeId: number,
-    _dateStr: string
-  ) => {};
+    entityType: EntityType,
+    modeId: number,
+    dateStr: string
+  ) => {
+    void entityType;
+    void modeId;
+    void dateStr;
+  };
 
-  // Optimistic move-to-date
   const optimisticMoveToDate = (
     entityType: EntityType,
     id: number,
@@ -118,59 +152,48 @@ export default function CalendarDndProvider({
   ) => {
     if (entityType === "task") {
       useTaskStore.getState().updateTaskDate(id, dateStr);
-      queryClient.setQueryData(
-        ["tasks"],
-        patchDateInCache(["tasks"])(id, dateStr)
-      );
+      queryClient.setQueryData(["tasks"], patchDateInCache(id, dateStr));
       return;
     }
     if (entityType === "milestone") {
       useMilestoneStore.getState().moveMilestoneToDate(id, dateStr);
-      queryClient.setQueryData(
-        ["milestones"],
-        patchDateInCache(["milestones"])(id, dateStr)
-      );
+      queryClient.setQueryData(["milestones"], patchDateInCache(id, dateStr));
       return;
     }
     if (entityType === "project") {
       useProjectStore.getState().moveProjectToDate(id, dateStr);
-      queryClient.setQueryData(
-        ["projects"],
-        patchDateInCache(["projects"])(id, dateStr)
-      );
+      queryClient.setQueryData(["projects"], patchDateInCache(id, dateStr));
       return;
     }
     if (entityType === "goal") {
       useGoalStore.getState().moveGoalToDate(id, dateStr);
-      queryClient.setQueryData(
-        ["goals"],
-        patchDateInCache(["goals"])(id, dateStr)
-      );
+      queryClient.setQueryData(["goals"], patchDateInCache(id, dateStr));
       return;
     }
   };
 
-  // ✅ Persist move-to-date using the hooks (with snake_case fallback)
   const persistDueDate = async (
     entityType: EntityType,
     id: number,
     dateStr: string
   ) => {
     try {
+      const payload: DueDatePatch = { id, dueDate: dateStr };
+
       if (entityType === "task") {
-        await updateTask({ id, dueDate: dateStr });
+        await updateTask(payload);
         return;
       }
       if (entityType === "milestone") {
-        await updateMilestone({ id, dueDate: dateStr } as any);
+        await updateMilestone(payload);
         return;
       }
       if (entityType === "project") {
-        await updateProject({ id, dueDate: dateStr } as any);
+        await updateProject(payload);
         return;
       }
       if (entityType === "goal") {
-        await updateGoal({ id, dueDate: dateStr } as any);
+        await updateGoal(payload);
         return;
       }
     } catch (err) {
@@ -181,7 +204,6 @@ export default function CalendarDndProvider({
         err,
       });
 
-      // Optional fallback if a hook fails (ensure snake_case)
       const snakeBody = JSON.stringify({ due_date: dateStr });
       const base = "http://127.0.0.1:8000/api";
 
@@ -226,9 +248,6 @@ export default function CalendarDndProvider({
     }
   };
 
-  // ─────────── TODAY reordering (cross-parent, multi-select aware) for all kinds
-
-  // Handlers
   const onDragStart = (e: DragStartEvent) => {
     const meta = e.active?.data?.current as DragMeta | undefined;
     setActiveMeta(meta || null);
@@ -236,11 +255,6 @@ export default function CalendarDndProvider({
 
   const onDragEnd = async (e: DragEndEvent) => {
     setActiveMeta(null);
-
-    const active = e.active?.data?.current as DragMeta | undefined;
-    const over = e.over?.data?.current as DragMeta | undefined;
-
-    // 2) Otherwise: band/date drop (multi-select move handled in routeCalendarDrop)
     routeCalendarDrop(e, {
       ensureListVisible,
       optimisticMoveToDate,
@@ -248,27 +262,32 @@ export default function CalendarDndProvider({
     });
   };
 
-  // ─────────── Overlay (Home-style)
+  // ─────────── Overlay backing data
   const tasks = useTaskStore((s) => s.tasks);
   const milestones = useMilestoneStore((s) => s.milestones);
   const projects = useProjectStore((s) => s.projects);
   const goals = useGoalStore((s) => s.goals);
 
+  const selectedTaskSet = useSelectionStore((s) => s.selected.task);
+  const selectedMilestoneSet = useSelectionStore((s) => s.selected.milestone);
+  const selectedProjectSet = useSelectionStore((s) => s.selected.project);
+  const selectedGoalSet = useSelectionStore((s) => s.selected.goal);
+
   const selectedTaskIds = useMemo(
-    () => Array.from(useSelectionStore.getState().selected.task),
-    [useSelectionStore((s) => s.selected.task)]
+    () => Array.from(selectedTaskSet),
+    [selectedTaskSet]
   );
   const selectedMilestoneIds = useMemo(
-    () => Array.from(useSelectionStore.getState().selected.milestone),
-    [useSelectionStore((s) => s.selected.milestone)]
+    () => Array.from(selectedMilestoneSet),
+    [selectedMilestoneSet]
   );
   const selectedProjectIds = useMemo(
-    () => Array.from(useSelectionStore.getState().selected.project),
-    [useSelectionStore((s) => s.selected.project)]
+    () => Array.from(selectedProjectSet),
+    [selectedProjectSet]
   );
   const selectedGoalIds = useMemo(
-    () => Array.from(useSelectionStore.getState().selected.goal),
-    [useSelectionStore((s) => s.selected.goal)]
+    () => Array.from(selectedGoalSet),
+    [selectedGoalSet]
   );
 
   const activeTask = useMemo(() => {
@@ -291,28 +310,29 @@ export default function CalendarDndProvider({
     return goals.find((g) => g.id === activeMeta.id) ?? null;
   }, [activeMeta, goals]);
 
+  // ✅ FIX: dragCount should be computed from the active item's own slice (mode + date),
+  // not from "today" always.
   const dragCount = useMemo(() => {
     if (!activeMeta) return 0;
-    const todayStr = format(startOfToday(), "yyyy-MM-dd");
+
+    const sliceDate = normalizeSliceDate(activeMeta.dateStr);
+    const sliceModeId = activeMeta.modeId;
 
     if (activeMeta.entityType === "task") {
       const sliceIds = new Set(
         tasks
-          .filter(
-            (t) => t.modeId === activeMeta.modeId && t.dueDate === todayStr
-          )
+          .filter((t) => t.modeId === sliceModeId && t.dueDate === sliceDate)
           .map((t) => t.id)
       );
       const moving = new Set(selectedTaskIds.filter((id) => sliceIds.has(id)));
       moving.add(activeMeta.id);
       return moving.size;
     }
+
     if (activeMeta.entityType === "milestone") {
       const sliceIds = new Set(
         milestones
-          .filter(
-            (m) => m.modeId === activeMeta.modeId && m.dueDate === todayStr
-          )
+          .filter((m) => m.modeId === sliceModeId && m.dueDate === sliceDate)
           .map((m) => m.id)
       );
       const moving = new Set(
@@ -321,12 +341,11 @@ export default function CalendarDndProvider({
       moving.add(activeMeta.id);
       return moving.size;
     }
+
     if (activeMeta.entityType === "project") {
       const sliceIds = new Set(
         projects
-          .filter(
-            (p) => p.modeId === activeMeta.modeId && p.dueDate === todayStr
-          )
+          .filter((p) => p.modeId === sliceModeId && p.dueDate === sliceDate)
           .map((p) => p.id)
       );
       const moving = new Set(
@@ -335,18 +354,18 @@ export default function CalendarDndProvider({
       moving.add(activeMeta.id);
       return moving.size;
     }
+
     if (activeMeta.entityType === "goal") {
       const sliceIds = new Set(
         goals
-          .filter(
-            (g) => g.modeId === activeMeta.modeId && g.dueDate === todayStr
-          )
+          .filter((g) => g.modeId === sliceModeId && g.dueDate === sliceDate)
           .map((g) => g.id)
       );
       const moving = new Set(selectedGoalIds.filter((id) => sliceIds.has(id)));
       moving.add(activeMeta.id);
       return moving.size;
     }
+
     return 0;
   }, [
     activeMeta,
@@ -385,12 +404,10 @@ export default function CalendarDndProvider({
       <DragOverlay
         dropAnimation={{ duration: 150, easing: "cubic-bezier(0.2, 0, 0, 1)" }}
       >
-        {activeMeta?.entityType === "task" ? (
-          dragCount > 1 ? (
-            <div className="bg-white shadow-md px-3 py-2 rounded border text-sm font-semibold">
-              {dragCount} {dragCount === 1 ? "task" : "tasks"}
-            </div>
-          ) : activeTask ? (
+        {!activeMeta ? null : dragCount > 1 ? (
+          <CalendarDragOverlay count={dragCount} noun={activeMeta.entityType} />
+        ) : activeMeta.entityType === "task" ? (
+          activeTask ? (
             <div className="pointer-events-none">
               <TaskRendererCalendar
                 task={activeTask}
@@ -399,12 +416,8 @@ export default function CalendarDndProvider({
               />
             </div>
           ) : null
-        ) : activeMeta?.entityType === "milestone" ? (
-          dragCount > 1 ? (
-            <div className="bg-white shadow-md px-3 py-2 rounded border text-sm font-semibold">
-              {dragCount} {dragCount === 1 ? "milestone" : "milestones"}
-            </div>
-          ) : activeMilestone ? (
+        ) : activeMeta.entityType === "milestone" ? (
+          activeMilestone ? (
             <div className="pointer-events-none">
               <MilestoneRendererCalendar
                 milestone={activeMilestone}
@@ -413,12 +426,8 @@ export default function CalendarDndProvider({
               />
             </div>
           ) : null
-        ) : activeMeta?.entityType === "project" ? (
-          dragCount > 1 ? (
-            <div className="bg-white shadow-md px-3 py-2 rounded border text-sm font-semibold">
-              {dragCount} {dragCount === 1 ? "project" : "projects"}
-            </div>
-          ) : activeProject ? (
+        ) : activeMeta.entityType === "project" ? (
+          activeProject ? (
             <div className="pointer-events-none">
               <ProjectRendererCalendar
                 project={activeProject}
@@ -427,12 +436,8 @@ export default function CalendarDndProvider({
               />
             </div>
           ) : null
-        ) : activeMeta?.entityType === "goal" ? (
-          dragCount > 1 ? (
-            <div className="bg-white shadow-md px-3 py-2 rounded border text-sm font-semibold">
-              {dragCount} {dragCount === 1 ? "goal" : "goals"}
-            </div>
-          ) : activeGoal ? (
+        ) : activeMeta.entityType === "goal" ? (
+          activeGoal ? (
             <div className="pointer-events-none">
               <GoalRendererCalendar
                 goal={activeGoal}

@@ -1,16 +1,17 @@
 "use client";
 
-import { useMemo, useEffect, useState } from "react";
+import { useMemo, useEffect, useState, useCallback } from "react";
 import clsx from "clsx";
 import { ChevronDown, ChevronRight } from "lucide-react";
 
 import { useCommentsByMode } from "@shared/api/hooks/comments/useCommentsByMode";
 
-import { Mode } from "@shared/types/Mode";
-import { Task } from "@shared/types/Task";
-import { Milestone } from "@shared/types/Milestone";
-import { Project } from "@shared/types/Project";
-import { Goal } from "@shared/types/Goal";
+import type { Comment } from "@shared/types/Comment";
+import type { Mode } from "@shared/types/Mode";
+import type { Task } from "@shared/types/Task";
+import type { Milestone } from "@shared/types/Milestone";
+import type { Project } from "@shared/types/Project";
+import type { Goal } from "@shared/types/Goal";
 
 import CommentCard from "./CommentCard";
 import ModeCommentComposer from "./ModeCommentComposer";
@@ -31,31 +32,41 @@ type Props = {
   selectedMode: Mode | "All";
 };
 
-function getCommentEntityType(comment: {
-  entity_model?: string;
-  content_type: number;
-}): EntityType | null {
-  return rawToEntityType(comment.entity_model ?? comment.content_type);
+function getCommentEntityType(
+  comment: Pick<Comment, "entity_model" | "content_type">
+): EntityType | null {
+  // rawToEntityType can accept string or number — but your Comment type allows null
+  const src = comment.entity_model ?? comment.content_type;
+  if (src == null) return null;
+  return rawToEntityType(src);
 }
 
-function getCommentEntityId(comment: { object_id: number }): number | null {
-  const n = Number(comment.object_id);
+function getCommentEntityId(
+  comment: Pick<Comment, "object_id">
+): number | null {
+  const id = comment.object_id;
+  if (id == null) return null;
+  const n = Number(id);
   return Number.isFinite(n) ? n : null;
 }
 
-function getCommentCreatedAt(comment: { created_at: string }): string {
+function getCommentCreatedAt(comment: Pick<Comment, "created_at">): string {
   return typeof comment.created_at === "string"
     ? comment.created_at
     : String(comment.created_at);
 }
 
-// ✅ NEW: prefer backend-provided title
-function getCommentEntityTitle(comment: any): string | null {
-  return typeof comment?.entity_title === "string" &&
-    comment.entity_title.trim()
-    ? comment.entity_title.trim()
-    : null;
+// prefer backend title
+function getCommentEntityTitle(
+  comment: Pick<Comment, "entity_title">
+): string | null {
+  const t = comment.entity_title;
+  if (typeof t !== "string") return null;
+  const trimmed = t.trim();
+  return trimmed ? trimmed : null;
 }
+
+type SelectedEntity = { type: EntityType; id: number; title: string };
 
 export default function ModeCommentsView({
   tasks,
@@ -65,76 +76,85 @@ export default function ModeCommentsView({
   modes,
   selectedMode,
 }: Props) {
-  const { data: modeComments = [], isLoading } = useCommentsByMode(
-    selectedMode === "All" ? 0 : selectedMode.id
+  const modeId = selectedMode === "All" ? 0 : selectedMode.id;
+
+  const { data: modeComments = [], isLoading } = useCommentsByMode(modeId);
+
+  const comments: Comment[] = selectedMode === "All" ? [] : modeComments;
+
+  const modeOnlyComments = useMemo(
+    () =>
+      comments.filter(
+        (c) =>
+          c.content_type === 0 ||
+          (c.entity_model ?? "").toLowerCase() === "mode"
+      ),
+    [comments]
   );
 
-  const comments = selectedMode === "All" ? [] : modeComments;
-
-  const modeOnlyComments = comments.filter(
-    (c: any) => c.content_type === 0 || c.entity_model === "mode"
+  const entityComments = useMemo(
+    () =>
+      comments.filter(
+        (c) =>
+          c.content_type !== 0 &&
+          (c.entity_model ?? "").toLowerCase() !== "mode"
+      ),
+    [comments]
   );
-  const entityComments = comments.filter(
-    (c: any) => c.content_type !== 0 && c.entity_model !== "mode"
-  );
 
-  // (Now optional fallback) maps for when entity_title is missing
+  // fallback maps (only used when entity_title missing)
   const taskMap = useMemo(
-    () => Object.fromEntries(tasks.map((t) => [t.id, t])),
+    () => Object.fromEntries(tasks.map((t) => [t.id, t] as const)),
     [tasks]
   );
   const milestoneMap = useMemo(
-    () => Object.fromEntries(milestones.map((m) => [m.id, m])),
+    () => Object.fromEntries(milestones.map((m) => [m.id, m] as const)),
     [milestones]
   );
   const projectMap = useMemo(
-    () => Object.fromEntries(projects.map((p) => [p.id, p])),
+    () => Object.fromEntries(projects.map((p) => [p.id, p] as const)),
     [projects]
   );
   const goalMap = useMemo(
-    () => Object.fromEntries(goals.map((g) => [g.id, g])),
+    () => Object.fromEntries(goals.map((g) => [g.id, g] as const)),
     [goals]
   );
   const modeMap = useMemo(
-    () => Object.fromEntries(modes.map((m) => [m.id, m])),
+    () => Object.fromEntries(modes.map((m) => [m.id, m] as const)),
     [modes]
   );
 
-  const resolveEntityTitleFallback = (type: EntityType, id: number): string => {
-    switch (type) {
-      case "task":
-        return (taskMap as any)[id]?.title ?? "(Task)";
-      case "milestone":
-        return (milestoneMap as any)[id]?.title ?? "(Milestone)";
-      case "project":
-        return (projectMap as any)[id]?.title ?? "(Project)";
-      case "goal":
-        return (goalMap as any)[id]?.title ?? "(Goal)";
-      case "mode":
-        return (modeMap as any)[id]?.title ?? "(Mode)";
-      default:
-        return "(Untitled)";
-    }
-  };
+  const resolveEntityTitleFallback = useCallback(
+    (type: EntityType, id: number): string => {
+      switch (type) {
+        case "task":
+          return taskMap[id]?.title ?? "(Task)";
+        case "milestone":
+          return milestoneMap[id]?.title ?? "(Milestone)";
+        case "project":
+          return projectMap[id]?.title ?? "(Project)";
+        case "goal":
+          return goalMap[id]?.title ?? "(Goal)";
+        case "mode":
+          return modeMap[id]?.title ?? "(Mode)";
+        default:
+          return "(Untitled)";
+      }
+    },
+    [taskMap, milestoneMap, projectMap, goalMap, modeMap]
+  );
 
   const [showFilterOptions, setShowFilterOptions] = useState(false);
-  const [selectedEntity, setSelectedEntity] = useState<{
-    type: EntityType;
-    id: number;
-    title: string;
-  } | null>(null);
+  const [selectedEntity, setSelectedEntity] = useState<SelectedEntity | null>(
+    null
+  );
 
   const entityOptions = useMemo(() => {
-    type OptionWithMeta = {
-      type: EntityType;
-      id: number;
-      title: string;
-      latestCreatedAt: string;
-    };
+    type OptionWithMeta = SelectedEntity & { latestCreatedAt: string };
 
     const map = new Map<string, OptionWithMeta>();
 
-    for (const c of entityComments as any[]) {
+    for (const c of entityComments) {
       const type = getCommentEntityType(c);
       const id = getCommentEntityId(c);
       if (!type || id == null) continue;
@@ -142,7 +162,6 @@ export default function ModeCommentsView({
       const key = `${type}-${id}`;
       const createdAtStr = getCommentCreatedAt(c);
 
-      // ✅ prefer backend title
       const title =
         getCommentEntityTitle(c) ?? resolveEntityTitleFallback(type, id);
 
@@ -163,10 +182,10 @@ export default function ModeCommentsView({
       b.latestCreatedAt.localeCompare(a.latestCreatedAt)
     );
 
-    return [...nonMode, ...modeOptions].map(
-      ({ latestCreatedAt, ...rest }) => rest
-    );
-  }, [entityComments, taskMap, milestoneMap, projectMap, goalMap, modeMap]);
+    // avoid eslint “unused var” by explicitly picking only the fields we return
+    const ordered = [...nonMode, ...modeOptions];
+    return ordered.map((o) => ({ type: o.type, id: o.id, title: o.title }));
+  }, [entityComments, resolveEntityTitleFallback]);
 
   useEffect(() => {
     if (!selectedEntity) return;
@@ -176,15 +195,17 @@ export default function ModeCommentsView({
     if (!stillExists) setSelectedEntity(null);
   }, [entityOptions, selectedEntity]);
 
-  const filteredEntityComments = selectedEntity
-    ? entityComments.filter((c: any) => {
-        const type = getCommentEntityType(c);
-        const id = getCommentEntityId(c);
-        return (
-          type === selectedEntity.type && id != null && id === selectedEntity.id
-        );
-      })
-    : entityComments;
+  const filteredEntityComments = useMemo(() => {
+    if (!selectedEntity) return entityComments;
+
+    return entityComments.filter((c) => {
+      const type = getCommentEntityType(c);
+      const id = getCommentEntityId(c);
+      return (
+        type === selectedEntity.type && id != null && id === selectedEntity.id
+      );
+    });
+  }, [entityComments, selectedEntity]);
 
   const shouldShowFilterUI =
     entityComments.length + modeOnlyComments.length > 2 &&
@@ -280,7 +301,6 @@ export default function ModeCommentsView({
                     projects={projects}
                     goals={goals}
                     modes={modes}
-                    selectedMode={selectedMode}
                   />
                 ) : (
                   !isLoading && (
@@ -302,7 +322,7 @@ export default function ModeCommentsView({
                   <p className="text-sm text-gray-500">Loading...</p>
                 )}
 
-                {modeOnlyComments.map((comment: any) => (
+                {modeOnlyComments.map((comment) => (
                   <CommentCard key={comment.id} comment={comment} />
                 ))}
 

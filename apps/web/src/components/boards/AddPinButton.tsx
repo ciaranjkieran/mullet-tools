@@ -24,9 +24,6 @@ export default function AddPinButton({
   const { open } = usePinDialogStore();
 
   const handleClick = () => {
-    const normalized = isEntityType(entityType)
-      ? { entity: entityType as EntityType, entityId }
-      : { entity: "mode" as const, entityId: modeId };
     open({ modeId, entity: entityType, entityId, modeColor });
   };
 

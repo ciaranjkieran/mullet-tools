@@ -29,8 +29,18 @@ type Props = {
   dragHandleProps?: React.HTMLAttributes<HTMLButtonElement>;
 };
 
-// Minimal nested milestone shape for the list
-type NestedMilestone = Milestone & { children?: NestedMilestone[] };
+// Minimal nested milestone shape for the list (must have children array)
+type NestedMilestone = Milestone & { children: NestedMilestone[] };
+
+type ProjectWithChildren = NestedProject & { children?: NestedProject[] };
+function hasProjectChildren(p: NestedProject): p is ProjectWithChildren {
+  return (
+    typeof p === "object" &&
+    p !== null &&
+    "children" in p &&
+    Array.isArray((p as Record<string, unknown>).children)
+  );
+}
 
 export default function ProjectItem({
   project,
@@ -42,6 +52,9 @@ export default function ProjectItem({
   milestones = [],
   dragHandleProps,
 }: Props) {
+  // keep for compatibility / potential future use
+  void parentId;
+
   // Safe primitive id (before any selectors)
   const pid = typeof project?.id === "number" ? project.id : undefined;
 
@@ -78,11 +91,10 @@ export default function ProjectItem({
     const key: number | null = effParentId ?? null;
 
     const bucket = childrenByParent.get(key);
-    if (bucket) {
-      bucket.push({ ...(m as Milestone) });
-    } else {
-      childrenByParent.set(key, [{ ...(m as Milestone) }]);
-    }
+    const node: NestedMilestone = { ...m, children: [] };
+
+    if (bucket) bucket.push(node);
+    else childrenByParent.set(key, [node]);
   }
 
   // Depth-first attach children arrays
@@ -98,16 +110,15 @@ export default function ProjectItem({
   ).map(attachChildren);
   // ─────────────────────────────────────────────────────────────
 
-  // Defensive for recursion of projects
-  const children: NestedProject[] = Array.isArray((project as any).children)
-    ? (project as any).children
+  // Defensive for recursion of projects (no any)
+  const children: NestedProject[] = hasProjectChildren(project)
+    ? project.children ?? []
     : [];
 
   return (
     <div className="space-y-2" style={{ paddingLeft: depth * 16 }}>
       <ProjectRenderer
         project={project}
-        mode={mode}
         dragHandleProps={dragHandleProps}
         modeColor={modeColor}
       />
@@ -121,11 +132,11 @@ export default function ProjectItem({
             projectId={pid}
           />
 
-          {/* Milestones under THIS project (now as a proper tree) */}
+          {/* Milestones under THIS project (tree) */}
           {projectMilestoneTree.length > 0 && (
             <MilestoneList
               parentId={null}
-              milestones={projectMilestoneTree as any}
+              milestones={projectMilestoneTree}
               depth={depth + 1}
               mode={mode}
               modes={modes}

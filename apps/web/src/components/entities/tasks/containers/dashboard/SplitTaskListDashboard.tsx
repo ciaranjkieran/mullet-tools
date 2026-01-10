@@ -4,27 +4,14 @@ import { Task } from "@shared/types/Task";
 import { Mode } from "@shared/types/Mode";
 import TaskListScheduledDashboard from "./TaskListScheduledDashboard";
 import TaskListUnscheduledDashboard from "./TaskListUnscheduledDashboard";
-import AddTaskInline from "../../windows/AddTaskInline";
 
 type Props = {
   mode: Mode;
   modes: Mode[];
   tasks: Task[];
-  onEditTask?: (task: Task) => void;
-  goalId?: number;
-  projectId?: number;
-  milestoneId?: number;
 };
 
-export default function SplitTaskListDashboard({
-  mode,
-  tasks,
-  onEditTask,
-  modes,
-  goalId,
-  projectId,
-  milestoneId,
-}: Props) {
+export default function SplitTaskListDashboard({ mode, modes, tasks }: Props) {
   const scheduled = tasks.filter((t) => !!t.dueDate);
   const unscheduled = tasks.filter((t) => !t.dueDate);
 
@@ -37,7 +24,6 @@ export default function SplitTaskListDashboard({
           tasks={scheduled}
           mode={mode}
           modes={modes}
-          onEditTask={onEditTask}
           showComposer={false}
         />
       )}
@@ -47,7 +33,6 @@ export default function SplitTaskListDashboard({
           tasks={unscheduled}
           modes={modes}
           mode={mode}
-          onEditTask={onEditTask}
         />
       )}
     </div>
