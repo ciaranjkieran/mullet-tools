@@ -42,7 +42,7 @@ const TIERS: Record<
     tone: "purple",
   },
   LionsMane: {
-    name: "Lion&rsquo;s Mane",
+    name: "Lion’s Mane",
     price: "€7/mo",
     blurb:
       "Everything in Full Bodied plus Timer & Stats for honest, mode-aware insight.",
