@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from django.contrib.contenttypes.models import ContentType
-
+from django.conf import settings import os
 from .models import Pin
 from .serializers import PinSerializer
 from .linkmeta import fetch_link_meta, try_fetch_favicon_url
@@ -15,6 +15,12 @@ class PinViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     filter_backends = [filters.SearchFilter]
     search_fields = ["title", "description", "entity_title", "url"]
+
+
+    print("MEDIA_ROOT", settings.MEDIA_ROOT)
+    print("Saved file name", pin.file.name)
+    print("Saved file path", pin.file.path)
+    print("File exists", os.path.exists(pin.file.path))
 
     def get_queryset(self):
         qs = (
