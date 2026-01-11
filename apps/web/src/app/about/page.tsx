@@ -120,7 +120,7 @@ export default function AboutPage() {
 
             <p>
               I remember hearing the mullet haircut has a reputation for
-              versatility — business up front, freedom in the back.{" "}
+              versatility — business up front, party at the back.{" "}
               <span aria-hidden>😄</span>
             </p>
 
