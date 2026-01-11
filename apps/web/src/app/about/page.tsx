@@ -59,7 +59,7 @@ export default function AboutPage() {
               <br />
               <span className="font-semibold text-neutral-900">
                 When structure fits how you think, productivity becomes smoother
-                — and organising stops feeling like effort.
+                — and organizing stops feeling like effort.
               </span>
             </p>
 
