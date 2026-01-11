@@ -15,9 +15,6 @@ urlpatterns = [
     path("api/", include("timers.urls")),
     path("api/batch/", include("batch.urls")),
 ]
-         # or "apps.batch.urls" if the app lives in apps/
 
-
-# ✅ Serve media files in development
-if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+# ✅ Serve media files (remove DEBUG guard)
+urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
