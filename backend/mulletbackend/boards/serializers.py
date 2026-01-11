@@ -7,14 +7,9 @@ from django.contrib.contenttypes.models import ContentType
 from .models import Pin
 from .linkmeta import fetch_link_meta, try_fetch_favicon_url
 
-# ✅ NEW: local thumbnail generators (Pillow + PyMuPDF)
-# (Create this file: boards/thumbs.py from the previous message)
+# local thumbnail generators (Pillow + PyMuPDF)
 from .thumbs import make_image_thumb, make_pdf_thumb
 
-# boards/serializers.py
-from rest_framework import serializers
-from django.contrib.contenttypes.models import ContentType
-from .models import Pin
 
 def _extract_title(obj):
     for attr in ("title", "name", "label"):
@@ -22,6 +17,7 @@ def _extract_title(obj):
         if v:
             return v
     return None
+
 
 class PinSerializer(serializers.ModelSerializer):
     entity = serializers.CharField(write_only=True)
@@ -45,7 +41,7 @@ class PinSerializer(serializers.ModelSerializer):
             "content_type",
             "object_id",
             "entity_title",
-            "display_title",   # ✅ add
+            "display_title",
             "mime_type",
             "file_size",
             "is_board_item",
@@ -58,7 +54,7 @@ class PinSerializer(serializers.ModelSerializer):
             "content_type",
             "object_id",
             "entity_title",
-            "display_title",   # ✅ add
+            "display_title",
             "mime_type",
             "file_size",
         ]
@@ -68,10 +64,9 @@ class PinSerializer(serializers.ModelSerializer):
         live = _extract_title(target) if target else None
         return live or (obj.entity_title or "")
 
-
     def to_representation(self, instance):
         """
-        ✅ Ensure file + thumbnail are absolute URLs so Next can render them.
+        Ensure file + thumbnail are absolute URLs so the frontend can render them.
         """
         data = super().to_representation(instance)
         req = self.context.get("request")
@@ -86,13 +81,15 @@ class PinSerializer(serializers.ModelSerializer):
         req = self.context.get("request")
         user = getattr(req, "user", None)
 
-        # ✅ use existing instance values for partial updates
         instance = getattr(self, "instance", None)
-
         kind = attrs.get("kind") or (getattr(instance, "kind", None) if instance else "image")
 
-        # file/url may not be in attrs during PATCH — fall back to existing
-        uploaded = (req.FILES.get("file") if req else None) or attrs.get("file") or (getattr(instance, "file", None) if instance else None)
+        uploaded = (
+            (req.FILES.get("file") if req else None)
+            or attrs.get("file")
+            or (getattr(instance, "file", None) if instance else None)
+        )
+
         url = attrs.get("url") if "url" in attrs else (getattr(instance, "url", None) if instance else None)
 
         # Basic inputs (only enforce "must have file or url" when it’s relevant)
@@ -100,8 +97,9 @@ class PinSerializer(serializers.ModelSerializer):
             if not uploaded and not url:
                 raise serializers.ValidationError({"file": "Provide a file or url."})
 
-        if kind == "image" and uploaded and getattr(uploaded, "content_type", "") and not (uploaded.content_type or "").startswith("image/"):
-            raise serializers.ValidationError({"file": "Must be an image."})
+        if kind == "image" and uploaded and getattr(uploaded, "content_type", ""):
+            if not (uploaded.content_type or "").startswith("image/"):
+                raise serializers.ValidationError({"file": "Must be an image."})
 
         if kind == "link":
             if not url:
@@ -135,8 +133,7 @@ class PinSerializer(serializers.ModelSerializer):
 
     def _download_to_thumbnail(self, pin: Pin, img_url: str):
         """
-        You already call this from refresh_meta() and create().
-        If you already have this implemented elsewhere, keep yours and delete this one.
+        Download remote image and save as thumbnail.
         """
         import requests
         from django.core.files.base import ContentFile
@@ -145,7 +142,6 @@ class PinSerializer(serializers.ModelSerializer):
         r.raise_for_status()
         content_type = (r.headers.get("content-type") or "").lower()
 
-        # pick extension
         ext = "jpg"
         if "png" in content_type:
             ext = "png"
@@ -153,13 +149,13 @@ class PinSerializer(serializers.ModelSerializer):
             ext = "webp"
 
         pin.thumbnail.save(f"{pin.id}_linkthumb.{ext}", ContentFile(r.content), save=False)
+
     def update(self, instance, validated_data):
         new_mode = validated_data.get("mode", None)
 
-        # Do the normal update first (or before; either is fine)
         instance = super().update(instance, validated_data)
 
-        # ✅ If this pin is "flat to a mode" (entity is Mode),
+        # If this pin is "flat to a mode" (entity is Mode),
         # then moving it to a new mode should also move the entity link.
         if new_mode and instance.content_type and instance.content_type.model == "mode":
             instance.object_id = new_mode.id
@@ -167,15 +163,15 @@ class PinSerializer(serializers.ModelSerializer):
             instance.save(update_fields=["object_id", "entity_title"])
 
         return instance
+
     def create(self, validated_data):
         req = self.context.get("request")
 
-        # ✅ if view passes serializer.save(user=...), it will be here
+        # If view passes serializer.save(user=...), it will be here
         user = validated_data.pop("user", None) or getattr(req, "user", None)
 
-        uploaded = validated_data.pop("file", None) or (
-            req.FILES.get("file") if req else None
-        )
+        uploaded = validated_data.pop("file", None) or (req.FILES.get("file") if req else None)
+
         entity_name = validated_data.pop("entity", None)
         entity_id = validated_data.pop("entity_id", None)
 
@@ -204,8 +200,8 @@ class PinSerializer(serializers.ModelSerializer):
                 meta_title = meta.get("title") or None
                 meta_desc = meta.get("description") or None
                 meta_img = meta.get("image") or None
-            except Exception:
-                pass
+            except Exception as e:
+                print("LINK META FAILED:", repr(e))
 
         if not validated_data.get("title") and meta_title:
             validated_data["title"] = meta_title
@@ -224,7 +220,7 @@ class PinSerializer(serializers.ModelSerializer):
             **validated_data,
         )
 
-        # ✅ NEW: generate thumbnails for uploaded files (reliable for viewer/grid)
+        # Generate thumbnails for uploaded files
         try:
             if not pin.thumbnail and pin.file:
                 mt = (pin.mime_type or "").lower()
@@ -235,15 +231,15 @@ class PinSerializer(serializers.ModelSerializer):
                     thumb_cf = make_image_thumb(pin.file)
                     pin.thumbnail.save(f"{pin.id}_thumb.jpg", thumb_cf, save=False)
 
-                # pdf thumb (file kind typically, but can be "file" even if user set kind oddly)
+                # pdf thumb
                 elif mt == "application/pdf" or name.endswith(".pdf"):
                     thumb_cf = make_pdf_thumb(pin.file)
                     pin.thumbnail.save(f"{pin.id}_thumb.jpg", thumb_cf, save=False)
-        except Exception:
-            # Don't fail creation if thumb gen fails
-            pass
 
-        # Existing: link thumbnails from OG image / favicon (download and store)
+        except Exception as e:
+            print("THUMBNAIL GEN FAILED:", repr(e))
+
+        # Link thumbnails from OG image / favicon (download and store)
         if not pin.thumbnail:
             try:
                 img_url = meta_img
@@ -251,8 +247,8 @@ class PinSerializer(serializers.ModelSerializer):
                     img_url = try_fetch_favicon_url(pin.url)
                 if img_url:
                     self._download_to_thumbnail(pin, img_url)
-            except Exception:
-                pass
+            except Exception as e:
+                print("LINK THUMB FAILED:", repr(e))
 
         pin.save()
         return pin
