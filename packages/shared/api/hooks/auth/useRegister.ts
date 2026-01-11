@@ -8,7 +8,7 @@ export function useRegister() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (body: { email: string; password: string }) => {
-      const res = await api.post("/auth/register", body);
+      const res = await api.post("/auth/register/", body);
       return res.data;
     },
     onSuccess: (user) => {
