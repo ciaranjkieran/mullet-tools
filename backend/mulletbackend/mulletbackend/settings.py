@@ -153,14 +153,18 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
     "https://www.mullet.tools",
-    "https://mullet-tools-web-hqeg.vercel.app",
+]
+
+# ✅ Allow any Vercel preview deployment URL
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^https://.*\.vercel\.app$",
 ]
 
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
     "https://www.mullet.tools",
-    "https://mullet-tools-web-hqeg.vercel.app",
+    "https://*.vercel.app",
 ]
 
 CORS_ALLOW_CREDENTIALS = True
