@@ -1,4 +1,5 @@
 # boards/serializers.py
+import os
 from mimetypes import guess_type
 
 from rest_framework import serializers
@@ -148,7 +149,13 @@ class PinSerializer(serializers.ModelSerializer):
         elif "webp" in content_type:
             ext = "webp"
 
-        pin.thumbnail.save(f"{pin.id}_linkthumb.{ext}", ContentFile(r.content), save=False)
+        pin.thumbnail.save(f"{pin.id}_linkthumb.{ext}", ContentFile(r.content), save=True)
+        print("LINK THUMB SAVED:", pin.thumbnail.name)
+        try:
+            print("LINK THUMB PATH:", pin.thumbnail.path)
+            print("LINK THUMB EXISTS:", os.path.exists(pin.thumbnail.path))
+        except Exception as e:
+            print("LINK THUMB PATH ERROR:", repr(e))
 
     def update(self, instance, validated_data):
         new_mode = validated_data.get("mode", None)
@@ -229,12 +236,24 @@ class PinSerializer(serializers.ModelSerializer):
                 # image thumb
                 if pin.kind == "image" or mt.startswith("image/"):
                     thumb_cf = make_image_thumb(pin.file)
-                    pin.thumbnail.save(f"{pin.id}_thumb.jpg", thumb_cf, save=False)
+                    pin.thumbnail.save(f"{pin.id}_thumb.jpg", thumb_cf, save=True)
+                    print("THUMB SAVED:", pin.thumbnail.name)
+                    try:
+                        print("THUMB PATH:", pin.thumbnail.path)
+                        print("THUMB EXISTS:", os.path.exists(pin.thumbnail.path))
+                    except Exception as e:
+                        print("THUMB PATH ERROR:", repr(e))
 
                 # pdf thumb
                 elif mt == "application/pdf" or name.endswith(".pdf"):
                     thumb_cf = make_pdf_thumb(pin.file)
-                    pin.thumbnail.save(f"{pin.id}_thumb.jpg", thumb_cf, save=False)
+                    pin.thumbnail.save(f"{pin.id}_thumb.jpg", thumb_cf, save=True)
+                    print("PDF THUMB SAVED:", pin.thumbnail.name)
+                    try:
+                        print("PDF THUMB PATH:", pin.thumbnail.path)
+                        print("PDF THUMB EXISTS:", os.path.exists(pin.thumbnail.path))
+                    except Exception as e:
+                        print("PDF THUMB PATH ERROR:", repr(e))
 
         except Exception as e:
             print("THUMBNAIL GEN FAILED:", repr(e))
@@ -250,5 +269,7 @@ class PinSerializer(serializers.ModelSerializer):
             except Exception as e:
                 print("LINK THUMB FAILED:", repr(e))
 
+        # Keep this for safety; thumbnail.save(save=True) already persists thumbnail,
+        # but calling pin.save() is harmless for other field changes.
         pin.save()
         return pin
