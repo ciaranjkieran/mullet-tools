@@ -146,7 +146,7 @@ MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # ------------------------------------------------------------------------------
-# CORS / CSRF
+# CORS / CSRF  (Vercel ↔ Render, session auth)
 # ------------------------------------------------------------------------------
 
 CORS_ALLOWED_ORIGINS = [
@@ -165,9 +165,13 @@ CSRF_TRUSTED_ORIGINS = [
 
 CORS_ALLOW_CREDENTIALS = True
 
-CSRF_COOKIE_SECURE = not DEBUG
-CSRF_COOKIE_SAMESITE = "Lax"
+# Required for cross-site cookies (Vercel -> Render)
+CSRF_COOKIE_SAMESITE = "None"
+CSRF_COOKIE_SECURE = True
 CSRF_COOKIE_HTTPONLY = False
+
+SESSION_COOKIE_SAMESITE = "None"
+SESSION_COOKIE_SECURE = True
 
 # ------------------------------------------------------------------------------
 # REST Framework
