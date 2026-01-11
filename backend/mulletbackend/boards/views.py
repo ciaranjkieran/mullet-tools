@@ -1,11 +1,13 @@
 # boards/views.py
-from rest_framework import viewsets, filters, status
-from rest_framework.response import Response
+import os
+
+from django.conf import settings
+from django.contrib.contenttypes.models import ContentType
+from rest_framework import viewsets, filters
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
-from django.contrib.contenttypes.models import ContentType
-from django.conf import settings 
-import os
+from rest_framework.response import Response
+
 from .models import Pin
 from .serializers import PinSerializer
 from .linkmeta import fetch_link_meta, try_fetch_favicon_url
@@ -17,18 +19,14 @@ class PinViewSet(viewsets.ModelViewSet):
     filter_backends = [filters.SearchFilter]
     search_fields = ["title", "description", "entity_title", "url"]
 
-
-    print("MEDIA_ROOT", settings.MEDIA_ROOT)
-    print("Saved file name", pin.file.name)
-    print("Saved file path", pin.file.path)
-    print("File exists", os.path.exists(pin.file.path))
-
     def get_queryset(self):
         qs = (
-                Pin.objects.filter(user=self.request.user)
-                .select_related("content_type", "mode")
-                .prefetch_related("content_object")
-            )
+            Pin.objects.filter(user=self.request.user)
+            .select_related("content_type", "mode")
+            # prefetch_related("content_object") is not valid for GenericForeignKey;
+            # leaving it out avoids confusion.
+        )
+
         mode_id = self.request.query_params.get("mode")
         entity_type = self.request.query_params.get("entity_type")
         entity_id = self.request.query_params.get("entity_id")
@@ -38,6 +36,7 @@ class PinViewSet(viewsets.ModelViewSet):
             qs = qs.filter(mode_id=mode_id)
         if kind:
             qs = qs.filter(kind=kind)
+
         if entity_type and entity_id:
             try:
                 ct = ContentType.objects.get(model=entity_type.lower())
@@ -48,7 +47,23 @@ class PinViewSet(viewsets.ModelViewSet):
         return qs.order_by("-created_at")
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        pin = serializer.save(user=self.request.user)
+
+        # --- DEBUG LOGS ---
+        print("MEDIA_ROOT:", settings.MEDIA_ROOT)
+        if pin.file:
+            print("Saved file name:", pin.file.name)
+            try:
+                print("Saved file path:", pin.file.path)
+                print("File exists:", os.path.exists(pin.file.path))
+            except Exception as e:
+                # Some storages (S3) don't have .path
+                print("Could not resolve file path:", repr(e))
+        else:
+            print("No file attached to this pin.")
+        # ---------------
+
+        return pin
 
     @action(detail=True, methods=["post"])
     def refresh_meta(self, request, pk=None):
