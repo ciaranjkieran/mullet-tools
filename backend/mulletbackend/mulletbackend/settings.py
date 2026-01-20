@@ -13,15 +13,21 @@ import dj_database_url
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # ------------------------------------------------------------------------------
+# Environment
+# ------------------------------------------------------------------------------
+
+# Render sets RENDER in the environment. Locally it should be unset.
+IS_PROD = os.environ.get("RENDER") is not None
+DEBUG = not IS_PROD
+
+# ------------------------------------------------------------------------------
 # Security
 # ------------------------------------------------------------------------------
 
 SECRET_KEY = os.environ.get(
     "SECRET_KEY",
-    "django-insecure-dev-only-change-me"
+    "django-insecure-dev-only-change-me",
 )
-
-DEBUG = os.environ.get("RENDER") is None
 
 ALLOWED_HOSTS = [
     "127.0.0.1",
@@ -32,7 +38,7 @@ ALLOWED_HOSTS = [
 ]
 
 # Allow Render preview / internal routing
-if os.environ.get("RENDER"):
+if IS_PROD:
     ALLOWED_HOSTS.append(".onrender.com")
 
 # ------------------------------------------------------------------------------
@@ -111,7 +117,7 @@ DATABASES = {
     "default": dj_database_url.config(
         default="sqlite:///db.sqlite3",
         conn_max_age=600,
-        ssl_require=bool(os.environ.get("RENDER")),
+        ssl_require=IS_PROD,
     )
 }
 
@@ -152,10 +158,12 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
+    "https://mullet-tools-web-hqeg.vercel.app",
+    # Keep these for later; harmless if unused:
     "https://www.mullet.tools",
 ]
 
-# ✅ Allow any Vercel preview deployment URL
+# Allow any Vercel preview deployment URL
 CORS_ALLOWED_ORIGIN_REGEXES = [
     r"^https://.*\.vercel\.app$",
 ]
@@ -163,19 +171,30 @@ CORS_ALLOWED_ORIGIN_REGEXES = [
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
+    "https://mullet-tools-web-hqeg.vercel.app",
+    # Keep these for later; harmless if unused:
     "https://www.mullet.tools",
-    "https://*.vercel.app",
 ]
 
 CORS_ALLOW_CREDENTIALS = True
 
-# Required for cross-site cookies (Vercel -> Render)
-CSRF_COOKIE_SAMESITE = "None"
-CSRF_COOKIE_SECURE = True
-CSRF_COOKIE_HTTPONLY = False
+# ✅ Keep ONLINE behaviour the same, but make local work over HTTP.
+if IS_PROD:
+    # Required for cross-site cookies (Vercel -> Render) over HTTPS
+    CSRF_COOKIE_SAMESITE = "None"
+    CSRF_COOKIE_SECURE = True
 
-SESSION_COOKIE_SAMESITE = "None"
-SESSION_COOKIE_SECURE = True
+    SESSION_COOKIE_SAMESITE = "None"
+    SESSION_COOKIE_SECURE = True
+else:
+    # Local dev over HTTP (Secure cookies won't be set on http://)
+    CSRF_COOKIE_SAMESITE = "Lax"
+    CSRF_COOKIE_SECURE = False
+
+    SESSION_COOKIE_SAMESITE = "Lax"
+    SESSION_COOKIE_SECURE = False
+
+CSRF_COOKIE_HTTPONLY = False
 
 # ------------------------------------------------------------------------------
 # REST Framework
