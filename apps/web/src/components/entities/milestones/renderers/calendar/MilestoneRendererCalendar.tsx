@@ -53,14 +53,14 @@ export default function MilestoneRendererCalendar({
   const today = startOfToday();
 
   const isSelected = useSelectionStore((s) =>
-    s.isSelected("milestone", milestone.id)
+    s.isSelected("milestone", milestone.id),
   );
 
   let computedOverdueLabel: string | null = null;
   if (milestone.dueDate && isBefore(parseISO(milestone.dueDate), today)) {
     const daysLate = differenceInCalendarDays(
       today,
-      parseISO(milestone.dueDate)
+      parseISO(milestone.dueDate),
     );
     computedOverdueLabel = `${daysLate} day${daysLate > 1 ? "s" : ""} ago`;
   }
@@ -81,10 +81,10 @@ export default function MilestoneRendererCalendar({
       data-entity-type="milestone"
       data-entity-id={milestone.id}
       className={clsx(
-        "px-4 py-3 bg-white group transition hover:bg-gray-50 relative",
+        "px-2 sm:px-4 py-2 sm:py-3 bg-white group transition hover:bg-gray-50 relative",
         isSelected
           ? "ring-2 z-10"
-          : "border-t border-transparent first:border-t-0"
+          : "border-t border-transparent first:border-t-0",
       )}
       style={
         isSelected

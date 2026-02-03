@@ -44,7 +44,7 @@ export default function WeekSection({
 }: Props) {
   const startOfDisplayedWeek = addDays(
     startOfWeek(today, { weekStartsOn: 1 }),
-    weekOffset * 7
+    weekOffset * 7,
   );
   const endOfDisplayedWeek = addDays(startOfDisplayedWeek, 6);
 
@@ -68,32 +68,29 @@ export default function WeekSection({
   return (
     <section className="space-y-8">
       {!isTodayFocus && (
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold text-gray-800">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 gap-2 sm:gap-0">
+          <h2 className="text-lg sm:text-xl font-semibold text-gray-800">
             {weekOffset === 0 && "This Week, "}
             {weekOffset === 0
-              ? `${format(today, "MMM d")} – ${format(
-                  endOfDisplayedWeek,
-                  "MMM d"
-                )}`
+              ? `${format(today, "MMM d")} – ${format(endOfDisplayedWeek, "MMM d")}`
               : `${format(startOfDisplayedWeek, "MMM d")} – ${format(
                   endOfDisplayedWeek,
-                  "MMM d"
+                  "MMM d",
                 )}`}
           </h2>
 
-          <div className="flex items-center space-x-4 text-sm">
+          <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-4 text-sm sm:text-base">
             {weekOffset > 0 && (
               <>
                 <button
                   onClick={() => setWeekOffset(() => 0)}
-                  className="text-blue-900 hover:underline cursor-pointer"
+                  className="text-blue-900 hover:underline cursor-pointer text-sm sm:text-base"
                 >
                   Back to This Week
                 </button>
                 <button
                   onClick={() => setWeekOffset((prev) => Math.max(prev - 1, 0))}
-                  className="text-blue-900 hover:underline font-medium cursor-pointer"
+                  className="text-blue-900 hover:underline font-medium cursor-pointer text-sm sm:text-base"
                 >
                   ← Previous
                 </button>
@@ -101,7 +98,7 @@ export default function WeekSection({
             )}
             <button
               onClick={() => setWeekOffset((prev) => prev + 1)}
-              className="text-blue-900 hover:underline font-medium cursor-pointer"
+              className="text-blue-900 hover:underline font-medium cursor-pointer text-sm sm:text-base"
             >
               Next Week →
             </button>

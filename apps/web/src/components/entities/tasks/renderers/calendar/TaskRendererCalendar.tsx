@@ -54,7 +54,7 @@ export default function TaskRendererCalendar({
 
   const today = startOfToday();
   const isSelected = useSelectionStore((s) =>
-    s.isSelected("task", liveTask.id)
+    s.isSelected("task", liveTask.id),
   );
 
   let computedOverdueLabel: string | null = null;
@@ -72,8 +72,8 @@ export default function TaskRendererCalendar({
       data-entity-type="task"
       data-entity-id={liveTask.id}
       className={clsx(
-        "px-4 py-3 bg-white group transition hover:bg-gray-50 relative",
-        isSelected ? "ring-2 z-10" : "border-t border-transparent"
+        "px-2 sm:px-4 py-2 sm:py-3 bg-white group transition hover:bg-gray-50 relative",
+        isSelected ? "ring-2 z-10" : "border-t border-transparent",
       )}
       style={
         isSelected

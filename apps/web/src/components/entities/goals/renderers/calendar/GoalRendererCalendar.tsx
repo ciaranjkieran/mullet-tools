@@ -72,10 +72,10 @@ export default function GoalRendererCalendar({
       data-entity-type="goal"
       data-entity-id={goal.id}
       className={clsx(
-        "px-4 py-3 bg-white group transition hover:bg-gray-50 relative",
+        "px-2 sm:px-4 py-2 sm:py-3 bg-white group transition hover:bg-gray-50 relative",
         isSelected
           ? "ring-2 z-10"
-          : "border-t border-transparent first:border-t-0"
+          : "border-t border-transparent first:border-t-0",
       )}
       style={
         isSelected
@@ -87,7 +87,7 @@ export default function GoalRendererCalendar({
         {/* Left: icon + text */}
         <div className="flex items-start gap-2">
           <div
-            className="w-5 h-5 rounded-full flex items-center justify-center mt-0.5"
+            className="w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0 mt-0.5 rounded-full flex items-center justify-center mt-0.5"
             style={{ backgroundColor: modeColor }}
           >
             <TargetIcon className="w-4 h-4 text-white" />

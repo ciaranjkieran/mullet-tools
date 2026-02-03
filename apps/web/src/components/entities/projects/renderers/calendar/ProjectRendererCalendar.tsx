@@ -50,7 +50,7 @@ export default function ProjectRendererCalendar({
   const today = startOfToday();
 
   const isSelected = useSelectionStore((s) =>
-    s.isSelected("project", project.id)
+    s.isSelected("project", project.id),
   );
 
   let computedOverdueLabel: string | null = null;
@@ -73,10 +73,10 @@ export default function ProjectRendererCalendar({
       data-entity-type="project"
       data-entity-id={project.id}
       className={clsx(
-        "px-4 py-3 bg-white group transition hover:bg-gray-50 relative",
+        "px-2 sm:px-4 py-2 sm:py-3 bg-white group transition hover:bg-gray-50 relative",
         isSelected
           ? "ring-2 z-10"
-          : "border-t border-transparent first:border-t-0"
+          : "border-t border-transparent first:border-t-0",
       )}
       style={
         isSelected
@@ -91,7 +91,7 @@ export default function ProjectRendererCalendar({
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 24 24"
             fill={modeColor}
-            className="w-6 h-6 flex-shrink-0 mt-0.5"
+            className="w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0 mt-0.5"
           >
             <path d="M3 4.5A1.5 1.5 0 0 1 4.5 3h5.379a1.5 1.5 0 0 1 1.06.44l1.621 1.62H19.5A1.5 1.5 0 0 1 21 6.56V18a1.5 1.5 0 0 1-1.5 1.5H4.5A1.5 1.5 0 0 1 3 18V4.5Z" />
           </svg>

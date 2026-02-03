@@ -184,33 +184,30 @@ export default function ModeFilter({
                 isModeFocus ? "justify-start" : ""
               }`}
             >
-              {!isModeFocus && (
-                <button
-                  onClick={() => {
-                    setSelectedMode("All");
+              <button
+                onClick={() => {
+                  setSelectedMode("All");
 
-                    // Also reset timer selection when going to All
-                    const timerSel = useTimerSelectionStore.getState();
-                    timerSel.setRaw({
-                      modeId: -1,
-                      goalId: null,
-                      projectId: null,
-                      milestoneId: null,
-                      taskId: null,
-                    });
-                  }}
-                  className="px-2 py-0.5 md:px-3 md:py-1 rounded-full border transition select-none text-sm md:text-base"
-                  style={{
-                    backgroundColor:
-                      selectedMode === "All" ? "#000" : "#F3F4F6",
-                    color: selectedMode === "All" ? "#fff" : "#111",
-                    borderColor: selectedMode === "All" ? "#000" : "#D1D5DB",
-                    cursor: "pointer",
-                  }}
-                >
-                  All
-                </button>
-              )}
+                  // Also reset timer selection when going to All
+                  const timerSel = useTimerSelectionStore.getState();
+                  timerSel.setRaw({
+                    modeId: -1,
+                    goalId: null,
+                    projectId: null,
+                    milestoneId: null,
+                    taskId: null,
+                  });
+                }}
+                className="px-2 py-0.5 md:px-3 md:py-1 rounded-full border transition select-none text-sm md:text-base"
+                style={{
+                  backgroundColor: selectedMode === "All" ? "#000" : "#F3F4F6",
+                  color: selectedMode === "All" ? "#fff" : "#111",
+                  borderColor: selectedMode === "All" ? "#000" : "#D1D5DB",
+                  cursor: "pointer",
+                }}
+              >
+                All
+              </button>
 
               {sortedModes
                 .filter(
@@ -229,21 +226,19 @@ export default function ModeFilter({
                   />
                 ))}
 
-              {selectedMode !== "All" && (
-                <button
-                  onClick={() => setIsModeFocus((prev) => !prev)}
-                  aria-label={
-                    isModeFocus ? "Exit Mode Focus" : "Focus on Selected Mode"
-                  }
-                  className="text-green-700 hover:text-green-800 transition p-1 rounded-sm focus:outline-none focus:ring-2 focus:ring-green-300 ml-1 cursor-pointer"
-                >
-                  {isModeFocus ? (
-                    <X size={18} strokeWidth={2} />
-                  ) : (
-                    <LocateFixed size={24} strokeWidth={2} />
-                  )}
-                </button>
-              )}
+              <button
+                onClick={() => setIsModeFocus((prev) => !prev)}
+                aria-label={
+                  isModeFocus ? "Exit Mode Focus" : "Focus on Selected Mode"
+                }
+                className="text-green-700 hover:text-green-800 transition p-1 rounded-sm focus:outline-none focus:ring-2 focus:ring-green-300 ml-1 cursor-pointer"
+              >
+                {isModeFocus ? (
+                  <X size={18} strokeWidth={2} />
+                ) : (
+                  <LocateFixed size={24} strokeWidth={2} />
+                )}
+              </button>
             </div>
           </SortableContext>
 

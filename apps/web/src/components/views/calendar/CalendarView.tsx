@@ -55,7 +55,7 @@ export default function CalendarView({
 
   const startOfDisplayedWeek = addDays(
     startOfWeek(today, { weekStartsOn: 1 }),
-    weekOffset * 7
+    weekOffset * 7,
   );
   const endOfDisplayedWeek = addDays(startOfDisplayedWeek, 6);
 
@@ -63,7 +63,7 @@ export default function CalendarView({
 
   const modeMap = useMemo(
     () => Object.fromEntries(modes.map((m) => [m.id, m])),
-    [modes]
+    [modes],
   );
 
   const normalizedTasks = normalizeDueDates(tasks);
@@ -76,7 +76,10 @@ export default function CalendarView({
 
   return (
     <CalendarDndProvider modeMap={modeMap}>
-      <div className="relative px-4 mt-6 space-y-12" id="calendar-view-root">
+      <div
+        className="relative px-2 sm:px-4 mt-4 sm:mt-6 space-y-8 sm:space-y-12"
+        id="calendar-view-root"
+      >
         {/* 🔴 Past Due — only show in current week and when not in Today Focus */}
         {!isTodayFocus && isCurrentWeek && (
           <PastDueSection
