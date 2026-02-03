@@ -36,7 +36,7 @@ export default function MilestoneItem({
   const hasValidId = milestoneId > 0;
 
   const collapsed = useEntityUIStore((s) =>
-    hasValidId ? !!s.collapsed.milestone?.[milestoneId] : false
+    hasValidId ? !!s.collapsed.milestone?.[milestoneId] : false,
   );
 
   const modeColor =
@@ -59,14 +59,19 @@ export default function MilestoneItem({
   }
 
   return (
-    <div className="space-y-2" style={{ paddingLeft: depth * 16 }}>
+    <div
+      className="space-y-2"
+      style={{
+        marginLeft: `calc(${depth} * var(--tree-indent-multiplier, 16) * 1px)`,
+      }}
+    >
+      {" "}
       <MilestoneRenderer
         milestone={milestone}
         mode={mode}
         dragHandleProps={dragHandleProps}
         modeColor={modeColor}
       />
-
       {!collapsed && (
         <div className="mt-2 space-y-4">
           {/* Tasks that belong to THIS milestone */}

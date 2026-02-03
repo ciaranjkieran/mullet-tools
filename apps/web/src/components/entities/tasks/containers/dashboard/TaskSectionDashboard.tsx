@@ -2,6 +2,7 @@ import SplitTaskListDashboard from "./SplitTaskListDashboard";
 import AddTaskInline from "../../windows/AddTaskInline";
 import { Task } from "@shared/types/Task";
 import { Mode } from "@shared/types/Mode";
+import { useMediaQuery } from "@/lib/hooks/useMediaQuery";
 
 type Props = {
   modes: Mode[];
@@ -22,19 +23,22 @@ export default function TaskSectionDashboard({
   modes,
   mode,
 }: Props) {
+  const isDesktop = useMediaQuery("(min-width: 768px)");
+
   return (
     <div className="mt-2 space-y-2">
       {tasks.length > 0 && (
         <SplitTaskListDashboard modes={modes} mode={mode} tasks={tasks} />
       )}
-
-      <AddTaskInline
-        inlineMode={mode}
-        modes={modes}
-        goalId={goalId}
-        projectId={projectId}
-        milestoneId={milestoneId}
-      />
+      {isDesktop && (
+        <AddTaskInline
+          inlineMode={mode}
+          modes={modes}
+          goalId={goalId}
+          projectId={projectId}
+          milestoneId={milestoneId}
+        />
+      )}
     </div>
   );
 }

@@ -112,8 +112,30 @@ body.dragging {
   font-size: 0.75rem; /* text-xs */
   font-weight: 500; /* font-medium */
   color: #ffffff; /* text-white */
-  box-shadow:                       /* shadow-lg */ 0 10px 15px -3px rgba(0, 0, 0, 0.1),
+  box-shadow:                       /* shadow-lg */
+    0 10px 15px -3px rgba(0, 0, 0, 0.1),
     0 4px 6px -4px rgba(0, 0, 0, 0.1);
   pointer-events: none;
   transition: opacity 150ms ease-in-out;
+}
+
+:root {
+  --tree-indent-multiplier: 16;
+}
+
+@media (max-width: 768px) {
+  :root {
+    --tree-indent-multiplier: 3;
+  }
+}
+@media (max-width: 768px) {
+  [data-entity-card="true"] {
+    padding: 0.5rem 0.75rem !important; /* 8px 12px instead of default */
+  }
+}
+/* Hide drag handles on touch / small screens */
+@media (max-width: 767px) {
+  [data-drag-handle] {
+    display: none;
+  }
 }

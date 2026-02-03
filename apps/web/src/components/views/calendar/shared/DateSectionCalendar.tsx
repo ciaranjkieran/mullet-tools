@@ -12,6 +12,8 @@ import AddTaskInline from "../../../entities/tasks/windows/AddTaskInline";
 import { Maps } from "@shared/types/Maps";
 import { DateDroppable } from "../../../dnd/calendar/DateDroppable";
 import { LocateFixed, X } from "lucide-react";
+import { useMediaQuery } from "@/lib/hooks/useMediaQuery";
+
 type Props = {
   dateStr: string;
   label: string;
@@ -45,6 +47,7 @@ export default function DateSectionCalendar({
 }: Props) {
   const today = startOfToday();
   const isPastDue = dateStr === "past-due";
+  const isDesktop = useMediaQuery("(min-width: 768px)");
 
   const hasEntities = (() => {
     if (isPastDue) {
@@ -52,29 +55,29 @@ export default function DateSectionCalendar({
         (t) =>
           t.dueDate &&
           isBefore(parseISO(t.dueDate), today) &&
-          (selectedMode === "All" || t.modeId === (selectedMode as Mode).id)
+          (selectedMode === "All" || t.modeId === (selectedMode as Mode).id),
       );
     }
 
     const hasTasks = tasks.some(
       (t) =>
         t.dueDate === dateStr &&
-        (selectedMode === "All" || t.modeId === (selectedMode as Mode).id)
+        (selectedMode === "All" || t.modeId === (selectedMode as Mode).id),
     );
     const hasMilestones = milestones.some(
       (m) =>
         m.dueDate === dateStr &&
-        (selectedMode === "All" || m.modeId === (selectedMode as Mode).id)
+        (selectedMode === "All" || m.modeId === (selectedMode as Mode).id),
     );
     const hasProjects = projects.some(
       (p) =>
         p.dueDate === dateStr &&
-        (selectedMode === "All" || p.modeId === (selectedMode as Mode).id)
+        (selectedMode === "All" || p.modeId === (selectedMode as Mode).id),
     );
     const hasGoals = goals.some(
       (g) =>
         g.dueDate === dateStr &&
-        (selectedMode === "All" || g.modeId === (selectedMode as Mode).id)
+        (selectedMode === "All" || g.modeId === (selectedMode as Mode).id),
     );
 
     return hasTasks || hasMilestones || hasProjects || hasGoals;
@@ -124,8 +127,7 @@ export default function DateSectionCalendar({
             Nothing scheduled yet.
           </div>
         )}
-
-        {!isPastDue && (
+        {isDesktop && !isPastDue && (
           <AddTaskInline
             inlineMode={selectedMode}
             modes={modes}

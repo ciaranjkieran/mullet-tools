@@ -70,7 +70,7 @@ export default function ProjectItem({
   const childTasks = tasks
     .filter(
       (t) =>
-        t.modeId === mode.id && t.projectId === pid && t.milestoneId == null
+        t.modeId === mode.id && t.projectId === pid && t.milestoneId == null,
     )
     .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
 
@@ -112,17 +112,22 @@ export default function ProjectItem({
 
   // Defensive for recursion of projects (no any)
   const children: NestedProject[] = hasProjectChildren(project)
-    ? project.children ?? []
+    ? (project.children ?? [])
     : [];
 
   return (
-    <div className="space-y-2" style={{ paddingLeft: depth * 16 }}>
+    <div
+      className="space-y-2"
+      style={{
+        marginLeft: `calc(${depth} * var(--tree-indent-multiplier, 16) * 1px)`,
+      }}
+    >
+      {" "}
       <ProjectRenderer
         project={project}
         dragHandleProps={dragHandleProps}
         modeColor={modeColor}
       />
-
       {!collapsed && (
         <div className="mt-2 space-y-4">
           <TaskSectionDashboard

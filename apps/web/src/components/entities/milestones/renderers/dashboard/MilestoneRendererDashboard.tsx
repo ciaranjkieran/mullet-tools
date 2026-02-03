@@ -42,19 +42,19 @@ export default function MilestoneRenderer({
 }: Props) {
   const isTitle = variant === "title";
   const baseClasses =
-    "flex items-center justify-between px-4 py-2.5 rounded-md border bg-muted";
+    "flex items-center justify-between px-3 py-2 md:px-4 md:py-2.5 rounded-md border bg-muted";
 
   const { mutate: deleteMilestone } = useDeleteMilestone();
   const { setMilestoneToEdit, setIsMilestoneDialogOpen } = useDialogStore();
 
   // selection highlight
   const isSelected = useSelectionStore((s) =>
-    s.isSelected("milestone", milestone.id)
+    s.isSelected("milestone", milestone.id),
   );
 
   // ---- Collapse (store-backed with optional overrides) ----
   const storeCollapsed = useEntityUIStore(
-    (s) => !!s.collapsed.milestone?.[milestone.id]
+    (s) => !!s.collapsed.milestone?.[milestone.id],
   );
   const toggleInStore = () =>
     useEntityUIStore.getState().toggleCollapsed("milestone", milestone.id);
@@ -124,17 +124,16 @@ export default function MilestoneRenderer({
         <div
           className={clsx(
             "flex flex-col min-w-0",
-            !isTitle && "group/edit cursor-pointer"
+            !isTitle && "group/edit cursor-pointer",
           )}
           {...(!isTitle && { onClick: handleEdit })}
         >
           <div className="flex items-center gap-2 min-w-0">
             <h3
               className={clsx(
-                "font-semibold truncate",
-                isTitle ? "text-xl md:text-xl" : "text-base"
+                "font-semibold break-words whitespace-normal",
+                isTitle ? "text-lg md:text-xl" : "text-sm md:text-base",
               )}
-              title={milestone.title}
             >
               {milestone.title}
             </h3>

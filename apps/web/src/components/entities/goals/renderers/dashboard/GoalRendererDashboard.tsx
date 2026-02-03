@@ -68,9 +68,9 @@ export default function GoalRendererDashboard({
   return (
     <div
       className={clsx(
-        "flex items-center justify-between px-4 py-2.5 rounded-md border bg-white hover:bg-gray-50 transition",
+        "flex items-center justify-between px-3 py-2 md:px-4 md:py-2.5 rounded-md border bg-white hover:bg-gray-50 transition",
         "border-gray-300",
-        isSelected && "ring-2"
+        isSelected && "ring-2",
       )}
       style={
         isSelected
@@ -105,14 +105,14 @@ export default function GoalRendererDashboard({
             <div
               className={clsx(
                 "flex items-center justify-center border-2 rounded-full",
-                isTitle ? "w-6 h-6" : "w-5 h-5"
+                isTitle ? "w-6 h-6" : "w-5 h-5",
               )}
               style={{ borderColor: modeColor }}
             >
               <div
                 className={clsx(
                   "rounded-full",
-                  isTitle ? "w-2 h-2" : "w-1.5 h-1.5"
+                  isTitle ? "w-2 h-2" : "w-1.5 h-1.5",
                 )}
                 style={{ backgroundColor: modeColor }}
               />
@@ -122,7 +122,7 @@ export default function GoalRendererDashboard({
             <div
               className={clsx(
                 "flex items-center justify-center rounded-full",
-                isTitle ? "w-6 h-6" : "w-5 h-5"
+                isTitle ? "w-6 h-6" : "w-5 h-5",
               )}
               style={{ backgroundColor: modeColor }}
             >
@@ -141,10 +141,9 @@ export default function GoalRendererDashboard({
           <div className="flex items-center gap-2 min-w-0">
             <h3
               className={clsx(
-                "font-bold leading-snug text-gray-900 truncate",
-                isTitle ? "text-[1.5rem]" : "text-[1.2rem]"
+                "font-bold leading-snug text-gray-900 break-words whitespace-normal",
+                isTitle ? "text-lg md:text-2xl" : "text-base md:text-xl",
               )}
-              title={goal.title}
             >
               {goal.title}
             </h3>
@@ -158,7 +157,7 @@ export default function GoalRendererDashboard({
           )}
 
           {goal.dueDate && (
-            <p className="text-xs text-gray-500">
+            <p className="text-[10px] md:text-xs text-gray-500">
               Due: {format(parseISO(goal.dueDate), "EEE, MMM d")}
               {goal.dueTime && ` at ${goal.dueTime.slice(0, 5)}`}
             </p>

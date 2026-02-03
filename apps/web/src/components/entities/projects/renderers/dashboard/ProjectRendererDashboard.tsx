@@ -40,12 +40,12 @@ export default function ProjectRenderer({
 
   // selection
   const isSelected = useSelectionStore((s) =>
-    s.isSelected("project", project.id)
+    s.isSelected("project", project.id),
   );
 
   // collapse (store with optional overrides)
   const storeCollapsed = useEntityUIStore(
-    (s) => !!s.collapsed.project?.[project.id]
+    (s) => !!s.collapsed.project?.[project.id],
   );
   const toggleInStore = () =>
     useEntityUIStore.getState().toggleCollapsed("project", project.id);
@@ -64,7 +64,7 @@ export default function ProjectRenderer({
   };
 
   const baseClasses =
-    "flex items-center justify-between px-4 py-2.5 rounded-md border bg-muted";
+    "flex items-center justify-between px-3 py-2 md:px-4 md:py-2.5 rounded-md border bg-muted";
 
   return (
     <div
@@ -118,17 +118,16 @@ export default function ProjectRenderer({
         <div
           className={clsx(
             "flex flex-col min-w-0",
-            !isTitle && "group/edit cursor-pointer"
+            !isTitle && "group/edit cursor-pointer",
           )}
           {...(!isTitle && { onClick: handleEdit })}
         >
           <div className="flex items-center gap-2 min-w-0">
             <h3
               className={clsx(
-                "font-semibold truncate",
-                isTitle ? "text-xl md:text-xl" : "text-lg"
+                "font-semibold break-words whitespace-normal",
+                isTitle ? "text-lg md:text-xl" : "text-base md:text-lg",
               )}
-              title={project.title}
             >
               {project.title}
             </h3>
@@ -138,7 +137,7 @@ export default function ProjectRenderer({
           </div>
 
           {project.dueDate && (
-            <p className="text-xs text-gray-500">
+            <p className="text-[10px] md:text-xs text-gray-500">
               Due: {format(parseISO(project.dueDate), "EEE, MMM d")}
               {project.dueTime && ` at ${project.dueTime.slice(0, 5)}`}
             </p>

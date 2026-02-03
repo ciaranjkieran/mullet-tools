@@ -97,7 +97,7 @@ function SortableModeButton({
         }}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
-        className="px-2 py-0.5 md:px-3 md:py-1 rounded-full border transition select-none text-xs md:text-base"
+        className="px-2 py-0.5 md:px-3 md:py-1 rounded-full border transition select-none text-sm md:text-base"
         style={{
           backgroundColor: isActive ? color : "#F3F4F6",
           color: isActive ? getContrastingText(mode.color) : "#111",
@@ -131,7 +131,7 @@ export default function ModeFilter({
         delay: 200,
         tolerance: 5,
       },
-    })
+    }),
   );
 
   const [activeId, setActiveId] = useState<number | null>(null);
@@ -139,7 +139,7 @@ export default function ModeFilter({
 
   // ✅ Sort modes by position before rendering
   const sortedModes = [...modes].sort(
-    (a, b) => (a.position ?? 9999) - (b.position ?? 9999)
+    (a, b) => (a.position ?? 9999) - (b.position ?? 9999),
   );
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -163,7 +163,7 @@ export default function ModeFilter({
 
     setModes(updatedWithPositions);
     updatePositions.mutate(
-      updatedWithPositions.map((m) => ({ id: m.id, position: m.position }))
+      updatedWithPositions.map((m) => ({ id: m.id, position: m.position })),
     );
   };
 
@@ -199,7 +199,7 @@ export default function ModeFilter({
                       taskId: null,
                     });
                   }}
-                  className="px-2 py-0.5 md:px-3 md:py-1 rounded-full border transition select-none text-xs md:text-base"
+                  className="px-2 py-0.5 md:px-3 md:py-1 rounded-full border transition select-none text-sm md:text-base"
                   style={{
                     backgroundColor:
                       selectedMode === "All" ? "#000" : "#F3F4F6",
@@ -216,7 +216,7 @@ export default function ModeFilter({
                 .filter(
                   (mode) =>
                     !isModeFocus ||
-                    (selectedMode !== "All" && mode.id === selectedMode.id)
+                    (selectedMode !== "All" && mode.id === selectedMode.id),
                 )
                 .map((mode) => (
                   <SortableModeButton

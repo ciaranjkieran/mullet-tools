@@ -34,9 +34,9 @@ export default function TaskRendererDashboard({
       data-entity-type="task"
       data-entity-id={task.id}
       className={clsx(
-        "border rounded px-3 py-2.5 shadow-sm relative group transition",
+        "border rounded px-3 py-2 md:px-4 md:py-2.5 shadow-sm relative group transition",
         "cursor-default text-left",
-        isSelected ? "ring-2" : "bg-white"
+        isSelected ? "ring-2" : "bg-white",
       )}
       style={
         isSelected
@@ -62,14 +62,14 @@ export default function TaskRendererDashboard({
                 setIsTaskDialogOpen(true);
               }}
             >
-              <span className="block w-full text-left text-sm font-semibold leading-tight break-words whitespace-normal">
+              <span className="block w-full text-left text-[13px] md:text-sm font-semibold leading-tight break-words whitespace-normal">
                 {task.title}
               </span>
               <PencilSquareIcon className="h-4 w-4 text-gray-400 opacity-0 group-hover/edit:opacity-100 transition-opacity flex-shrink-0" />
             </button>
 
             {task.dueDate && (
-              <div className="mt-0.5 flex items-center gap-1 text-xs text-gray-700 leading-snug">
+              <div className="mt-0.5 flex items-center gap-1 text-[10px] md:text-xs text-gray-700 leading-snug">
                 <span className="break-words whitespace-normal text-left">
                   Due: {format(parseISO(task.dueDate), "EEE, MMM d")}
                   {task.dueTime && ` at ${task.dueTime.slice(0, 5)}`}

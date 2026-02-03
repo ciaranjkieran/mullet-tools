@@ -35,7 +35,7 @@ function makeProjectIndex(projects: Project[]) {
 }
 function effectiveProjectGoalId(
   projectId: number,
-  byId: Map<number, Project>
+  byId: Map<number, Project>,
 ): number | null {
   let cur = byId.get(projectId);
   const seen = new Set<number>();
@@ -75,7 +75,7 @@ export default function GoalItem({
 
   // Hooks must always run
   const collapsed = useEntityUIStore((s) =>
-    hasValidGoalId ? !!s.collapsed.goal?.[goalId] : false
+    hasValidGoalId ? !!s.collapsed.goal?.[goalId] : false,
   );
 
   const modeColor = useMemo(() => {
@@ -92,7 +92,7 @@ export default function GoalItem({
           t.modeId === mode.id &&
           t.goalId === goalId &&
           t.projectId == null &&
-          t.milestoneId == null
+          t.milestoneId == null,
       )
       .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
   }, [tasks, mode.id, goalId, hasValidGoalId]);
@@ -149,14 +149,19 @@ export default function GoalItem({
   }
 
   return (
-    <div className="space-y-2" style={{ paddingLeft: depth * 16 }}>
+    <div
+      className="space-y-2"
+      style={{
+        marginLeft: `calc(${depth} * var(--tree-indent-multiplier, 16) * 1px)`,
+      }}
+    >
+      {" "}
       <GoalRenderer
         goal={goal}
         mode={mode}
         dragHandleProps={dragHandleProps}
         modeColor={modeColor}
       />
-
       {!collapsed && (
         <div className="mt-2 space-y-4">
           <TaskSectionDashboard

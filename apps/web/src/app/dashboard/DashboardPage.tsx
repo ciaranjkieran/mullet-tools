@@ -559,14 +559,16 @@ export default function DashboardPage() {
       </section>
 
       {jumperPos && (
-        <ScrollJumper
-          enableBottom={false}
-          showAfterVH={1}
-          variant="circle"
-          diameter={48}
-          modeColor={modeColor}
-          customPosition={jumperPos}
-        />
+        <div className="hidden md:block">
+          <ScrollJumper
+            enableBottom={false}
+            showAfterVH={1}
+            variant="circle"
+            diameter={48}
+            modeColor={modeColor}
+            customPosition={jumperPos}
+          />
+        </div>
       )}
     </div>
   );
