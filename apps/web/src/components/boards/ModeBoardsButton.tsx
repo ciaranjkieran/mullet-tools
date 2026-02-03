@@ -11,7 +11,7 @@ type Props = {
 
 export default function ModeBoardsButton({ style, className, onClick }: Props) {
   return (
-    <div className="relative inline-flex items-center group">
+    <div>
       <span
         className="pointer-events-none absolute right-full mr-3 top-1/2 -translate-y-1/2 
                    whitespace-nowrap rounded-md bg-gray-900 px-2 py-1 text-xs 
@@ -28,7 +28,7 @@ export default function ModeBoardsButton({ style, className, onClick }: Props) {
         style={style}
         aria-label="Open Boards View"
       >
-        <LayoutGrid className="w-5 h-5 md:w-6 md:h-6 text-black" />
+        <LayoutGrid className="w-6 h-6 text-black" />
       </button>
     </div>
   );

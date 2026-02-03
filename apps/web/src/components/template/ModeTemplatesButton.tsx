@@ -16,7 +16,7 @@ export default function ModeTemplatesButton({
   onClick,
 }: Props) {
   return (
-    <div className="relative inline-flex items-center group">
+    <div>
       <span
         className="pointer-events-none absolute right-full mr-3 top-1/2 -translate-y-1/2 
                    whitespace-nowrap rounded-md bg-gray-900 px-2 py-1 text-xs 

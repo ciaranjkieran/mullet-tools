@@ -18,6 +18,8 @@ venv/
 **/db.sqlite3
 **/staticfiles/
 **/media/
+.backup/
+
 
 # ===============================
 # Node / Next

@@ -41,6 +41,13 @@ ALLOWED_HOSTS = [
 if IS_PROD:
     ALLOWED_HOSTS.append(".onrender.com")
 
+# Local LAN access (phone testing)
+if not IS_PROD:
+    ALLOWED_HOSTS += ["192.168.0.7"]
+
+
+
+
 # ------------------------------------------------------------------------------
 # Applications
 # ------------------------------------------------------------------------------
@@ -175,6 +182,19 @@ CSRF_TRUSTED_ORIGINS = [
     # Keep these for later; harmless if unused:
     "https://www.mullet.tools",
 ]
+
+if not IS_PROD:
+    CORS_ALLOWED_ORIGINS += ["http://192.168.0.7:3000"]
+    CSRF_TRUSTED_ORIGINS += ["http://192.168.0.7:3000"]
+    
+if not IS_PROD:
+    CSRF_COOKIE_SECURE = False
+    SESSION_COOKIE_SECURE = False
+
+    # This helps when you're doing API calls from a different origin in dev
+    CSRF_COOKIE_SAMESITE = "Lax"
+    SESSION_COOKIE_SAMESITE = "Lax"
+
 
 CORS_ALLOW_CREDENTIALS = True
 

@@ -239,7 +239,7 @@ export default function DashboardPage() {
 
           <button
             onClick={() => goView("home")}
-            className={`p-3 rounded-full bg-white hover:bg-gray-100 transition cursor-pointer ${
+            className={`p-2.5 rounded-full bg-white hover:bg-gray-100 transition cursor-pointer ${
               activeView !== "home" ? "border border-black" : ""
             }`}
             style={
@@ -266,7 +266,7 @@ export default function DashboardPage() {
 
           <button
             onClick={() => goView("calendar")}
-            className={`p-3 rounded-full bg-white hover:bg-gray-100 transition cursor-pointer ${
+            className={`p-2.5 rounded-full bg-white hover:bg-gray-100 transition cursor-pointer ${
               activeView !== "calendar" ? "border border-black" : ""
             }`}
             style={
@@ -288,7 +288,7 @@ export default function DashboardPage() {
               ? { boxShadow: `0 0 0 3px ${modeColor}` }
               : undefined
           }
-          className={`p-3 rounded-full bg-white hover:bg-gray-100 transition cursor-pointer ${
+          className={`p-2.5 rounded-full bg-white hover:bg-gray-100 transition cursor-pointer ${
             activeView !== "comments" ? "border border-black" : ""
           }`}
         />
@@ -300,7 +300,7 @@ export default function DashboardPage() {
               ? { boxShadow: `0 0 0 3px ${modeColor}` }
               : undefined
           }
-          className={`p-3 rounded-full bg-white hover:bg-gray-100 transition cursor-pointer ${
+          className={`p-2.5 rounded-full bg-white hover:bg-gray-100 transition cursor-pointer ${
             activeView !== "notes" ? "border border-black" : ""
           }`}
         />
@@ -312,7 +312,7 @@ export default function DashboardPage() {
               ? { boxShadow: `0 0 0 3px ${modeColor}` }
               : undefined
           }
-          className={`p-3 rounded-full bg-white hover:bg-gray-100 transition cursor-pointer ${
+          className={`p-2.5 rounded-full bg-white hover:bg-gray-100 transition cursor-pointer ${
             activeView !== "boards" ? "border border-black" : ""
           }`}
         />
@@ -324,7 +324,7 @@ export default function DashboardPage() {
               ? { boxShadow: `0 0 0 3px ${modeColor}` }
               : undefined
           }
-          className={`p-3 rounded-full bg-white hover:bg-gray-100 transition cursor-pointer ${
+          className={`p-2.5 rounded-full bg-white hover:bg-gray-100 transition cursor-pointer ${
             activeView !== "templates" ? "border border-black" : ""
           }`}
         />
@@ -336,7 +336,7 @@ export default function DashboardPage() {
               ? { boxShadow: `0 0 0 3px ${modeColor}` }
               : undefined
           }
-          className={`p-3 rounded-full bg-white hover:bg-gray-100 transition cursor-pointer ${
+          className={`p-2.5 rounded-full bg-white hover:bg-gray-100 transition cursor-pointer ${
             activeView !== "stats" ? "border border-black" : ""
           }`}
           modeColor={modeColor}
@@ -344,7 +344,7 @@ export default function DashboardPage() {
 
         <TimerViewButton
           onClick={() => goView("timer")}
-          className={`p-3 rounded-full bg-white hover:bg-gray-100 transition cursor-pointer ${
+          className={`p-2.5 rounded-full bg-white hover:bg-gray-100 transition cursor-pointer ${
             activeView !== "timer" ? "border border-black" : ""
           }`}
           style={
@@ -370,38 +370,45 @@ export default function DashboardPage() {
         </div>
 
         {/* Mobile view buttons */}
-        <div className="flex md:hidden items-center gap-2 mt-2 mb-4 flex-wrap">
-          <button
-            onClick={() => goView("home")}
-            className={`p-2 rounded-full bg-white hover:bg-gray-100 transition cursor-pointer ${
-              activeView !== "home" ? "border border-black" : ""
-            }`}
-            style={
-              activeView === "home"
-                ? { boxShadow: `0 0 0 2px ${modeColor}` }
-                : undefined
-            }
-            aria-label="Switch to Home View"
-            type="button"
-          >
-            <HomeIcon className="w-5 h-5 text-black" />
-          </button>
+        <div
+          className="grid md:hidden gap-x-2 gap-y-2 mt-6 mb-4"
+          style={{ gridTemplateColumns: "repeat(4, max-content)" }}
+        >
+          <div>
+            <button
+              onClick={() => goView("home")}
+              className={`p-2.5 rounded-full bg-white hover:bg-gray-100 transition cursor-pointer ${
+                activeView !== "home" ? "border border-black" : ""
+              }`}
+              style={
+                activeView === "home"
+                  ? { boxShadow: `0 0 0 2px ${modeColor}` }
+                  : undefined
+              }
+              aria-label="Switch to Home View"
+              type="button"
+            >
+              <HomeIcon className="w-6 h-6 text-black" />
+            </button>
+          </div>
 
-          <button
-            onClick={() => goView("calendar")}
-            className={`p-2 rounded-full bg-white hover:bg-gray-100 transition cursor-pointer ${
-              activeView !== "calendar" ? "border border-black" : ""
-            }`}
-            style={
-              activeView === "calendar"
-                ? { boxShadow: `0 0 0 2px ${modeColor}` }
-                : undefined
-            }
-            aria-label="Switch to Calendar View"
-            type="button"
-          >
-            <CalendarIcon className="w-5 h-5 text-black" />
-          </button>
+          <div>
+            <button
+              onClick={() => goView("calendar")}
+              className={`p-2.5 rounded-full bg-white hover:bg-gray-100 transition cursor-pointer ${
+                activeView !== "calendar" ? "border border-black" : ""
+              }`}
+              style={
+                activeView === "calendar"
+                  ? { boxShadow: `0 0 0 2px ${modeColor}` }
+                  : undefined
+              }
+              aria-label="Switch to Calendar View"
+              type="button"
+            >
+              <CalendarIcon className="w-6 h-6 text-black" />
+            </button>
+          </div>
 
           <ModeCommentsButton
             onClick={() => goView("comments")}
@@ -410,7 +417,7 @@ export default function DashboardPage() {
                 ? { boxShadow: `0 0 0 3px ${modeColor}` }
                 : undefined
             }
-            className={`p-3 rounded-full bg-white hover:bg-gray-100 transition cursor-pointer ${
+            className={`p-2.5 rounded-full bg-white hover:bg-gray-100 transition cursor-pointer ${
               activeView !== "comments" ? "border border-black" : ""
             }`}
           />
@@ -422,7 +429,7 @@ export default function DashboardPage() {
                 ? { boxShadow: `0 0 0 2px ${modeColor}` }
                 : undefined
             }
-            className={`p-2 rounded-full bg-white hover:bg-gray-100 transition cursor-pointer ${
+            className={`p-2.5 rounded-full bg-white hover:bg-gray-100 transition cursor-pointer ${
               activeView !== "notes" ? "border border-black" : ""
             }`}
           />
@@ -434,7 +441,7 @@ export default function DashboardPage() {
                 ? { boxShadow: `0 0 0 2px ${modeColor}` }
                 : undefined
             }
-            className={`p-2 rounded-full bg-white hover:bg-gray-100 transition cursor-pointer ${
+            className={`p-2.5 rounded-full bg-white hover:bg-gray-100 transition cursor-pointer ${
               activeView !== "boards" ? "border border-black" : ""
             }`}
           />
@@ -446,7 +453,7 @@ export default function DashboardPage() {
                 ? { boxShadow: `0 0 0 2px ${modeColor}` }
                 : undefined
             }
-            className={`p-2 rounded-full bg-white hover:bg-gray-100 transition cursor-pointer ${
+            className={`p-2.5 rounded-full bg-white hover:bg-gray-100 transition cursor-pointer ${
               activeView !== "templates" ? "border border-black" : ""
             }`}
           />
@@ -458,7 +465,7 @@ export default function DashboardPage() {
                 ? { boxShadow: `0 0 0 2px ${modeColor}` }
                 : undefined
             }
-            className={`p-2 rounded-full bg-white hover:bg-gray-100 transition cursor-pointer ${
+            className={`p-2.5 rounded-full bg-white hover:bg-gray-100 transition cursor-pointer ${
               activeView !== "stats" ? "border border-black" : ""
             }`}
             modeColor={modeColor}
@@ -466,7 +473,7 @@ export default function DashboardPage() {
 
           <TimerViewButton
             onClick={() => goView("timer")}
-            className={`p-2 rounded-full bg-white hover:bg-gray-100 transition cursor-pointer ${
+            className={`p-2.5 rounded-full bg-white hover:bg-gray-100 transition cursor-pointer ${
               activeView !== "timer" ? "border border-black" : ""
             }`}
             style={
@@ -502,8 +509,22 @@ export default function DashboardPage() {
         />
 
         {!viewerOpen && (
-          <div className="fixed bottom-10 right-12 z-50 flex flex-row items-end gap-4">
-            <div className="flex flex-col items-center gap-4">
+          <div className="fixed z-50 bottom-6 right-6 md:bottom-10 md:right-12">
+            {/* Mobile: single + */}
+            <div className="md:hidden">
+              <button
+                onClick={() => {
+                  setTaskToEdit(null);
+                  setIsTaskDialogOpen(true);
+                }}
+                className="w-14 h-14 rounded-full bg-black text-white text-3xl flex items-center justify-center shadow-lg"
+              >
+                +
+              </button>
+            </div>
+
+            {/* Desktop: full stack */}
+            <div className="hidden md:flex flex-col items-center gap-4">
               <AddGoalButton
                 onClick={() => {
                   setGoalToEdit(null);
