@@ -77,7 +77,7 @@ type TaskWithLinks = Task & {
 function projectIsDescendantOrSelf(
   candidateId: number,
   ancestorId: number,
-  byId: Map<number, Project>
+  byId: Map<number, Project>,
 ): boolean {
   if (candidateId === ancestorId) return true;
   const seen = new Set<number>();
@@ -97,7 +97,7 @@ function projectIsDescendantOrSelf(
 function milestoneIsDescendantOrSelf(
   candidateId: number,
   ancestorId: number,
-  byId: Map<number, Milestone>
+  byId: Map<number, Milestone>,
 ): boolean {
   if (candidateId === ancestorId) return true;
   const seen = new Set<number>();
@@ -150,11 +150,13 @@ export default function TimerSelectionCard({
     typeof (selectedMode as Mode).id === "number"
       ? (selectedMode as Mode).id
       : Array.isArray(modes) && modes.length > 0
-      ? modes[0].id
-      : null;
+        ? modes[0].id
+        : null;
 
   const effectiveModeId =
-    typeof modeId === "number" && modeId !== -1 ? modeId : selectedModeId ?? -1;
+    typeof modeId === "number" && modeId !== -1
+      ? modeId
+      : (selectedModeId ?? -1);
 
   const editorSelection = useMemo<EditorSelection>(
     () => ({
@@ -163,7 +165,7 @@ export default function TimerSelectionCard({
       projectId,
       milestoneId,
     }),
-    [effectiveModeId, goalId, projectId, milestoneId]
+    [effectiveModeId, goalId, projectId, milestoneId],
   );
 
   const editorDatasets = useMemo<EditorDatasets>(
@@ -173,12 +175,12 @@ export default function TimerSelectionCard({
       projects,
       milestones,
     }),
-    [modes, goals, projects, milestones]
+    [modes, goals, projects, milestones],
   );
 
   const filtered = useMemo(
     () => filterEditorOptions(editorSelection, editorDatasets),
-    [editorSelection, editorDatasets]
+    [editorSelection, editorDatasets],
   );
 
   const projMaps = useMemo(() => makeProjectMaps(projects), [projects]);
@@ -189,7 +191,7 @@ export default function TimerSelectionCard({
 
   const tasksById = useMemo(
     () => new Map(tasksWithLinks.map((t) => [t.id, t])),
-    [tasksWithLinks]
+    [tasksWithLinks],
   );
 
   // ─────────────────────────────────────────────
@@ -224,7 +226,7 @@ export default function TimerSelectionCard({
           const effMs = milestoneEffectiveLineage(
             tidMs,
             msMaps.byId,
-            projMaps.byId
+            projMaps.byId,
           );
           const effProjId = effMs.projectId ?? null;
           if (
@@ -251,7 +253,7 @@ export default function TimerSelectionCard({
           const effMs = milestoneEffectiveLineage(
             tidMs,
             msMaps.byId,
-            projMaps.byId
+            projMaps.byId,
           );
           if (effMs.goalId === goalId) return true;
         }
@@ -282,7 +284,7 @@ export default function TimerSelectionCard({
 
   const collator = useMemo(
     () => new Intl.Collator(undefined, { numeric: true, sensitivity: "base" }),
-    []
+    [],
   );
 
   const sortAlpha = useMemo(
@@ -290,7 +292,7 @@ export default function TimerSelectionCard({
       <T extends { title: string }>(arr: T[]): T[] => {
         const none = arr.find((x) => x.title === "None");
         const rest = arr.filter(
-          (x) => x.title !== "None" && !x.title.startsWith("Create")
+          (x) => x.title !== "None" && !x.title.startsWith("Create"),
         );
         const create = arr.filter((x) => x.title.startsWith("Create"));
         return [
@@ -299,24 +301,24 @@ export default function TimerSelectionCard({
           ...create,
         ];
       },
-    [collator]
+    [collator],
   );
 
   const goalsSorted = useMemo(
     () => sortAlpha(goalsScoped),
-    [goalsScoped, sortAlpha]
+    [goalsScoped, sortAlpha],
   );
   const projectsSorted = useMemo(
     () => sortAlpha(projectsScoped),
-    [projectsScoped, sortAlpha]
+    [projectsScoped, sortAlpha],
   );
   const milestonesSorted = useMemo(
     () => sortAlpha(milestonesScoped),
-    [milestonesScoped, sortAlpha]
+    [milestonesScoped, sortAlpha],
   );
   const tasksSorted = useMemo(
     () => sortAlpha(tasksScoped),
-    [tasksScoped, sortAlpha]
+    [tasksScoped, sortAlpha],
   );
 
   const tasksWithSelected = useMemo(() => {
@@ -504,7 +506,7 @@ export default function TimerSelectionCard({
       const eff = milestoneEffectiveLineage(
         nextMilestoneId,
         msMaps.byId,
-        projMaps.byId
+        projMaps.byId,
       );
       if (nextProjectId == null && eff.projectId != null) {
         nextProjectId = eff.projectId;
@@ -596,17 +598,19 @@ export default function TimerSelectionCard({
 
   return (
     <div
-      className="rounded-2xl border-2 p-6 space-y-6 pb-6"
+      className="rounded-2xl border-2 p-4 md:p-6 space-y-4 md:space-y-6 pb-4 md:pb-6"
       style={{ borderColor: modeColor }}
     >
-      <div className="flex justify-between items-center">
-        <h3 className="text-lg font-semibold">What are you timing?</h3>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0">
+        <h3 className="text-base md:text-lg font-semibold">
+          What are you timing?
+        </h3>
 
         {showSwitch && (
           <button
             type="button"
             onClick={onSwitchToSelection}
-            className="px-4 py-1.5 rounded-md text-sm font-medium shadow-sm transition"
+            className="w-full sm:w-auto px-3 md:px-4 py-1.5 rounded-md text-xs md:text-sm font-medium shadow-sm transition"
             style={{
               backgroundColor: modeColor,
               color: getContrastingText(modeColor),
@@ -643,9 +647,10 @@ export default function TimerSelectionCard({
             onClick={onComplete}
             disabled={isCompleting}
             className={[
-              "inline-flex items-center gap-2",
-              "px-5 py-2.5",
-              "text-sm font-semibold",
+              "inline-flex items-center justify-center gap-2",
+              "w-full md:w-auto",
+              "px-4 md:px-5 py-2 md:py-2.5",
+              "text-xs md:text-sm font-semibold",
               "rounded-lg",
               "shadow-sm",
               "transition-colors",
@@ -665,10 +670,10 @@ export default function TimerSelectionCard({
                 "#14532D";
             }}
           >
-            <span className="truncate max-w-[520px]">
+            <span className="truncate max-w-[280px] md:max-w-[520px]">
               {isCompleting ? "Completing…" : completeLabel}
             </span>
-            <Check className="h-5 w-5 flex-shrink-0" />
+            <Check className="h-4 w-4 md:h-5 md:w-5 flex-shrink-0" />
           </button>
         </div>
       )}

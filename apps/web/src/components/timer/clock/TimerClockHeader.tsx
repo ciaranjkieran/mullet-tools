@@ -7,8 +7,7 @@ import type { CSSProperties } from "react";
 
 type Props = {
   active: ActiveTimerDTO | null;
-  clockType: Kind; // "stopwatch" | "timer"
-  /** Used only to trigger re-renders; actual time is Date.now() */
+  clockType: Kind;
   now: number;
   durationSec?: number;
   cdMin?: number;
@@ -17,8 +16,7 @@ type Props = {
   activeColor: string;
   onStart: () => void;
   onStop: () => void;
-  /** When the active timer payload was last fetched from the server (ms since epoch) */
-  fetchedAtMs?: number; // optional
+  fetchedAtMs?: number;
 };
 
 function pad2(n: number) {
@@ -34,12 +32,12 @@ function toMMSS(totalSec: number) {
 export default function TimerClockHeader({
   active,
   clockType,
-  now: _now, // used only to trigger re-render
+  now: _now,
   durationSec = 0,
   cdMin,
   cdSec,
   modeColor,
-  activeColor: _activeColor, // intentionally unused
+  activeColor: _activeColor,
   onStart,
   onStop,
   fetchedAtMs,
@@ -52,13 +50,11 @@ export default function TimerClockHeader({
   if (active) {
     running = true;
 
-    // Safely read possibly-present fields not declared on ActiveTimerDTO
     const a = active as unknown as Record<string, unknown>;
     const elapsedSeconds = a["elapsedSeconds"];
     const remainingSeconds = a["remainingSeconds"];
 
     if (active.kind === "stopwatch") {
-      // Prefer server-supplied elapsedSeconds (if present), then tick locally
       if (typeof elapsedSeconds === "number") {
         if (typeof fetchedAtMs === "number") {
           const dtSec = (nowMs - fetchedAtMs) / 1000;
@@ -67,7 +63,6 @@ export default function TimerClockHeader({
           displaySec = Math.max(0, Math.floor(elapsedSeconds));
         }
       } else {
-        // Fallback: derive from startedAt
         const startedAtMs = Date.parse(active.startedAt);
         displaySec = Math.max(0, Math.floor((nowMs - startedAtMs) / 1000));
       }
@@ -85,7 +80,7 @@ export default function TimerClockHeader({
         const startedAtMs = Date.parse(active.startedAt);
         const elapsedSec = Math.max(
           0,
-          Math.floor((nowMs - startedAtMs) / 1000)
+          Math.floor((nowMs - startedAtMs) / 1000),
         );
         const planned =
           typeof active.plannedSeconds === "number"
@@ -137,29 +132,31 @@ export default function TimerClockHeader({
 
   return (
     <div
-      className="rounded-2xl border-2 p-6 flex items-center justify-between"
+      className="rounded-2xl border-2 p-4 md:p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4"
       style={{ borderColor: modeColor }}
     >
-      <div className="flex items-baseline gap-4">
-        <span className="tabular-nums text-5xl font-semibold">{label}</span>
-        <span className="text-sm text-gray-500">
+      <div className="flex flex-col md:flex-row items-baseline gap-2 md:gap-4 w-full md:w-auto">
+        <span className="tabular-nums text-4xl md:text-5xl font-semibold">
+          {label}
+        </span>
+        <span className="text-xs md:text-sm text-gray-500">
           {active
             ? active.kind === "stopwatch"
               ? "elapsed"
               : "remaining"
             : clockType === "stopwatch"
-            ? "ready"
-            : `preset${cdMin != null ? ` · ${cdMin}m` : ""}${
-                cdSec ? `:${pad2(cdSec)}` : ""
-              }`}
+              ? "ready"
+              : `preset${cdMin != null ? ` · ${cdMin}m` : ""}${
+                  cdSec ? `:${pad2(cdSec)}` : ""
+                }`}
         </span>
       </div>
 
-      <div className="flex gap-3">
+      <div className="flex gap-2 md:gap-3 w-full md:w-auto">
         {running ? (
           <button
             onClick={onStop}
-            className="px-4 py-2 rounded-md text-base font-semibold transition-colors"
+            className="flex-1 md:flex-none px-4 py-2 rounded-md text-sm md:text-base font-semibold transition-colors"
             style={stopStyle}
             onMouseEnter={() => setHoverStop(true)}
             onMouseLeave={() => setHoverStop(false)}
@@ -169,7 +166,7 @@ export default function TimerClockHeader({
         ) : (
           <button
             onClick={onStart}
-            className="px-4 py-2 rounded-md text-base font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 md:flex-none px-4 py-2 rounded-md text-sm md:text-base font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             style={startStyle}
             onMouseEnter={() => setHoverStart(true)}
             onMouseLeave={() => setHoverStart(false)}

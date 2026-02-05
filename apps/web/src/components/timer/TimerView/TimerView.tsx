@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * TimerView
+ * TimerView - RESPONSIVE VERSION
  *
  * A presentational component that renders:
  * - Clock header (stopwatch/timer state)
@@ -118,8 +118,8 @@ export default function TimerView({
     typeof remainingLive === "number"
       ? remainingLive
       : active?.kind === "timer"
-      ? 0
-      : durationSec ?? 0;
+        ? 0
+        : (durationSec ?? 0);
   const effectiveKind = active?.kind ?? clockType;
 
   const timerHasElapsed =
@@ -141,17 +141,17 @@ export default function TimerView({
   // - Timer: only active while remaining > 0.
 
   return (
-    <div className="max-w-4xl mx-auto p-8 space-y-10">
+    <div className="max-w-4xl mx-auto p-4 md:p-8 space-y-6 md:space-y-10">
       {/* Hide timer UI when filtering by "All" */}
       {!isAllMode && (
         <>
           {/* Header / Icons */}
-          <div className="flex justify-between items-center mb-6">
+          <div className="flex justify-between items-center mb-4 md:mb-6">
             <div>
               {clockType === "stopwatch" ? (
-                <TimerIcon className="h-14 w-14 text-gray-700" />
+                <TimerIcon className="h-10 w-10 md:h-14 md:w-14 text-gray-700" />
               ) : (
-                <Hourglass className="h-14 w-14 text-gray-700" />
+                <Hourglass className="h-10 w-10 md:h-14 md:w-14 text-gray-700" />
               )}
             </div>
 
@@ -164,23 +164,25 @@ export default function TimerView({
 
           {/* Active session breadcrumb */}
           {isActiveForUI && (
-            <div className="mb-6">
-              <div className="text-[11px] uppercase tracking-wide text-gray-700 mb-1">
+            <div className="mb-4 md:mb-6">
+              <div className="text-[10px] md:text-[11px] uppercase tracking-wide text-gray-700 mb-1">
                 Now working on
               </div>
 
               <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-                <span className="font-bold text-black text-3xl leading-snug">
+                <span className="font-bold text-black text-2xl md:text-3xl leading-snug break-words">
                   {leafTitle}
                 </span>
 
                 {ancestors.map((c, i) => (
                   <span
                     key={`${c.type}-${c.id}-${i}`}
-                    className="flex items-baseline gap-2"
+                    className="flex items-baseline gap-1 md:gap-2"
                   >
                     <span className="text-gray-400">|</span>
-                    <span className="text-sm text-gray-700">{c.title}</span>
+                    <span className="text-xs md:text-sm text-gray-700 break-words">
+                      {c.title}
+                    </span>
                   </span>
                 ))}
               </div>
@@ -193,7 +195,7 @@ export default function TimerView({
             active={isActiveForUI ? active : null}
             clockType={effectiveKind}
             now={now}
-            durationSec={timerHasElapsed ? durationSec ?? 0 : liveRemaining}
+            durationSec={timerHasElapsed ? (durationSec ?? 0) : liveRemaining}
             cdMin={cdMin}
             cdSec={cdSec}
             modeColor={modeColor}

@@ -52,7 +52,7 @@ export default function StatsView(props: Props) {
   const chainUp = useStatsChainUp();
 
   const [pendingChainUp, setPendingChainUp] = useState<PendingChainUp | null>(
-    null
+    null,
   );
 
   const [showClearConfirm, setShowClearConfirm] = useState(false);
@@ -86,7 +86,7 @@ export default function StatsView(props: Props) {
   } = useStatsTree(
     !isAllSelected && effectiveModeId && range.from && range.to
       ? { modeId: effectiveModeId, from: range.from, to: range.to }
-      : null
+      : null,
   );
 
   // 🔹 All-modes stats (for "All" view) – fetch one tree per mode
@@ -94,7 +94,7 @@ export default function StatsView(props: Props) {
     modes,
     range.from ?? null,
     range.to ?? null,
-    isAllSelected
+    isAllSelected,
   );
 
   const treesByMode: Record<number, StatsTree | undefined> = useMemo(() => {
@@ -113,7 +113,7 @@ export default function StatsView(props: Props) {
   const firstErrorAll = allModeQueries.find((q) => q.error)?.error;
 
   const hasAnyAllStats = Object.values(treesByMode).some(
-    (t) => t && t.seconds > 0
+    (t) => t && t.seconds > 0,
   );
 
   const headerColor = modeColor;
@@ -232,7 +232,7 @@ export default function StatsView(props: Props) {
   function handleChainUpClick(
     kind: EntityKind,
     node: StatsNode,
-    parentTitle: string | null
+    parentTitle: string | null,
   ) {
     // We never want chain up on mode-level rows
     if (kind === "mode" || !node.id) return;
@@ -267,16 +267,17 @@ export default function StatsView(props: Props) {
 
   return (
     <>
-      <div className="space-y-6 text-sm">
+      <div className="space-y-4 md:space-y-6 text-sm">
         {/* Header / Controls */}
-        <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            {/* 📅 Range presets + custom dates */}
-            <div className="flex flex-col gap-3 md:flex-row md:items-center">
-              {/* Presets */}
+        <div className="rounded-2xl border border-gray-200 bg-white p-3 md:p-4 shadow-sm">
+          <div className="flex flex-col gap-3 md:gap-4">
+            {/* 📅 Range presets */}
+            <div className="flex flex-col gap-2 md:gap-3">
               <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-gray-600">Range</span>
-                <div className="flex items-center gap-1">
+                <span className="text-xs md:text-sm font-medium text-gray-600">
+                  Range
+                </span>
+                <div className="flex flex-wrap items-center gap-1">
                   {(
                     [
                       "today",
@@ -291,7 +292,7 @@ export default function StatsView(props: Props) {
                         key={preset}
                         type="button"
                         onClick={() => handlePresetChange(preset)}
-                        className="rounded-full border px-3 py-1 text-sm font-medium transition hover:bg-gray-50"
+                        className="rounded-full border px-2 md:px-3 py-0.5 md:py-1 text-xs md:text-sm font-medium transition hover:bg-gray-50"
                         style={
                           isActive
                             ? {
@@ -307,9 +308,9 @@ export default function StatsView(props: Props) {
                         }
                       >
                         {preset === "today" && "Today"}
-                        {preset === "thisWeek" && "This week"}
-                        {preset === "thisMonth" && "This month"}
-                        {preset === "allTime" && "All time"}
+                        {preset === "thisWeek" && "Week"}
+                        {preset === "thisMonth" && "Month"}
+                        {preset === "allTime" && "All"}
                       </button>
                     );
                   })}
@@ -317,62 +318,70 @@ export default function StatsView(props: Props) {
               </div>
 
               {/* Custom date inputs */}
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-gray-600">From</span>
-                <input
-                  type="date"
-                  className="rounded-full border border-gray-300 bg-white px-3 py-1 text-sm outline-none hover:border-gray-400"
-                  value={range.from ?? ""}
-                  onChange={(e) => handleDateChange("from", e.target.value)}
-                />
-                <span className="text-sm font-medium text-gray-600">To</span>
-                <input
-                  type="date"
-                  className="rounded-full border border-gray-300 bg-white px-3 py-1 text-sm outline-none hover:border-gray-400"
-                  value={range.to ?? ""}
-                  onChange={(e) => handleDateChange("to", e.target.value)}
-                />
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                  <span className="text-xs md:text-sm font-medium text-gray-600 whitespace-nowrap">
+                    From
+                  </span>
+                  <input
+                    type="date"
+                    className="flex-1 sm:flex-none rounded-full border border-gray-300 bg-white px-2 md:px-3 py-1 text-xs md:text-sm outline-none hover:border-gray-400"
+                    value={range.from ?? ""}
+                    onChange={(e) => handleDateChange("from", e.target.value)}
+                  />
+                </div>
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                  <span className="text-xs md:text-sm font-medium text-gray-600 whitespace-nowrap">
+                    To
+                  </span>
+                  <input
+                    type="date"
+                    className="flex-1 sm:flex-none rounded-full border border-gray-300 bg-white px-2 md:px-3 py-1 text-xs md:text-sm outline-none hover:border-gray-400"
+                    value={range.to ?? ""}
+                    onChange={(e) => handleDateChange("to", e.target.value)}
+                  />
+                </div>
               </div>
             </div>
           </div>
         </div>
-        <div className="flex items-center justify-end">
-          <div className="flex items-center justify-end">
-            <button
-              type="button"
-              onClick={handleClearClick}
-              disabled={!range.from || !range.to}
-              className="
-      py-1 text-sm font-medium
-      hover:underline hover:opacity-90
-      disabled:opacity-50 disabled:cursor-not-allowed
-    "
-              style={{
-                color: !range.from || !range.to ? "#9CA3AF" : "#7b1e3a", // greyed when disabled, deep wine otherwise
-              }}
-            >
-              Clear stats for this range
-            </button>
-          </div>
+
+        <div className="flex items-center justify-end px-2 md:px-0">
+          <button
+            type="button"
+            onClick={handleClearClick}
+            disabled={!range.from || !range.to}
+            className="
+              py-1 text-xs md:text-sm font-medium
+              hover:underline hover:opacity-90
+              disabled:opacity-50 disabled:cursor-not-allowed
+            "
+            style={{
+              color: !range.from || !range.to ? "#9CA3AF" : "#7b1e3a",
+            }}
+          >
+            Clear stats for this range
+          </button>
         </div>
+
         {/* Main stats panel */}
-        <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+        <div className="rounded-2xl border border-gray-200 bg-white p-3 md:p-4 shadow-sm">
           {isLoading && (
             <div className="space-y-2">
-              <div className="h-4 w-32 animate-pulse rounded bg-gray-100" />
-              <div className="h-4 w-full animate-pulse rounded bg-gray-100" />
-              <div className="h-4 w-3/4 animate-pulse rounded bg-gray-100" />
+              <div className="h-3 md:h-4 w-24 md:w-32 animate-pulse rounded bg-gray-100" />
+              <div className="h-3 md:h-4 w-full animate-pulse rounded bg-gray-100" />
+              <div className="h-3 md:h-4 w-3/4 animate-pulse rounded bg-gray-100" />
             </div>
           )}
 
           {isError && (
-            <p className="text-base text-red-600">
+            <p className="text-sm md:text-base text-red-600">
               Failed to load stats: {(error as Error)?.message}
             </p>
           )}
 
           {!isLoading && !isError && !hasAnyStats && (
-            <p className="text-base text-gray-500">
+            <p className="text-sm md:text-base text-gray-500">
               No tracked time for this range yet.
             </p>
           )}
@@ -411,7 +420,7 @@ export default function StatsView(props: Props) {
         title="Chain time up?"
         description={
           <div className="space-y-2">
-            <p>
+            <p className="text-sm md:text-base">
               Move direct time from{" "}
               <span className="font-semibold">&quot;{pendingLabel}&quot;</span>{" "}
               up to{" "}
@@ -420,7 +429,7 @@ export default function StatsView(props: Props) {
               </span>
               ?
             </p>
-            <p className="text-sm text-gray-700">
+            <p className="text-xs md:text-sm text-gray-700">
               This will reassign that time to the parent in stats. You
               can&apos;t undo this from here.
             </p>
@@ -437,7 +446,7 @@ export default function StatsView(props: Props) {
         title="Clear stats for this period?"
         description={
           <div className="space-y-2">
-            <p>
+            <p className="text-sm md:text-base">
               This will permanently delete all time entries
               {isAllSelected ? " in any mode " : " in this mode "}
               between <span className="font-semibold">
@@ -445,7 +454,7 @@ export default function StatsView(props: Props) {
               </span>{" "}
               and <span className="font-semibold">{range.to ?? "?"}</span>.
             </p>
-            <p className="text-sm text-gray-700">
+            <p className="text-xs md:text-sm text-gray-700">
               This cannot be undone and your stats will refresh to reflect the
               change.
             </p>
@@ -469,14 +478,6 @@ function toISODate(d: Date): string {
   return `${yyyy}-${mm}-${dd}`;
 }
 
-/**
- * Read an "all-time" range from a StatsTree.
- * Expects backend to expose firstDate / lastDate on the root, or under .meta.
- */
-/**
- * Read an "all-time" range from a StatsTree.
- * Expects backend to expose firstDate / lastDate on the root, or under .meta.
- */
 function extractAllTimeRange(tree: StatsTree): { from: string; to: string } {
   const todayIso = toISODate(new Date());
 
@@ -540,7 +541,7 @@ function useAllModesStatsTrees(
   modes: Mode[],
   from: string | null,
   to: string | null,
-  enabled: boolean
+  enabled: boolean,
 ) {
   const queries = useQueries({
     queries: modes.map((mode) => ({

@@ -130,7 +130,7 @@ export default function TodayEntriesCard({
       projectsById: new Map(projects.map((p) => [p.id, p])),
       goalsById: new Map(goals.map((g) => [g.id, g])),
     }),
-    [modes, tasks, milestones, projects, goals]
+    [modes, tasks, milestones, projects, goals],
   );
 
   const deriveModeId = useMemo(() => {
@@ -173,8 +173,8 @@ export default function TodayEntriesCard({
       e.endedAt
         ? new Date(e.endedAt).getTime()
         : e.startedAt
-        ? new Date(e.startedAt).getTime()
-        : 0;
+          ? new Date(e.startedAt).getTime()
+          : 0;
     return [...filtered].sort((a, b) => ts(b) - ts(a));
   }, [filtered]);
 
@@ -215,14 +215,17 @@ export default function TodayEntriesCard({
     const modeIdForEntry = deriveModeId(e);
 
     return (
-      <li key={e.id} className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-3 min-w-0">
+      <li
+        key={e.id}
+        className="flex items-start md:items-center justify-between gap-2 md:gap-4"
+      >
+        <div className="flex items-center gap-2 md:gap-3 min-w-0">
           {getEntityIcon(meta.type, meta.color)}
           <div className="truncate">
-            <div className="text-sm font-medium truncate">
+            <div className="text-xs md:text-sm font-medium truncate">
               {meta.title || "Untitled"}
             </div>
-            <div className="text-xs text-gray-500">
+            <div className="text-[10px] md:text-xs text-gray-500">
               {formatRange(e.startedAt, e.endedAt)} · {fmtSeconds(e.seconds)}
               {remaining != null && (
                 <>
@@ -235,14 +238,11 @@ export default function TodayEntriesCard({
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col md:flex-row items-stretch md:items-center gap-1.5 md:gap-2">
           {canResume && (
             <button
               onClick={() => {
                 if (!canResume) return;
-
-                // If we're in "All" (no filter) and we know this entry's mode,
-                // ask the parent to switch to that mode before resuming.
                 if (
                   filterModeId == null &&
                   modeIdForEntry != null &&
@@ -250,12 +250,10 @@ export default function TodayEntriesCard({
                 ) {
                   onRequestFilterMode(modeIdForEntry);
                 }
-
                 onResume(e, {
                   remainingSeconds: remaining ?? undefined,
                   resumeFromEntryId: e.id,
                 });
-
                 window.scrollTo({ top: 72, behavior: "smooth" });
               }}
               disabled={!canResume}
@@ -265,12 +263,12 @@ export default function TodayEntriesCard({
                   ["--btnText"]: getContrastingText(meta.color),
                 } as React.CSSProperties
               }
-              className={`px-3 py-1.5 rounded-md text-xs font-semibold transition
-              border bg-[var(--btn)] text-[var(--btnText)] border-[var(--btn)]
-              hover:bg-transparent hover:text-[var(--btn)]
-              active:scale-95
-              focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--btn)]
-              ${canResume ? "" : "opacity-50 cursor-not-allowed"}`}
+              className={`px-2.5 py-1.5 md:px-3 rounded-md text-[11px] md:text-xs font-semibold transition
+          border bg-[var(--btn)] text-[var(--btnText)] border-[var(--btn)]
+          hover:bg-transparent hover:text-[var(--btn)]
+          active:scale-95
+          focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--btn)]
+          ${canResume ? "" : "opacity-50 cursor-not-allowed"}`}
             >
               Resume
             </button>
@@ -279,12 +277,12 @@ export default function TodayEntriesCard({
           <button
             onClick={() => askDelete(e.id, canAct)}
             disabled={!canAct || delMut.isPending}
-            className={`px-3 py-1.5 rounded-md text-xs font-semibold transition
-              border border-red-500 text-red-600
-              hover:bg-red-500 hover:text-white
-              active:scale-95
-              focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-red-500
-              ${canAct ? "" : "opacity-50 cursor-not-allowed"}`}
+            className={`px-2.5 py-1.5 md:px-3 rounded-md text-[11px] md:text-xs font-semibold transition
+          border border-red-500 text-red-600
+          hover:bg-red-500 hover:text-white
+          active:scale-95
+          focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-red-500
+          ${canAct ? "" : "opacity-50 cursor-not-allowed"}`}
           >
             {delMut.isPending && pendingDeleteId === e.id
               ? "Deleting…"
@@ -297,11 +295,13 @@ export default function TodayEntriesCard({
 
   return (
     <div
-      className="rounded-2xl border-2 p-6"
+      className="rounded-2xl border-2 p-4 md:p-6"
       style={{ borderColor: modeColor }}
     >
-      <h3 className="text-lg font-semibold mb-1">Today & Yesterday</h3>
-      <p className="text-xs text-gray-500 mb-4">
+      <h3 className="text-base md:text-lg font-semibold mb-1">
+        Today & Yesterday
+      </h3>
+      <p className="text-[10px] md:text-xs text-gray-500 mb-3 md:mb-4">
         Sessions that ended in the last 24&nbsp;hours are shown below, grouped
         by day. You can resume active items or delete them; completed items can
         only be deleted.
@@ -357,7 +357,7 @@ export default function TodayEntriesCard({
 
 function classifyEntryDay(
   e: TimeEntryDTO,
-  nowMs?: number
+  nowMs?: number,
 ): "today" | "yesterday" | null {
   if (!e.endedAt) return null;
 
@@ -385,7 +385,7 @@ function getPlannedSecondsFromEntry(e: TimeEntryDTO): number | null {
 
 function getRemainingSeconds(
   e: TimeEntryDTO,
-  resolvePlannedSeconds?: (entry: TimeEntryDTO) => number | null
+  resolvePlannedSeconds?: (entry: TimeEntryDTO) => number | null,
 ): number | null {
   const planned =
     getPlannedSecondsFromEntry(e) ??
@@ -408,7 +408,7 @@ function isEntryResumable(
     projectsById: Map<number, Project>;
     milestonesById: Map<number, Milestone>;
     tasksById: Map<number, Task>;
-  }
+  },
 ): boolean {
   const p = getPath(e);
   if (!p) return true; // mode-only / floating entry → still resumable
@@ -460,7 +460,7 @@ function getMetaFromPath(
     milestonesById: Map<number, Milestone>;
     tasksById: Map<number, Task>;
   },
-  deriveModeId: (e: ActiveTimerDTO | TimeEntryDTO) => number | null
+  deriveModeId: (e: ActiveTimerDTO | TimeEntryDTO) => number | null,
 ): {
   title: string;
   color: string;
@@ -532,7 +532,7 @@ function withModeColor(
   title: string,
   modeId: number | null,
   maps: { modesById: Map<number, Mode> },
-  type: "task" | "milestone" | "project" | "goal" | "mode"
+  type: "task" | "milestone" | "project" | "goal" | "mode",
 ) {
   const mod = modeId != null ? maps.modesById.get(modeId) : undefined;
   return { title, color: mod?.color ?? "#9CA3AF", type };
@@ -540,7 +540,7 @@ function withModeColor(
 
 function getEntityIcon(
   type: "task" | "milestone" | "project" | "goal" | "mode",
-  modeColor: string
+  modeColor: string,
 ) {
   switch (type) {
     case "task":

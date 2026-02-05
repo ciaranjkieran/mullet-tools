@@ -17,11 +17,11 @@ export default function CountdownSettingsCard({
 }: Props) {
   return (
     <div
-      className="rounded-2xl border-2 p-6 space-y-5"
+      className="rounded-2xl border-2 p-4 md:p-6 space-y-4 md:space-y-5"
       style={{ borderColor: modeColor }}
     >
-      <h3 className="text-lg font-semibold">Countdown settings</h3>
-      <div className="flex gap-2">
+      <h3 className="text-base md:text-lg font-semibold">Countdown settings</h3>
+      <div className="flex flex-wrap gap-2">
         {[15, 25, 50].map((m) => (
           <button
             key={m}
@@ -29,14 +29,14 @@ export default function CountdownSettingsCard({
               setCdMin(m);
               setCdSec(0);
             }}
-            className="px-3 py-1.5 rounded-full border text-sm"
+            className="px-2.5 py-1.5 md:px-3 rounded-full border text-xs md:text-sm"
             style={{ borderColor: modeColor }}
           >
-            {m} minutes
+            {m} min
           </button>
         ))}
       </div>
-      <div className="flex gap-3">
+      <div className="flex gap-2 md:gap-3">
         <TimerNumberField
           label="Minutes"
           value={cdMin}

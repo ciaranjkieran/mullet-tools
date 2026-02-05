@@ -17,7 +17,7 @@ type Props = {
   onChainUp?: (
     kind: EntityKind,
     node: StatsNode,
-    parentTitle: string | null
+    parentTitle: string | null,
   ) => void;
   /** Whether to show the chain-up affordance at all. */
   canChainUp?: boolean;
@@ -65,24 +65,24 @@ export function StatsNodeCard({
   }
 
   return (
-    <div className="flex items-center justify-between gap-3 rounded-md px-3 py-3 text-sm hover:bg-white">
+    <div className="flex flex-col mb-5 gap-2 sm:flex-row sm:items-center sm:justify-between">
       {/* LEFT SIDE */}
-      <div className="flex min-w-0 items-center gap-2 text-gray-700 leading-tight">
+      <div className="flex min-w-0 flex-1 items-center gap-2 text-gray-700 leading-tight">
         {renderKindIcon(kind, modeColor)}
 
         {/* Title + | parent */}
         <div className="flex min-w-0 flex-col">
-          <div className="flex min-w-0 items-baseline truncate">
-            <span className="truncate font-medium text-gray-900">
+          <p className="min-w-0 break-words leading-snug">
+            <span className="font-medium text-gray-900">
               {node.title || "Untitled"}
             </span>
             {parentTitle && (
-              <>
-                <span className="mx-1 shrink-0 text-gray-400">|</span>
-                <span className="truncate text-gray-500">{parentTitle}</span>
-              </>
+              <span className="text-gray-500">
+                <span className="mx-1 text-gray-400">|</span>
+                {parentTitle}
+              </span>
             )}
-          </div>
+          </p>
         </div>
       </div>
 
@@ -159,10 +159,19 @@ function renderKindIcon(kind: EntityKind, modeColor: string) {
     case "goal":
       return (
         <div
-          className="relative top-[0.5px] left-[0.5px] flex h-5 w-5 items-center justify-center rounded-full"
-          style={{ backgroundColor: modeColor }}
+          className="
+    relative
+    flex
+    items-center
+    justify-center
+    rounded-full
+    bg-[color:var(--mode-color)]
+    h-4 w-4
+    sm:h-5 sm:w-5
+  "
+          style={{ ["--mode-color" as any]: modeColor }}
         >
-          <TargetIcon className="h-4 w-4 text-white" />
+          <TargetIcon className="h-2.5 w-2.5 sm:h-4 sm:w-4 text-white" />
         </div>
       );
 
