@@ -33,16 +33,15 @@ type Props = {
 };
 
 function getCommentEntityType(
-  comment: Pick<Comment, "entity_model" | "content_type">
+  comment: Pick<Comment, "entity_model" | "content_type">,
 ): EntityType | null {
-  // rawToEntityType can accept string or number — but your Comment type allows null
   const src = comment.entity_model ?? comment.content_type;
   if (src == null) return null;
   return rawToEntityType(src);
 }
 
 function getCommentEntityId(
-  comment: Pick<Comment, "object_id">
+  comment: Pick<Comment, "object_id">,
 ): number | null {
   const id = comment.object_id;
   if (id == null) return null;
@@ -56,9 +55,8 @@ function getCommentCreatedAt(comment: Pick<Comment, "created_at">): string {
     : String(comment.created_at);
 }
 
-// prefer backend title
 function getCommentEntityTitle(
-  comment: Pick<Comment, "entity_title">
+  comment: Pick<Comment, "entity_title">,
 ): string | null {
   const t = comment.entity_title;
   if (typeof t !== "string") return null;
@@ -87,9 +85,9 @@ export default function ModeCommentsView({
       comments.filter(
         (c) =>
           c.content_type === 0 ||
-          (c.entity_model ?? "").toLowerCase() === "mode"
+          (c.entity_model ?? "").toLowerCase() === "mode",
       ),
-    [comments]
+    [comments],
   );
 
   const entityComments = useMemo(
@@ -97,31 +95,30 @@ export default function ModeCommentsView({
       comments.filter(
         (c) =>
           c.content_type !== 0 &&
-          (c.entity_model ?? "").toLowerCase() !== "mode"
+          (c.entity_model ?? "").toLowerCase() !== "mode",
       ),
-    [comments]
+    [comments],
   );
 
-  // fallback maps (only used when entity_title missing)
   const taskMap = useMemo(
     () => Object.fromEntries(tasks.map((t) => [t.id, t] as const)),
-    [tasks]
+    [tasks],
   );
   const milestoneMap = useMemo(
     () => Object.fromEntries(milestones.map((m) => [m.id, m] as const)),
-    [milestones]
+    [milestones],
   );
   const projectMap = useMemo(
     () => Object.fromEntries(projects.map((p) => [p.id, p] as const)),
-    [projects]
+    [projects],
   );
   const goalMap = useMemo(
     () => Object.fromEntries(goals.map((g) => [g.id, g] as const)),
-    [goals]
+    [goals],
   );
   const modeMap = useMemo(
     () => Object.fromEntries(modes.map((m) => [m.id, m] as const)),
-    [modes]
+    [modes],
   );
 
   const resolveEntityTitleFallback = useCallback(
@@ -141,12 +138,12 @@ export default function ModeCommentsView({
           return "(Untitled)";
       }
     },
-    [taskMap, milestoneMap, projectMap, goalMap, modeMap]
+    [taskMap, milestoneMap, projectMap, goalMap, modeMap],
   );
 
   const [showFilterOptions, setShowFilterOptions] = useState(false);
   const [selectedEntity, setSelectedEntity] = useState<SelectedEntity | null>(
-    null
+    null,
   );
 
   const entityOptions = useMemo(() => {
@@ -179,10 +176,9 @@ export default function ModeCommentsView({
 
     nonMode.sort((a, b) => b.latestCreatedAt.localeCompare(a.latestCreatedAt));
     modeOptions.sort((a, b) =>
-      b.latestCreatedAt.localeCompare(a.latestCreatedAt)
+      b.latestCreatedAt.localeCompare(a.latestCreatedAt),
     );
 
-    // avoid eslint “unused var” by explicitly picking only the fields we return
     const ordered = [...nonMode, ...modeOptions];
     return ordered.map((o) => ({ type: o.type, id: o.id, title: o.title }));
   }, [entityComments, resolveEntityTitleFallback]);
@@ -190,7 +186,7 @@ export default function ModeCommentsView({
   useEffect(() => {
     if (!selectedEntity) return;
     const stillExists = entityOptions.some(
-      (e) => e.type === selectedEntity.type && e.id === selectedEntity.id
+      (e) => e.type === selectedEntity.type && e.id === selectedEntity.id,
     );
     if (!stillExists) setSelectedEntity(null);
   }, [entityOptions, selectedEntity]);
@@ -214,7 +210,7 @@ export default function ModeCommentsView({
   return (
     <div className="flex flex-col h-full max-h-[calc(100vh-6rem)]">
       {selectedMode === "All" ? (
-        <div className="overflow-y-auto flex-1 p-6 space-y-12">
+        <div className="overflow-y-auto flex-1 space-y-12">
           {modes.map((mode) => (
             <AllModeCommentSection
               key={mode.id}
@@ -229,28 +225,19 @@ export default function ModeCommentsView({
         </div>
       ) : (
         <>
-          <div className="overflow-y-auto flex-1 p-6 space-y-8">
+          <div className="overflow-y-auto flex-1 space-y-8">
             {(entityComments.length > 0 || selectedEntity) && (
               <div>
-                <div className="flex items-center justify-between mb-2">
-                  <h2 className="text-lg font-semibold text-gray-800">
-                    Commented Items in {selectedMode.title}
-                    {selectedEntity ? (
-                      <span className="ml-2 text-sm font-normal text-gray-500">
-                        (filtered)
-                      </span>
-                    ) : null}
-                  </h2>
-
-                  {selectedEntity && (
+                {selectedEntity && (
+                  <div className="flex items-center justify-end mb-2">
                     <button
                       onClick={() => setSelectedEntity(null)}
                       className="text-sm text-gray-500 hover:underline"
                     >
                       Clear filter
                     </button>
-                  )}
-                </div>
+                  </div>
+                )}
 
                 {shouldShowFilterUI && (
                   <div className="mb-4">
@@ -281,7 +268,7 @@ export default function ModeCommentsView({
                                 "text-sm px-3 py-1 rounded border transition-colors duration-200 relative overflow-hidden font-normal",
                                 isSelected
                                   ? "border-blue-500 text-blue-900"
-                                  : "border-gray-300 text-black"
+                                  : "border-gray-300 text-black",
                               )}
                             >
                               {entity.title}

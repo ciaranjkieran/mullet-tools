@@ -68,26 +68,26 @@ export default function ModeNotesView({
 
   const goalMap = useMemo(
     () => Object.fromEntries(goals.map((g) => [g.id, g])),
-    [goals]
+    [goals],
   );
   const projectMap = useMemo(
     () => Object.fromEntries(projects.map((p) => [p.id, p])),
-    [projects]
+    [projects],
   );
   const milestoneMap = useMemo(
     () => Object.fromEntries(milestones.map((m) => [m.id, m])),
-    [milestones]
+    [milestones],
   );
   const taskMap = useMemo(
     () => Object.fromEntries(tasks.map((t) => [t.id, t])),
-    [tasks]
+    [tasks],
   );
 
   const { setNotes } = useNoteStore();
   const visibleNotes = useNoteStore((state) => state.notes) as Note[];
 
   const { data: notes, isLoading } = useFetchNotesByMode(
-    !isAll && mode ? mode.id : 0
+    !isAll && mode ? mode.id : 0,
   );
 
   useEffect(() => {
@@ -139,18 +139,18 @@ export default function ModeNotesView({
 
     nonMode.sort((a, b) => b.latestCreatedAt.localeCompare(a.latestCreatedAt));
     modeOptions.sort((a, b) =>
-      b.latestCreatedAt.localeCompare(a.latestCreatedAt)
+      b.latestCreatedAt.localeCompare(a.latestCreatedAt),
     );
 
     return [...nonMode, ...modeOptions].map(
-      ({ latestCreatedAt: _latest, ...rest }) => rest
+      ({ latestCreatedAt: _latest, ...rest }) => rest,
     );
   }, [visibleNotes]);
 
   useEffect(() => {
     if (!selectedEntity) return;
     const stillExists = entityOptions.some(
-      (e) => e.type === selectedEntity.type && e.id === selectedEntity.id
+      (e) => e.type === selectedEntity.type && e.id === selectedEntity.id,
     );
     if (!stillExists) setSelectedEntity(null);
   }, [entityOptions, selectedEntity]);
@@ -167,7 +167,7 @@ export default function ModeNotesView({
 
   if (isAll) {
     return (
-      <div className="overflow-y-auto flex-1 p-6 space-y-12">
+      <div className="overflow-y-auto flex-1 space-y-12">
         {modes.map((m) => (
           <AllModeNoteSection
             key={m.id}
@@ -200,7 +200,7 @@ export default function ModeNotesView({
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex-1 overflow-y-auto space-y-8 p-8">
+      <div className="flex-1 overflow-y-auto space-y-8">
         {/* Filter UI */}
         {visibleNotes.length > 2 && (
           <div className="flex items-center justify-between">
@@ -250,7 +250,7 @@ export default function ModeNotesView({
                         "text-sm px-3 py-1 rounded border transition-colors duration-200 relative overflow-hidden font-normal",
                         isSelected
                           ? "border-blue-500 text-blue-900"
-                          : "border-gray-300 text-black"
+                          : "border-gray-300 text-black",
                       )}
                       style={{
                         backgroundColor:
@@ -285,7 +285,7 @@ export default function ModeNotesView({
           const breadcrumb = getEntityBreadcrumbFromNote(
             note,
             { goalMap, projectMap, milestoneMap, taskMap },
-            { immediateOnly: true }
+            { immediateOnly: true },
           );
 
           return (

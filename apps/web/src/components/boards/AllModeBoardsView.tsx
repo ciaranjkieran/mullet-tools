@@ -15,7 +15,7 @@ export default function AllModeBoardsView({ modes }: { modes: Mode[] }) {
     : "#000";
 
   return (
-    <div className="overflow-y-auto flex-1 p-6 space-y-12">
+    <div className="overflow-y-auto flex-1 space-y-12">
       {modes.map((mode) => (
         <AllModeBoardSection key={mode.id} mode={mode} />
       ))}

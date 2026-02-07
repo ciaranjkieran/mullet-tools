@@ -77,7 +77,7 @@ export default function CalendarView({
   return (
     <CalendarDndProvider modeMap={modeMap}>
       <div
-        className="relative px-2 sm:px-4 mt-4 sm:mt-6 space-y-8 sm:space-y-12"
+        className="relative mt-4 sm:mt-6 space-y-8 sm:space-y-12"
         id="calendar-view-root"
       >
         {/* 🔴 Past Due — only show in current week and when not in Today Focus */}

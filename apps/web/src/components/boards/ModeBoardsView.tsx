@@ -173,7 +173,7 @@ export default function ModeBoardsView({ mode, isAllMode, modes }: Props) {
     : { type: "mode" as const, modeId: mode.id };
 
   return (
-    <div className="p-6 relative">
+    <div className="relative">
       {pins.length > 2 && (
         <div className="mb-4 flex items-center justify-between">
           <button

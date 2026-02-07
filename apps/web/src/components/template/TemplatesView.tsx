@@ -66,7 +66,7 @@ export default function TemplatesView({ modes, selectedMode }: Props) {
   const handleUse = (template: Template) => setUsingTemplate(template);
 
   return (
-    <div className="p-6 h-full flex flex-col">
+    <div className="h-full flex flex-col">
       {/* No create buttons in All mode */}
       {!showAllMode && (
         <div className="mb-4 grid grid-cols-2 gap-6">

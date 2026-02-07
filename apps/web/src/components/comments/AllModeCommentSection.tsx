@@ -71,7 +71,6 @@ export default function AllModeCommentSection({
     [comments]
   );
 
-  const [showEntity, setShowEntity] = useState(true);
   const [showGeneral, setShowGeneral] = useState(true);
 
   // Filter-by-item state
@@ -146,7 +145,6 @@ export default function AllModeCommentSection({
       const key = `${type}-${id}`;
       const createdAtStr = getCommentCreatedAt(c);
 
-      // Your Comment type doesn’t include an entity_title, so we always fallback
       const title = resolveEntityTitleFallback(type, id);
 
       const existing = map.get(key);
@@ -166,13 +164,11 @@ export default function AllModeCommentSection({
       b.latestCreatedAt.localeCompare(a.latestCreatedAt)
     );
 
-    // avoid eslint unused-var warning
     return [...nonMode, ...modeOptions].map(
       ({ latestCreatedAt: _latestCreatedAt, ...rest }) => rest
     );
   }, [entityComments, resolveEntityTitleFallback]);
 
-  // Clear selection if entity disappears
   useEffect(() => {
     if (!selectedEntity) return;
     const stillExists = entityOptions.some(
@@ -214,36 +210,19 @@ export default function AllModeCommentSection({
       {/* Entity comments */}
       {entityComments.length > 0 && (
         <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <button
-              className="flex items-center gap-2 text-md text-black-700 font-semibold hover:underline"
-              onClick={() => setShowEntity((prev) => !prev)}
-            >
-              {showEntity ? (
-                <ChevronDown className="w-4 h-4" />
-              ) : (
-                <ChevronRight className="w-4 h-4" />
-              )}
-              Commented Items in {mode.title}
-              {selectedEntity ? (
-                <span className="text-sm font-normal text-gray-500">
-                  (filtered)
-                </span>
-              ) : null}
-            </button>
-
-            {selectedEntity && (
+          {selectedEntity && (
+            <div className="flex items-center justify-end">
               <button
                 onClick={() => setSelectedEntity(null)}
                 className="text-sm text-gray-500 hover:underline"
               >
                 Clear filter
               </button>
-            )}
-          </div>
+            </div>
+          )}
 
-          {/* Filter UI (under header) */}
-          {showEntity && shouldShowFilterUI && (
+          {/* Filter UI */}
+          {shouldShowFilterUI && (
             <div className="mb-2">
               <button
                 onClick={() => setShowFilterOptions((prev) => !prev)}
@@ -300,20 +279,18 @@ export default function AllModeCommentSection({
             </div>
           )}
 
-          {showEntity && (
-            <ModeEntityCommentsPreview
-              comments={filteredEntityComments}
-              tasks={tasks}
-              milestones={milestones}
-              projects={projects}
-              goals={goals}
-              modes={allModes}
-            />
-          )}
+          <ModeEntityCommentsPreview
+            comments={filteredEntityComments}
+            tasks={tasks}
+            milestones={milestones}
+            projects={projects}
+            goals={goals}
+            modes={allModes}
+          />
         </div>
       )}
 
-      {/* General comments (hide properly during filter) */}
+      {/* General comments (hide during filter) */}
       {!selectedEntity && modeOnlyComments.length > 0 && (
         <div className="space-y-2">
           <button

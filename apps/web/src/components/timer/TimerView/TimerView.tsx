@@ -141,7 +141,7 @@ export default function TimerView({
   // - Timer: only active while remaining > 0.
 
   return (
-    <div className="max-w-4xl mx-auto p-4 md:p-8 space-y-6 md:space-y-10">
+    <div className="space-y-6 md:space-y-10">
       {/* Hide timer UI when filtering by "All" */}
       {!isAllMode && (
         <>

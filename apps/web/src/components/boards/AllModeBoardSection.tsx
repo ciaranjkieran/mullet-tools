@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown, ChevronRight } from "lucide-react";
 import { Mode } from "@shared/types/Mode";
 import { usePinsByMode } from "@shared/api/hooks/boards/usePinsByMode";
 import ModeBoardsView from "./ModeBoardsView";
@@ -11,7 +10,6 @@ type Props = { mode: Mode };
 
 export default function AllModeBoardSection({ mode }: Props) {
   const { data: pins = [], isLoading } = usePinsByMode(mode.id);
-  const [showBoard, setShowBoard] = useState(true);
   if (!isLoading && pins.length === 0) return null;
 
   return (
@@ -30,19 +28,7 @@ export default function AllModeBoardSection({ mode }: Props) {
 
       {pins.length > 0 && (
         <div className="space-y-2">
-          <button
-            className="flex items-center gap-2 text-md text-black-700 font-semibold hover:underline"
-            onClick={() => setShowBoard((prev) => !prev)}
-          >
-            {showBoard ? (
-              <ChevronDown className="w-4 h-4" />
-            ) : (
-              <ChevronRight className="w-4 h-4" />
-            )}
-            {mode.title} Board
-          </button>
-
-          {showBoard && <ModeBoardsView mode={mode} isAllMode={true} />}
+          {<ModeBoardsView mode={mode} isAllMode={true} />}
         </div>
       )}
     </div>
