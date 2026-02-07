@@ -31,13 +31,13 @@ type Props = {
 
 /** ---- helpers ---- */
 function getCommentEntityType(
-  comment: Pick<Comment, "entity_model" | "content_type">
+  comment: Pick<Comment, "entity_model" | "content_type">,
 ): EntityType | null {
   return rawToEntityType(comment.entity_model ?? comment.content_type);
 }
 
 function getCommentEntityId(
-  comment: Pick<Comment, "object_id">
+  comment: Pick<Comment, "object_id">,
 ): number | null {
   const n = Number(comment.object_id);
   return Number.isFinite(n) ? n : null;
@@ -62,13 +62,13 @@ export default function AllModeCommentSection({
   const modeOnlyComments = useMemo(
     () =>
       comments.filter((c) => c.content_type === 0 || c.entity_model === "mode"),
-    [comments]
+    [comments],
   );
 
   const entityComments = useMemo(
     () =>
       comments.filter((c) => c.content_type !== 0 && c.entity_model !== "mode"),
-    [comments]
+    [comments],
   );
 
   const [showGeneral, setShowGeneral] = useState(true);
@@ -84,27 +84,27 @@ export default function AllModeCommentSection({
   // ---- maps for title fallback ----
   const taskMap = useMemo<Record<number, Task>>(
     () => Object.fromEntries(tasks.map((t) => [t.id, t])),
-    [tasks]
+    [tasks],
   );
 
   const milestoneMap = useMemo<Record<number, Milestone>>(
     () => Object.fromEntries(milestones.map((m) => [m.id, m])),
-    [milestones]
+    [milestones],
   );
 
   const projectMap = useMemo<Record<number, Project>>(
     () => Object.fromEntries(projects.map((p) => [p.id, p])),
-    [projects]
+    [projects],
   );
 
   const goalMap = useMemo<Record<number, Goal>>(
     () => Object.fromEntries(goals.map((g) => [g.id, g])),
-    [goals]
+    [goals],
   );
 
   const modeMap = useMemo<Record<number, Mode>>(
     () => Object.fromEntries(allModes.map((m) => [m.id, m])),
-    [allModes]
+    [allModes],
   );
 
   const resolveEntityTitleFallback = useCallback(
@@ -124,7 +124,7 @@ export default function AllModeCommentSection({
           return "(Untitled)";
       }
     },
-    [taskMap, milestoneMap, projectMap, goalMap, modeMap]
+    [taskMap, milestoneMap, projectMap, goalMap, modeMap],
   );
 
   const entityOptions = useMemo(() => {
@@ -161,18 +161,18 @@ export default function AllModeCommentSection({
 
     nonMode.sort((a, b) => b.latestCreatedAt.localeCompare(a.latestCreatedAt));
     modeOptions.sort((a, b) =>
-      b.latestCreatedAt.localeCompare(a.latestCreatedAt)
+      b.latestCreatedAt.localeCompare(a.latestCreatedAt),
     );
 
     return [...nonMode, ...modeOptions].map(
-      ({ latestCreatedAt: _latestCreatedAt, ...rest }) => rest
+      ({ latestCreatedAt: _latestCreatedAt, ...rest }) => rest,
     );
   }, [entityComments, resolveEntityTitleFallback]);
 
   useEffect(() => {
     if (!selectedEntity) return;
     const stillExists = entityOptions.some(
-      (e) => e.type === selectedEntity.type && e.id === selectedEntity.id
+      (e) => e.type === selectedEntity.type && e.id === selectedEntity.id,
     );
     if (!stillExists) setSelectedEntity(null);
   }, [entityOptions, selectedEntity]);
@@ -251,7 +251,7 @@ export default function AllModeCommentSection({
                           "text-sm px-3 py-1 rounded border transition-colors duration-200 relative overflow-hidden font-normal",
                           isSelected
                             ? "border-blue-500 text-blue-900"
-                            : "border-gray-300 text-black"
+                            : "border-gray-300 text-black",
                         )}
                         style={{
                           backgroundColor: isSelected

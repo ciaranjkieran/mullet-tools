@@ -17,7 +17,10 @@ class CommentViewSet(viewsets.ModelViewSet):
         entity_id = self.request.query_params.get("entity_id")
 
         if mode_id:
-            qs = qs.filter(mode_id=mode_id)
+            try:
+                qs = qs.filter(mode_id=int(mode_id))
+            except (ValueError, TypeError):
+                pass
 
         if entity_type and entity_id:
             try:
