@@ -105,10 +105,16 @@ class CommentSerializer(serializers.ModelSerializer):
         return super().update(instance, validated_data)
 
     def get_entity_model(self, obj):
-        return obj.content_type.model if obj.content_type else None
+        try:
+            return obj.content_type.model if obj.content_type else None
+        except Exception:
+            return None
 
     def get_entity_title(self, obj):
-        target = getattr(obj, "content_object", None)
+        try:
+            target = obj.content_object
+        except Exception:
+            return None
         if not target:
             return None
 

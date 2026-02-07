@@ -1,16 +1,39 @@
+import logging
+
 from rest_framework import viewsets, permissions
 from django.contrib.contenttypes.models import ContentType
 
 from .models import Comment, CommentAttachment
 from .serializers import CommentSerializer, CommentAttachmentSerializer
 
+logger = logging.getLogger(__name__)
+
 
 class CommentViewSet(viewsets.ModelViewSet):
     serializer_class = CommentSerializer
     permission_classes = [permissions.IsAuthenticated]
 
+    def list(self, request, *args, **kwargs):
+        logger.info(
+            "CommentViewSet.list called — user=%s params=%s",
+            request.user.id if request.user.is_authenticated else "anon",
+            dict(request.query_params),
+        )
+        try:
+            response = super().list(request, *args, **kwargs)
+            logger.info("CommentViewSet.list returning %d items", len(response.data))
+            return response
+        except Exception:
+            logger.exception("CommentViewSet.list failed")
+            raise
+
     def get_queryset(self):
-        qs = Comment.objects.filter(user=self.request.user, is_deleted=False)
+        qs = (
+            Comment.objects
+            .filter(user=self.request.user, is_deleted=False)
+            .select_related("content_type", "mode")
+            .prefetch_related("attachments")
+        )
 
         mode_id = self.request.query_params.get("mode")
         entity_type = self.request.query_params.get("entity")
