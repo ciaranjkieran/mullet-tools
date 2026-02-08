@@ -78,9 +78,6 @@ export default function EntityCommentsPreview({
     const out: Record<string, Comment[]> = {};
 
     for (const c of comments) {
-      // Skip mode-level comments (your convention)
-      if (c.content_type === 0) continue;
-
       const t = commentEntityType(c);
       if (!t) continue;
 

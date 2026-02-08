@@ -83,9 +83,7 @@ export default function ModeCommentsView({
   const modeOnlyComments = useMemo(
     () =>
       comments.filter(
-        (c) =>
-          c.content_type === 0 ||
-          (c.entity_model ?? "").toLowerCase() === "mode",
+        (c) => (c.entity_model ?? "").toLowerCase() === "mode",
       ),
     [comments],
   );
@@ -93,9 +91,7 @@ export default function ModeCommentsView({
   const entityComments = useMemo(
     () =>
       comments.filter(
-        (c) =>
-          c.content_type !== 0 &&
-          (c.entity_model ?? "").toLowerCase() !== "mode",
+        (c) => (c.entity_model ?? "").toLowerCase() !== "mode",
       ),
     [comments],
   );

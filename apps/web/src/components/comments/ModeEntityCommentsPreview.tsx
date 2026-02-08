@@ -56,29 +56,25 @@ export default function ModeEntityCommentsPreview({
   const goalMap = useMemo(() => indexById(goals), [goals]);
   const modeMap = useMemo(() => indexById(modes ?? []), [modes]);
 
-  // If your backend uses numeric ContentType IDs, keep them here:
-  const contentTypeMap: Record<number, EntityType> = {
-    2: "task",
-    12: "milestone",
-    10: "project",
-    11: "goal",
-  };
+  function resolveEntityType(model: string | null | undefined): EntityType | null {
+    if (!model) return null;
+    const m = model.toLowerCase();
+    if (m.includes("task")) return "task";
+    if (m.includes("milestone")) return "milestone";
+    if (m.includes("project")) return "project";
+    if (m.includes("goal")) return "goal";
+    return null;
+  }
 
   const grouped = useMemo(() => {
     const out: Record<string, Comment[]> = {};
 
     for (const c of comments) {
-      // mode-level comments
-      if (c.content_type === 0) continue;
-
-      const ct = c.content_type;
-      const oid = c.object_id;
-
-      // your Comment type allows nulls
-      if (ct == null || oid == null) continue;
-
-      const type = contentTypeMap[ct];
+      const type = resolveEntityType(c.entity_model);
       if (!type) continue;
+
+      const oid = c.object_id;
+      if (oid == null) continue;
 
       const key = `${type}-${oid}`;
       (out[key] ??= []).push(c);
@@ -93,16 +89,11 @@ export default function ModeEntityCommentsPreview({
         const first = group[0];
         if (!first) return null;
 
-        const ct = first.content_type;
         const oid = first.object_id;
+        if (oid == null) return null;
 
-        if (ct == null || oid == null) return null;
-
-        const type = contentTypeMap[ct];
-        if (!type) {
-          console.warn(`Unrecognized content_type: ${ct}`);
-          return null;
-        }
+        const type = resolveEntityType(first.entity_model);
+        if (!type) return null;
 
         let entity: Entity | null = null;
 

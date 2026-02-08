@@ -61,13 +61,13 @@ export default function AllModeCommentSection({
 
   const modeOnlyComments = useMemo(
     () =>
-      comments.filter((c) => c.content_type === 0 || c.entity_model === "mode"),
+      comments.filter((c) => (c.entity_model ?? "").toLowerCase() === "mode"),
     [comments],
   );
 
   const entityComments = useMemo(
     () =>
-      comments.filter((c) => c.content_type !== 0 && c.entity_model !== "mode"),
+      comments.filter((c) => (c.entity_model ?? "").toLowerCase() !== "mode"),
     [comments],
   );
 
