@@ -19,6 +19,7 @@ import BuildProjectTemplateWindow from "./projects/BuildProjectTemplateWindow";
 
 import TemplateWorkbenchPortal from "./TemplateWorkbenchPortal";
 import AllModeTemplatesSection from "./AllModeTemplatesView";
+import TemplateTabs from "./TemplateTabs";
 
 type Props = {
   modes: Mode[];
@@ -67,24 +68,52 @@ export default function TemplatesView({ modes, selectedMode }: Props) {
 
   return (
     <div className="h-full flex flex-col">
-      {/* No create buttons in All mode */}
+      {/* Mobile tab bar (single-mode only) */}
       {!showAllMode && (
-        <div className="mb-4 grid grid-cols-2 gap-6">
-          <CreateMilestoneButton
-            onClick={() => {
-              setSelectedType("milestone");
-              setIsCreateOpen(true);
-            }}
-            modeColor={modeColor}
-          />
-          <CreateProjectButton
-            onClick={() => {
-              setSelectedType("project");
-              setIsCreateOpen(true);
-            }}
+        <div className="md:hidden mb-4">
+          <TemplateTabs
+            selected={selectedType}
+            onSelect={setSelectedType}
             modeColor={modeColor}
           />
         </div>
+      )}
+
+      {/* Create buttons */}
+      {!showAllMode && (
+        <>
+          {/* Desktop: both side by side */}
+          <div className="mb-4 hidden md:grid grid-cols-2 gap-6">
+            <CreateMilestoneButton
+              onClick={() => {
+                setSelectedType("milestone");
+                setIsCreateOpen(true);
+              }}
+              modeColor={modeColor}
+            />
+            <CreateProjectButton
+              onClick={() => {
+                setSelectedType("project");
+                setIsCreateOpen(true);
+              }}
+              modeColor={modeColor}
+            />
+          </div>
+          {/* Mobile: only the active type */}
+          <div className="mb-4 md:hidden">
+            {selectedType === "milestone" ? (
+              <CreateMilestoneButton
+                onClick={() => setIsCreateOpen(true)}
+                modeColor={modeColor}
+              />
+            ) : (
+              <CreateProjectButton
+                onClick={() => setIsCreateOpen(true)}
+                modeColor={modeColor}
+              />
+            )}
+          </div>
+        </>
       )}
 
       <div className="flex-1 overflow-y-auto">
@@ -115,42 +144,57 @@ export default function TemplatesView({ modes, selectedMode }: Props) {
             })}
           </div>
         ) : (
-          // 🔹 SINGLE MODE: original 2-column layout
-          <div className="grid grid-cols-2 gap-6 h-full">
-            {/* Left: Milestones */}
-            <div className="flex flex-col h-full">
-              <div className="overflow-y-auto flex-1 mt-4">
-                {filtered.milestone.length === 0 ? (
-                  <p className="text-muted mt-2">
-                    No milestone templates found.
-                  </p>
-                ) : (
-                  <TemplateList
-                    templates={filtered.milestone}
-                    modes={modes}
-                    onEdit={handleEdit}
-                    onUse={handleUse}
-                  />
-                )}
+          <>
+            {/* Desktop: two-column layout */}
+            <div className="hidden md:grid grid-cols-2 gap-6 h-full">
+              <div className="flex flex-col h-full">
+                <div className="overflow-y-auto flex-1 mt-4">
+                  {filtered.milestone.length === 0 ? (
+                    <p className="text-muted mt-2">
+                      No milestone templates found.
+                    </p>
+                  ) : (
+                    <TemplateList
+                      templates={filtered.milestone}
+                      modes={modes}
+                      onEdit={handleEdit}
+                      onUse={handleUse}
+                    />
+                  )}
+                </div>
+              </div>
+              <div className="flex flex-col h-full">
+                <div className="overflow-y-auto flex-1 mt-4">
+                  {filtered.project.length === 0 ? (
+                    <p className="text-muted mt-2"></p>
+                  ) : (
+                    <TemplateList
+                      templates={filtered.project}
+                      modes={modes}
+                      onEdit={handleEdit}
+                      onUse={handleUse}
+                    />
+                  )}
+                </div>
               </div>
             </div>
 
-            {/* Right: Projects */}
-            <div className="flex flex-col h-full">
-              <div className="overflow-y-auto flex-1 mt-4">
-                {filtered.project.length === 0 ? (
-                  <p className="text-muted mt-2"></p>
-                ) : (
-                  <TemplateList
-                    templates={filtered.project}
-                    modes={modes}
-                    onEdit={handleEdit}
-                    onUse={handleUse}
-                  />
-                )}
-              </div>
+            {/* Mobile: single column, filtered by active tab */}
+            <div className="md:hidden mt-4">
+              {filtered[selectedType].length === 0 ? (
+                <p className="text-muted mt-2">
+                  No {selectedType} templates found.
+                </p>
+              ) : (
+                <TemplateList
+                  templates={filtered[selectedType]}
+                  modes={modes}
+                  onEdit={handleEdit}
+                  onUse={handleUse}
+                />
+              )}
             </div>
-          </div>
+          </>
         )}
       </div>
 

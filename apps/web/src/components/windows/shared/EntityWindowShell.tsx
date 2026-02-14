@@ -51,26 +51,55 @@ export default function EntityWindowShell({
   const activeIndex = controlledIndex ?? uncontrolledIndex;
   const setActiveIndex = onTabChange ?? setUncontrolledIndex;
 
+  const tabButton = (tab: ReactElement<TabProps>, i: number) => {
+    const isActive = i === activeIndex;
+    return (
+      <button
+        key={i}
+        type="button"
+        onClick={() => setActiveIndex(i)}
+        aria-pressed={isActive}
+        aria-label={tab.props.name}
+        className={clsx(
+          "w-9 h-9 md:w-10 md:h-10 rounded-md flex items-center justify-center border-2 transition-all duration-150",
+          isActive ? "text-white" : "bg-transparent hover:bg-muted/10"
+        )}
+        style={{
+          backgroundColor: isActive ? modeColor : "transparent",
+          opacity: 0.75,
+          borderColor: modeColor,
+          color: isActive ? "white" : modeColor,
+        }}
+      >
+        {isIconElement(tab.props.icon)
+          ? React.cloneElement(tab.props.icon, {
+              className: "w-4 h-4 md:w-5 md:h-5",
+            })
+          : tab.props.name.charAt(0)}
+      </button>
+    );
+  };
+
   return (
-    <div className="flex w-full h-full bg-background rounded-lg border border-border shadow-xl overflow-hidden relative">
+    <div className="flex flex-col md:flex-row w-full h-full bg-background rounded-lg border border-border shadow-xl overflow-hidden relative">
       {/* Top border */}
       <div
         className="pointer-events-none absolute top-0 left-0 w-full h-1.5 md:h-4 z-10"
         style={{ backgroundColor: modeColor }}
       />
-      {/* Left stripe */}
+      {/* Left stripe — desktop only */}
       <div
-        className="absolute top-0 left-0 h-full w-4 md:w-3 rounded-l-xl"
+        className="hidden md:block absolute top-0 left-0 h-full w-3 rounded-l-xl"
         style={{ backgroundColor: modeColor, opacity: 0.5 }}
       />
 
       {/* Main content (tab decides scroll layout) */}
-      <div className="flex-1 flex flex-col h-full overflow-hidden">
+      <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
         {tabs[activeIndex]}
       </div>
 
-      {/* Right rail */}
-      <aside className="flex flex-col justify-start items-center relative pl-3 pr-2 py-4 bg-background">
+      {/* Desktop: Right rail */}
+      <aside className="hidden md:flex flex-col justify-start items-center relative pl-3 pr-2 py-4 bg-background">
         {/* Mode accent line */}
         <div
           className="absolute top-0 bottom-0 left-0 w-1.5"
@@ -81,7 +110,6 @@ export default function EntityWindowShell({
         <div className="flex flex-col pr-3 pl-3 pt-4 space-y-3 z-10">
           {tabs.map((tab, i) => {
             const isActive = i === activeIndex;
-
             return (
               <div
                 key={i}
@@ -98,28 +126,7 @@ export default function EntityWindowShell({
                   {tab.props.name}
                 </span>
 
-                <button
-                  type="button"
-                  onClick={() => setActiveIndex(i)}
-                  aria-pressed={isActive}
-                  aria-label={tab.props.name}
-                  className={clsx(
-                    "w-10 h-10 rounded-md flex items-center justify-center border-2 transition-all duration-150",
-                    isActive ? "text-white" : "bg-transparent hover:bg-muted/10"
-                  )}
-                  style={{
-                    backgroundColor: isActive ? modeColor : "transparent",
-                    opacity: 0.75,
-                    borderColor: modeColor,
-                    color: isActive ? "white" : modeColor,
-                  }}
-                >
-                  {isIconElement(tab.props.icon)
-                    ? React.cloneElement(tab.props.icon, {
-                        className: "w-5 h-5",
-                      })
-                    : tab.props.name.charAt(0)}
-                </button>
+                {tabButton(tab, i)}
               </div>
             );
           })}
@@ -136,6 +143,30 @@ export default function EntityWindowShell({
           </div>
         )}
       </aside>
+
+      {/* Mobile: Bottom bar */}
+      <div
+        className="md:hidden flex items-center justify-center gap-2 px-3 py-2 border-t bg-background relative"
+        style={{ borderColor: `${modeColor}30` }}
+      >
+        {/* Accent line at top of bar */}
+        <div
+          className="absolute top-0 left-0 w-full h-0.5"
+          style={{ backgroundColor: modeColor, opacity: 0.5 }}
+        />
+
+        {tabs.map((tab, i) => tabButton(tab, i))}
+
+        {railFooter && (
+          <>
+            <div
+              className="h-6 w-px mx-1"
+              style={{ backgroundColor: `${modeColor}33` }}
+            />
+            {railFooter}
+          </>
+        )}
+      </div>
     </div>
   );
 }

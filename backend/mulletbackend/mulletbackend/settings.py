@@ -128,6 +128,10 @@ DATABASES = {
     )
 }
 
+# SQLite concurrency fix: wait up to 20s for lock instead of failing immediately
+if DATABASES["default"]["ENGINE"] == "django.db.backends.sqlite3":
+    DATABASES["default"].setdefault("OPTIONS", {})["timeout"] = 20
+
 # ------------------------------------------------------------------------------
 # Password validation
 # ------------------------------------------------------------------------------

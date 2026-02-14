@@ -24,6 +24,7 @@ import {
   AddProjectButton,
   AddTaskButton,
 } from "@/components/addbuttons";
+import MobileEntityFAB from "@/components/addbuttons/MobileEntityFAB";
 
 import { useViewerStore } from "@/components/boards/viewer/store/useViewerStore";
 
@@ -509,22 +510,30 @@ export default function DashboardPage() {
         />
 
         {!viewerOpen && (
-          <div className="fixed z-50 bottom-6 right-6 md:bottom-10 md:right-12">
-            {/* Mobile: single + */}
-            <div className="md:hidden">
-              <button
-                onClick={() => {
-                  setTaskToEdit(null);
-                  setIsTaskDialogOpen(true);
-                }}
-                className="w-14 h-14 rounded-full bg-black text-white text-3xl flex items-center justify-center shadow-lg"
-              >
-                +
-              </button>
-            </div>
+          <>
+            {/* Mobile: Entity FAB (task + entity creator) */}
+            <MobileEntityFAB
+              modeColor={modeColor}
+              onAddTask={() => {
+                setTaskToEdit(null);
+                setIsTaskDialogOpen(true);
+              }}
+              onAddGoal={() => {
+                setGoalToEdit(null);
+                setIsGoalDialogOpen(true);
+              }}
+              onAddProject={() => {
+                setProjectToEdit(null);
+                setIsProjectDialogOpen(true);
+              }}
+              onAddMilestone={() => {
+                setMilestoneToEdit(null);
+                setIsMilestoneDialogOpen(true);
+              }}
+            />
 
             {/* Desktop: full stack */}
-            <div className="hidden md:flex flex-col items-center gap-4">
+            <div className="fixed z-50 bottom-10 right-12 hidden md:flex flex-col items-center gap-4">
               <AddGoalButton
                 onClick={() => {
                   setGoalToEdit(null);
@@ -554,7 +563,7 @@ export default function DashboardPage() {
                 modeColor={modeColor}
               />
             </div>
-          </div>
+          </>
         )}
       </section>
 

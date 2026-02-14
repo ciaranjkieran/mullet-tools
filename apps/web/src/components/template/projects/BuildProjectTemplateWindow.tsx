@@ -121,7 +121,7 @@ export default function BuildProjectTemplateWindow({
                 onChange={(e) =>
                   setProject({ ...project, title: e.target.value })
                 }
-                placeholder="New Project Template Title"
+                placeholder="Project title"
                 className="w-full text-2xl font-bold tracking-tight placeholder-gray-400 focus:outline-none border-none bg-transparent"
               />
             </div>

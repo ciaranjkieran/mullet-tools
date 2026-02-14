@@ -176,7 +176,7 @@ export default function ProjectWindow({
           className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50"
           style={{ overflow: "visible" }}
         >
-          <div className="relative bg-white rounded-xl w-[900px] maxh-[90vh] h-[90vh] flex flex-col overflow-hidden shadow-xl">
+          <div className="relative bg-white rounded-xl w-[calc(100vw-2rem)] max-w-[900px] max-h-[90vh] h-[85vh] md:h-[90vh] flex flex-col overflow-hidden shadow-xl">
             <Dialog.Title className="sr-only">Edit Project</Dialog.Title>
 
             <EntityWindowShell

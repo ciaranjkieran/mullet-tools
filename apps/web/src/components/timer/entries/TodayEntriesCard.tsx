@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo, useState, useEffect } from "react";
-import { Target as TargetIcon } from "lucide-react";
+import GoalIcon from "../../entities/goals/UI/GoalIcon";
+import GoalTarget from "../../entities/goals/UI/GoalTarget";
 import { getContrastingText } from "@shared/utils/getContrastingText";
 import type React from "react";
 
@@ -566,9 +567,9 @@ function getEntityIcon(
       return (
         <svg
           xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 24 24"
+          viewBox="0 28 28"
           fill={modeColor}
-          className="w-4 h-4"
+          className="w-5 h-5"
         >
           <path d="M3 4.5A1.5 1.5 0 0 1 4.5 3h5.379a1.5 1.5 0 0 1 1.06.44l1.621 1.62H19.5A1.5 1.5 0 0 1 21 6.56V18a1.5 1.5 0 0 1-1.5 1.5H4.5A1.5 1.5 0 0 1 3 18V4.5Z" />
         </svg>
@@ -576,10 +577,12 @@ function getEntityIcon(
     case "goal":
       return (
         <div
-          className="w-5 h-5 rounded-full flex items-center justify-center"
+          className="w-5 h-5 shrink-0 aspect-square rounded-full flex items-center justify-center"
           style={{ backgroundColor: modeColor }}
         >
-          <TargetIcon className="w-3.5 h-3.5 text-white" />
+          <GoalIcon size={13} className="text-white">
+            <GoalTarget />
+          </GoalIcon>
         </div>
       );
     case "mode":

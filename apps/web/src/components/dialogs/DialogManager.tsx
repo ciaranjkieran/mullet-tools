@@ -1,6 +1,8 @@
 "use client";
 
+import { useCallback } from "react";
 import { useDialogStore } from "@/lib/dialogs/useDialogStore";
+import { useBackClose } from "@/lib/hooks/useBackClose";
 
 import TaskWindow from "../entities/tasks/windows/TaskWindow";
 import BuildTaskWindow from "../entities/tasks/windows/build/BuildTaskWindow";
@@ -67,6 +69,37 @@ export default function DialogManager({
     setIsEditModesOpen,
   } = useDialogStore();
 
+  // Back-button closes modals on mobile
+  const closeTask = useCallback(() => {
+    setTaskToEdit(null);
+    setIsTaskDialogOpen(false);
+  }, [setTaskToEdit, setIsTaskDialogOpen]);
+
+  const closeMilestone = useCallback(() => {
+    setMilestoneToEdit(null);
+    setIsMilestoneDialogOpen(false);
+  }, [setMilestoneToEdit, setIsMilestoneDialogOpen]);
+
+  const closeProject = useCallback(() => {
+    setProjectToEdit(null);
+    setIsProjectDialogOpen(false);
+  }, [setProjectToEdit, setIsProjectDialogOpen]);
+
+  const closeGoal = useCallback(() => {
+    setGoalToEdit(null);
+    setIsGoalDialogOpen(false);
+  }, [setGoalToEdit, setIsGoalDialogOpen]);
+
+  const closeModes = useCallback(() => {
+    setIsEditModesOpen(false);
+  }, [setIsEditModesOpen]);
+
+  useBackClose(isTaskDialogOpen, closeTask);
+  useBackClose(isMilestoneDialogOpen, closeMilestone);
+  useBackClose(isProjectDialogOpen, closeProject);
+  useBackClose(isGoalDialogOpen, closeGoal);
+  useBackClose(isEditModesOpen, closeModes);
+
   return (
     <>
       <div className="fixed bottom-10 right-12 z-[200]">
@@ -84,15 +117,12 @@ export default function DialogManager({
             modes={modes}
             defaultModeId={fallbackModeId}
             isOpen={isTaskDialogOpen}
-            onClose={() => {
-              setTaskToEdit(null);
-              setIsTaskDialogOpen(false);
-            }}
+            onClose={closeTask}
           />
         ) : (
           <BuildTaskWindow
             isOpen={isTaskDialogOpen}
-            onClose={() => setIsTaskDialogOpen(false)}
+            onClose={closeTask}
             defaultModeId={fallbackModeId}
             goals={goals}
             projects={projects}
@@ -112,15 +142,12 @@ export default function DialogManager({
             modes={modes}
             defaultModeId={fallbackModeId}
             isOpen={isMilestoneDialogOpen}
-            onClose={() => {
-              setMilestoneToEdit(null);
-              setIsMilestoneDialogOpen(false);
-            }}
+            onClose={closeMilestone}
           />
         ) : (
           <BuildMilestoneWindow
             isOpen={isMilestoneDialogOpen}
-            onClose={() => setIsMilestoneDialogOpen(false)}
+            onClose={closeMilestone}
             defaultModeId={fallbackModeId}
             goals={goals}
             projects={projects}
@@ -139,15 +166,12 @@ export default function DialogManager({
             projects={projects}
             modes={modes}
             isOpen={isProjectDialogOpen}
-            onClose={() => {
-              setProjectToEdit(null);
-              setIsProjectDialogOpen(false);
-            }}
+            onClose={closeProject}
           />
         ) : (
           <BuildProjectWindow
             isOpen={isProjectDialogOpen}
-            onClose={() => setIsProjectDialogOpen(false)}
+            onClose={closeProject}
             defaultModeId={fallbackModeId}
             goals={goals}
             projects={projects}
@@ -164,15 +188,12 @@ export default function DialogManager({
             tasks={tasks}
             modes={modes}
             isOpen={isGoalDialogOpen}
-            onClose={() => {
-              setGoalToEdit(null);
-              setIsGoalDialogOpen(false);
-            }}
+            onClose={closeGoal}
           />
         ) : (
           <BuildGoalWindow
             isOpen={isGoalDialogOpen}
-            onClose={() => setIsGoalDialogOpen(false)}
+            onClose={closeGoal}
             defaultModeId={fallbackModeId}
             modes={modes}
           />
@@ -181,7 +202,7 @@ export default function DialogManager({
       {isEditModesOpen && (
         <EditModesModal
           isOpen={isEditModesOpen}
-          onClose={() => setIsEditModesOpen(false)}
+          onClose={closeModes}
           modes={modes}
         />
       )}

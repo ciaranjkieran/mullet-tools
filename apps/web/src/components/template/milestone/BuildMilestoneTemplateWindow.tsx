@@ -155,7 +155,7 @@ export default function BuildMilestoneTemplateWindow({
                 onChange={(e) =>
                   setMilestone({ ...milestone, title: e.target.value })
                 }
-                placeholder="New Milestone Template Title"
+                placeholder="Milestone title"
                 className="w-full text-2xl font-bold tracking-tight placeholder-gray-400 focus:outline-none border-none bg-transparent"
               />
             </div>

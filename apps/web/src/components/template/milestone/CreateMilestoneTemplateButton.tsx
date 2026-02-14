@@ -11,7 +11,7 @@ const CreateMilestoneTemplateButton: FC<Props> = ({ onClick, modeColor }) => {
   return (
     <button
       onClick={onClick}
-      className="flex items-center justify-center gap-2 py-4 rounded-md border shadow-sm text-base font-medium hover:bg-gray-50 transition w-full"
+      className="flex items-center justify-center gap-2 py-4 rounded-md border shadow-sm text-lg font-medium hover:bg-gray-50 transition w-full"
     >
       <div
         style={{

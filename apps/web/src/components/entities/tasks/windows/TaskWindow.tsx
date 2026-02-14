@@ -141,7 +141,7 @@ export default function TaskWindow({
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 bg-black/30 z-40" />
         <Dialog.Content
-          className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[900px] max-h-[90vh] h-[90vh] rounded-xl shadow-xl bg-white overflow-hidden"
+          className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[calc(100%-2rem)] max-w-[900px] max-h-[90vh] h-[85vh] md:h-[90vh] rounded-xl shadow-xl bg-white overflow-hidden"
           onOpenAutoFocus={(e) => e.preventDefault()}
         >
           <EntityWindowShell

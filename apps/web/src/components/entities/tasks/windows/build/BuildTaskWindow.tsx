@@ -93,7 +93,7 @@ export default function BuildTaskWindow({
     <Dialog.Root open={isOpen} onOpenChange={(v) => !v && onClose()}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 bg-black/30 z-40" />
-        <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-xl z-50 w-full max-w-3xl max-h-[90vh] overflow-y-auto p-0">
+        <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-xl z-50 w-[calc(100%-2rem)] max-w-3xl max-h-[90vh] overflow-y-auto p-0">
           <BuildTaskForm
             title={title}
             dueDate={dueDate}

@@ -41,7 +41,7 @@ export default function EditProjectTemplateWindow({
         : [],
   });
 
-  const [modeId, setModeId] = useState<number>(template?.mode || modes[0].id);
+  const [modeId, setModeId] = useState<number>(template?.mode || modes[0]?.id || 0);
   const patchTemplate = usePatchTemplate();
   const modeColor = modes.find((m) => m.id === modeId)?.color || "#000";
   const contentRef = useRef<HTMLDivElement>(null);
