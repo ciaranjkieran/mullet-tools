@@ -179,11 +179,8 @@ export default function MobileEntityFAB({
   return (
     <div
       ref={containerRef}
-      className="fixed z-50 md:hidden"
+      className="fixed z-50 lg:hidden"
       style={{ bottom: pos.bottom, right: pos.right }}
-      onTouchStart={onTouchStart}
-      onTouchMove={onTouchMove}
-      onTouchEnd={onTouchEnd}
     >
       {/* Expanded entity buttons — fan out vertically above */}
       <div
@@ -219,6 +216,9 @@ export default function MobileEntityFAB({
         {/* Entity Creator button */}
         <button
           onClick={toggleExpanded}
+          onTouchStart={onTouchStart}
+          onTouchMove={onTouchMove}
+          onTouchEnd={onTouchEnd}
           className="w-14 h-14 rounded-full shadow-xl flex items-center justify-center transition-transform duration-200"
           style={{
             backgroundColor: modeColor,
@@ -234,6 +234,9 @@ export default function MobileEntityFAB({
         {/* Add Task button */}
         <button
           onClick={handleTaskTap}
+          onTouchStart={onTouchStart}
+          onTouchMove={onTouchMove}
+          onTouchEnd={onTouchEnd}
           className="w-14 h-14 rounded-full shadow-xl flex items-center justify-center"
           style={{ backgroundColor: modeColor, color: textColor }}
           aria-label="Add task"

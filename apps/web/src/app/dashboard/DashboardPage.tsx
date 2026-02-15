@@ -227,7 +227,7 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen">
       {/* Desktop view buttons */}
-      <div className="hidden md:grid md:grid-cols-2 gap-6 absolute top-[6.5rem] left-10 z-40 ml-8">
+      <div className="hidden lg:grid lg:grid-cols-2 gap-4 xl:gap-6 absolute top-[6.5rem] left-3 xl:left-10 z-40 ml-2 xl:ml-8">
         <div className="relative inline-flex items-center group">
           <span
             className="pointer-events-none absolute right-full mr-3 top-1/2 -translate-y-1/2
@@ -372,7 +372,7 @@ export default function DashboardPage() {
 
         {/* Mobile view buttons */}
         <div
-          className="grid md:hidden gap-x-2 gap-y-2 mt-6 mb-4"
+          className="grid lg:hidden gap-x-2 gap-y-2 mt-6 mb-4"
           style={{ gridTemplateColumns: "repeat(4, max-content)" }}
         >
           <div>
@@ -533,7 +533,7 @@ export default function DashboardPage() {
             />
 
             {/* Desktop: full stack */}
-            <div className="fixed z-50 bottom-10 right-12 hidden md:flex flex-col items-center gap-4">
+            <div className="fixed z-50 bottom-10 right-12 hidden lg:flex flex-col items-center gap-4">
               <AddGoalButton
                 onClick={() => {
                   setGoalToEdit(null);
