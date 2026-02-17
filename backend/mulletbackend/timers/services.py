@@ -86,7 +86,7 @@ def close_active_into_entry(
     if end < active.started_at:
         end = active.started_at
 
-    seconds = int((end - active.started_at).total_seconds())
+    seconds = round((end - active.started_at).total_seconds())
     if seconds < 1:
         seconds = 1
 
@@ -124,7 +124,7 @@ def slice_active_until(active: ActiveTimer, *, until=None, corr: str = "—"):
         log.info("[SLICE][%s] No elapsed; moved started_at -> %s", corr, until)
         return
 
-    elapsed = int((until - active.started_at).total_seconds())
+    elapsed = round((until - active.started_at).total_seconds())
     if elapsed < 0:
         elapsed = 0
 

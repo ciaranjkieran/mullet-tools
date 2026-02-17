@@ -428,6 +428,17 @@ export function useTimerController({
     return normalizePathIdsToSelection(pathIds, resolvedModeId);
   }, [active, activeSessionModeId, modeId, modes, pathIds]);
 
+  // True when the active session is timing an entity (not just a mode)
+  const activeSessionHasEntity = useMemo(() => {
+    if (!selectionFromPath) return false;
+    return (
+      selectionFromPath.taskId != null ||
+      selectionFromPath.milestoneId != null ||
+      selectionFromPath.projectId != null ||
+      selectionFromPath.goalId != null
+    );
+  }, [selectionFromPath]);
+
   function applyTaskPathNormalized(path: {
     modeId: number | null;
     goalId: number | null;
@@ -1436,5 +1447,6 @@ export function useTimerController({
     handleNext,
     isCompleting: completeNextMut.isPending,
     didCompleteStop,
+    activeSessionHasEntity,
   };
 }

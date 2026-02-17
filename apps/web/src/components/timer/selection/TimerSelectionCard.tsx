@@ -56,6 +56,7 @@ type Props = {
   onComplete: () => void;
 
   completeLabelTitle: string;
+  activeSessionHasEntity?: boolean;
 };
 
 // ─────────────────────────────────────────────
@@ -139,6 +140,7 @@ export default function TimerSelectionCard({
   isCompleting,
   onComplete,
   completeLabelTitle,
+  activeSessionHasEntity,
 }: Props) {
   // ─────────────────────────────────────────────
   // Derived mode + editor selection
@@ -640,7 +642,7 @@ export default function TimerSelectionCard({
         modeColor={modeColor}
       />
 
-      {isActiveSession && (
+      {isActiveSession && activeSessionHasEntity && (
         <div className="pt-3 border-t flex justify-end">
           <button
             type="button"

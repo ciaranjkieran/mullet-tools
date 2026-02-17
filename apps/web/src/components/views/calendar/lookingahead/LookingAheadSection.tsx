@@ -3,6 +3,7 @@
 
 import { useState } from "react";
 import { format, parseISO } from "date-fns";
+import { formatDateLabel } from "@/lib/utils/formatDateLabel";
 import { Mode } from "@shared/types/Mode";
 import { Milestone } from "@shared/types/Milestone";
 import { Task } from "@shared/types/Task";
@@ -76,7 +77,7 @@ export default function LookingAheadSection({
       {isOpen &&
         sorted.map((dateStr) => {
           const date = parseISO(dateStr);
-          const label = format(date, "eeee, MMM d");
+          const label = formatDateLabel(date, "eeee, MMM d");
           return (
             <DateSectionCalendar
               key={dateStr}

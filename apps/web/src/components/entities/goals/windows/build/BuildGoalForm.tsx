@@ -60,7 +60,7 @@ export default function BuildGoalForm({
           className="w-5 h-5 rounded-full flex items-center justify-center"
           style={{ backgroundColor: modeColor }}
         >
-          <TargetIcon className="w-4 h-4 text-white" />
+          <TargetIcon className="w-4 h-4" style={{ color: textColor }} />
         </div>
         <div className="flex-1">
           <TitleInput title={title} setTitle={setTitle} label="Goal" />

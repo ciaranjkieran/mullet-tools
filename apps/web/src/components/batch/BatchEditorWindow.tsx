@@ -242,8 +242,9 @@ export default function BatchEditorWindow() {
   const todayStr = () => new Date().toLocaleDateString("en-CA");
 
   const selectedModeId = targetModeId ?? onlyModeId ?? modes[0]?.id ?? null;
+  const resolvedModeId = sameMode || targetModeId != null ? selectedModeId : null;
   const modeColor =
-    (selectedModeId && modes.find((m) => m.id === selectedModeId)?.color) ||
+    (resolvedModeId && modes.find((m) => m.id === resolvedModeId)?.color) ||
     "#333";
   const primaryFg = getContrastingText(modeColor);
 
@@ -654,9 +655,10 @@ export default function BatchEditorWindow() {
                   <div className="max-w-sm">
                     <EditorModeSelect
                       modes={modes}
-                      modeId={selectedModeId ?? modes[0]?.id ?? 0}
+                      modeId={sameMode || targetModeId != null ? (selectedModeId ?? modes[0]?.id ?? 0) : null}
                       onChange={onModeChange}
                       modeColor={modeColor}
+                      placeholder="---"
                     />
                   </div>
                 </section>

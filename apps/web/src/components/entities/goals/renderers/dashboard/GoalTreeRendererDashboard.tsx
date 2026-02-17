@@ -16,6 +16,7 @@ import { buildMilestoneTree } from "@/components/entities/milestones/utils/Miles
 
 import GoalCardDragDashboard from "../../dnd/dashboard/GoalCardDragDashboard";
 import TaskSectionDashboard from "@/components/entities/tasks/containers/dashboard/TaskSectionDashboard";
+import { useEntityUIStore } from "@/lib/store/useEntityUIStore";
 
 // NEW: lineage helpers (transitive)
 import {
@@ -56,8 +57,9 @@ export default function GoalTreeRendererDashboard({
   milestones,
   collapsedMap,
 }: Props) {
-  // collapse (prefer provider’s map)
-  const isCollapsed = !!collapsedMap?.goal?.[goal.id];
+  // collapse (prefer provider's map, fall back to persistent store)
+  const storeCollapsed = useEntityUIStore((s) => !!s.collapsed.goal?.[goal.id]);
+  const isCollapsed = collapsedMap?.goal?.[goal.id] ?? storeCollapsed;
 
   // Maps for O(1) lineage walk-ups
   const projectsById = useMemo(

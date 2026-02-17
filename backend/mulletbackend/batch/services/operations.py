@@ -161,11 +161,13 @@ def do_change_mode(selected: Selected, mode_id: int, *, user) -> Dict[str, int]:
 
 
 @transaction.atomic
-def do_schedule(selected: Selected, due_date, due_time, *, user) -> Dict[str, int]:
+def do_schedule(selected: Selected, payload: Dict[str, object], *, user) -> Dict[str, int]:
     user = _require_user(user)
 
+    if not payload:
+        return {"task": 0, "milestone": 0, "project": 0, "goal": 0}
+
     changed = {"task": 0, "milestone": 0, "project": 0, "goal": 0}
-    payload = {"due_date": due_date, "due_time": due_time}
 
     if ids := selected.get("task"):
         changed["task"] = Task.objects.filter(user=user, id__in=ids).update(**payload)

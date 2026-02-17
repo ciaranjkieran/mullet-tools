@@ -99,6 +99,7 @@ export default function TimerView({
     // ✅ Complete
     handleComplete,
     isCompleting,
+    activeSessionHasEntity,
   } = useTimerController({
     modes,
     selectedMode,
@@ -243,6 +244,7 @@ export default function TimerView({
             isCompleting={isCompleting}
             onComplete={handleComplete}
             completeLabelTitle={leafTitle}
+            activeSessionHasEntity={activeSessionHasEntity}
           />
         </>
       )}

@@ -5,7 +5,8 @@ import { Milestone } from "@shared/types/Milestone";
 import { Mode } from "@shared/types/Mode";
 import { PencilSquareIcon } from "@heroicons/react/24/outline";
 import clsx from "clsx";
-import { format, parseISO } from "date-fns";
+import { parseISO } from "date-fns";
+import { formatDateLabel } from "@/lib/utils/formatDateLabel";
 
 import { useDeleteMilestone } from "@shared/api/hooks/milestones/useDeleteMilestone";
 import { useDialogStore } from "../../../../../lib/dialogs/useDialogStore";
@@ -144,7 +145,7 @@ export default function MilestoneRenderer({
 
           {milestone.dueDate && (
             <p className="text-xs text-gray-500">
-              Due: {format(parseISO(milestone.dueDate), "EEE, MMM d")}
+              Due: {formatDateLabel(parseISO(milestone.dueDate), "EEE, MMM d")}
               {milestone.dueTime && ` at ${milestone.dueTime.slice(0, 5)}`}
             </p>
           )}

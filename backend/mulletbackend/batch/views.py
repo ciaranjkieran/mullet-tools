@@ -38,9 +38,12 @@ class BatchScheduleView(APIView):
       ser = BatchScheduleSerializer(data=request.data)
       ser.is_valid(raise_exception=True)
       sel = ser.validated_data["selected"]
-      due_date = ser.validated_data.get("dueDate")  # None or date
-      due_time = ser.validated_data.get("dueTime")  # None or time
-      out = do_schedule(sel, due_date, due_time, user=request.user)
+      payload = {}
+      if "dueDate" in ser.validated_data:
+          payload["due_date"] = ser.validated_data["dueDate"]
+      if "dueTime" in ser.validated_data:
+          payload["due_time"] = ser.validated_data["dueTime"]
+      out = do_schedule(sel, payload, user=request.user)
       return Response({"ok": True, "changed": out}, status=status.HTTP_200_OK)
 
 class BatchChangeModeView(APIView):

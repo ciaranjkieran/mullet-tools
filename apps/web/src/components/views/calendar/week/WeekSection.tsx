@@ -2,6 +2,7 @@
 "use client";
 
 import { addDays, format, isAfter, isSameDay, startOfWeek } from "date-fns";
+import { formatDateLabel } from "@/lib/utils/formatDateLabel";
 
 import { Mode } from "@shared/types/Mode";
 import { Milestone } from "@shared/types/Milestone";
@@ -53,8 +54,8 @@ export default function WeekSection({
     const isToday = isSameDay(date, today);
     const dateStr = format(date, "yyyy-MM-dd");
     const label = isToday
-      ? `${format(date, "eee, MMM d")}, today.`
-      : format(date, "eee, MMM d");
+      ? `${formatDateLabel(date, "eee, MMM d")}, today.`
+      : formatDateLabel(date, "eee, MMM d");
 
     return { date, dateStr, label, isToday };
   });
@@ -72,8 +73,8 @@ export default function WeekSection({
           <h2 className="text-lg sm:text-xl font-semibold text-gray-800">
             {weekOffset === 0 && "This Week, "}
             {weekOffset === 0
-              ? `${format(today, "MMM d")} – ${format(endOfDisplayedWeek, "MMM d")}`
-              : `${format(startOfDisplayedWeek, "MMM d")} – ${format(
+              ? `${formatDateLabel(today, "MMM d")} – ${formatDateLabel(endOfDisplayedWeek, "MMM d")}`
+              : `${formatDateLabel(startOfDisplayedWeek, "MMM d")} – ${formatDateLabel(
                   endOfDisplayedWeek,
                   "MMM d",
                 )}`}

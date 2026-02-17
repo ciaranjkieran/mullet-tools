@@ -5,7 +5,8 @@ import { Project } from "@shared/types/Project";
 import { PencilSquareIcon } from "@heroicons/react/24/outline";
 import { Folder as OutlineFolderIcon } from "lucide-react";
 import clsx from "clsx";
-import { format, parseISO } from "date-fns";
+import { parseISO } from "date-fns";
+import { formatDateLabel } from "@/lib/utils/formatDateLabel";
 import { useDialogStore } from "@/lib/dialogs/useDialogStore";
 import { useDeleteProject } from "@shared/api/hooks/projects/useDeleteProject";
 
@@ -138,7 +139,7 @@ export default function ProjectRenderer({
 
           {project.dueDate && (
             <p className="text-[10px] md:text-xs text-gray-500">
-              Due: {format(parseISO(project.dueDate), "EEE, MMM d")}
+              Due: {formatDateLabel(parseISO(project.dueDate), "EEE, MMM d")}
               {project.dueTime && ` at ${project.dueTime.slice(0, 5)}`}
             </p>
           )}

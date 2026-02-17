@@ -2,7 +2,8 @@
 
 import { Task } from "@shared/types/Task";
 import { Mode } from "@shared/types/Mode";
-import { format, parseISO } from "date-fns";
+import { parseISO } from "date-fns";
+import { formatDateLabel } from "@/lib/utils/formatDateLabel";
 import { PencilSquareIcon } from "@heroicons/react/24/outline";
 import clsx from "clsx";
 import { useDeleteTask } from "@shared/api/hooks/tasks/useDeleteTask";
@@ -71,7 +72,7 @@ export default function TaskRendererDashboard({
             {task.dueDate && (
               <div className="mt-0.5 flex items-center gap-1 text-[10px] md:text-xs text-gray-700 leading-snug">
                 <span className="break-words whitespace-normal text-left">
-                  Due: {format(parseISO(task.dueDate), "EEE, MMM d")}
+                  Due: {formatDateLabel(parseISO(task.dueDate), "EEE, MMM d")}
                   {task.dueTime && ` at ${task.dueTime.slice(0, 5)}`}
                 </span>
               </div>

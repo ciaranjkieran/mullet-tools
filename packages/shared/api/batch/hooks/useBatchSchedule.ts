@@ -18,8 +18,8 @@ import { useUpdateGoal } from "../../../api/hooks/goals/useUpdateGoal";
 
 type Payload = {
   selected: SelectedIds;
-  dueDate: string | null;
-  dueTime: string | null;
+  dueDate: string | null | undefined;
+  dueTime: string | null | undefined;
   skipInvalidate?: boolean;
 };
 
@@ -38,38 +38,46 @@ export function useBatchSchedule() {
 
       if (useBackend) {
         await ensureCsrf();
-        return api.post("/batch/schedule/", clean);
+        const payload: Record<string, unknown> = { selected: clean.selected };
+        if (clean.dueDate !== undefined) payload.dueDate = clean.dueDate;
+        if (clean.dueTime !== undefined) payload.dueTime = clean.dueTime;
+        return api.post("/batch/schedule/", payload);
       }
 
       const { selected, dueDate, dueTime } = clean;
       const { task = [], milestone = [], project = [], goal = [] } = selected;
 
+      const datePatch = {
+        ...(dueDate !== undefined ? { dueDate } : {}),
+        ...(dueTime !== undefined ? { dueTime } : {}),
+      };
+
       await Promise.all([
         task.length
           ? runInBatches(
               task,
-              (id) => updateTask.mutateAsync({ id, dueDate, dueTime }),
+              (id) => updateTask.mutateAsync({ id, ...datePatch }),
               8
             )
           : Promise.resolve(),
         milestone.length
           ? runInBatches(
               milestone,
-              (id) => updateMilestone.mutateAsync({ id, dueDate, dueTime }),
+              (id) => updateMilestone.mutateAsync({ id, ...datePatch }),
               8
             )
           : Promise.resolve(),
         project.length
           ? runInBatches(
               project,
-              (id) => updateProject.mutateAsync({ id, dueDate, dueTime }),
+              (id) => updateProject.mutateAsync({ id, ...datePatch }),
               8
             )
           : Promise.resolve(),
         goal.length
           ? runInBatches(
               goal,
-              (id) => updateGoal.mutateAsync({ id, dueDate, dueTime } as any),
+              (id) => updateGoal.mutateAsync({ id, ...datePatch } as any),
               8
             )
           : Promise.resolve(),
@@ -98,8 +106,8 @@ export function useBatchSchedule() {
 
       const patch = (o: any) => ({
         ...o,
-        dueDate: body.dueDate,
-        dueTime: body.dueTime,
+        ...(body.dueDate !== undefined ? { dueDate: body.dueDate } : {}),
+        ...(body.dueTime !== undefined ? { dueTime: body.dueTime } : {}),
       });
 
       const patchByIdMap = (

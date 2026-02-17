@@ -4,7 +4,8 @@
 import { Goal } from "@shared/types/Goal";
 import { Mode } from "@shared/types/Mode";
 import clsx from "clsx";
-import { format, parseISO } from "date-fns";
+import { parseISO } from "date-fns";
+import { formatDateLabel } from "@/lib/utils/formatDateLabel";
 import { useDialogStore } from "@/lib/dialogs/useDialogStore";
 import { useDeleteGoal } from "@shared/api/hooks/goals/useDeleteGoal";
 
@@ -158,7 +159,7 @@ export default function GoalRendererDashboard({
 
           {goal.dueDate && (
             <p className="text-[10px] md:text-xs text-gray-500">
-              Due: {format(parseISO(goal.dueDate), "EEE, MMM d")}
+              Due: {formatDateLabel(parseISO(goal.dueDate), "EEE, MMM d")}
               {goal.dueTime && ` at ${goal.dueTime.slice(0, 5)}`}
             </p>
           )}

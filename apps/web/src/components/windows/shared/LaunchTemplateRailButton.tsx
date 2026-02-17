@@ -1,6 +1,7 @@
 // components/windows/shared/LaunchTemplateRailButton.tsx
 "use client";
 import { FileStack } from "lucide-react";
+import { getContrastingText } from "@shared/utils/getContrastingText";
 
 export default function LaunchTemplateRailButton({
   onClick,
@@ -36,7 +37,7 @@ export default function LaunchTemplateRailButton({
         "
         style={{ backgroundColor: modeColor }}
       >
-        <FileStack className="w-5 h-5 text-white" />
+        <FileStack className="w-5 h-5" style={{ color: getContrastingText(modeColor) }} />
       </button>
     </div>
   );

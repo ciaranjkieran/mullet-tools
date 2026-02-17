@@ -4,10 +4,11 @@ import { Mode } from "@shared/types/Mode";
 
 type Props = {
   modes: Mode[];
-  modeId: number;
+  modeId: number | null;
   onChange?: (id: number) => void;
   variant?: "build" | "edit" | "batch";
   modeColor?: string; // ⬅️ NEW
+  placeholder?: string;
 };
 
 export default function EditorModeSelect({
@@ -15,6 +16,7 @@ export default function EditorModeSelect({
   modeId,
   onChange,
   modeColor = "#333",
+  placeholder,
 }: Props) {
   return (
     <div>
@@ -26,10 +28,18 @@ export default function EditorModeSelect({
         Mode
       </label>
       <select
-        value={modeId}
-        onChange={(e) => onChange?.(Number(e.target.value))}
+        value={modeId ?? ""}
+        onChange={(e) => {
+          const v = e.target.value;
+          if (v !== "") onChange?.(Number(v));
+        }}
         className="w-full border rounded-md px-2 py-1.5 text-sm"
       >
+        {placeholder && modeId == null && (
+          <option value="" disabled>
+            {placeholder}
+          </option>
+        )}
         {modes.map((m) => (
           <option key={m.id} value={m.id}>
             {m.title}

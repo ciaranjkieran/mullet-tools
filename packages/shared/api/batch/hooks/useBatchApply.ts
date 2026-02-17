@@ -73,9 +73,9 @@ export function useBatchApply() {
       ? null
       : params.setToday
       ? new Date().toISOString().slice(0, 10)
-      : params.dueDate || null;
+      : params.dueDate || undefined;
 
-    const nextTime = shouldClear ? null : params.dueTime || null;
+    const nextTime = shouldClear ? null : params.dueTime || undefined;
 
     setIsApplying(true);
     try {

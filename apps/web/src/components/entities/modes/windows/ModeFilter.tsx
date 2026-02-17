@@ -184,30 +184,32 @@ export default function ModeFilter({
                 isModeFocus ? "justify-start" : ""
               }`}
             >
-              <button
-                onClick={() => {
-                  setSelectedMode("All");
+              {(!isModeFocus || selectedMode === "All") && (
+                <button
+                  onClick={() => {
+                    setSelectedMode("All");
 
-                  // Also reset timer selection when going to All
-                  const timerSel = useTimerSelectionStore.getState();
-                  timerSel.setRaw({
-                    modeId: -1,
-                    goalId: null,
-                    projectId: null,
-                    milestoneId: null,
-                    taskId: null,
-                  });
-                }}
-                className="px-2 py-0.5 md:px-3 md:py-1 rounded-full border transition select-none text-sm md:text-base"
-                style={{
-                  backgroundColor: selectedMode === "All" ? "#000" : "#F3F4F6",
-                  color: selectedMode === "All" ? "#fff" : "#111",
-                  borderColor: selectedMode === "All" ? "#000" : "#D1D5DB",
-                  cursor: "pointer",
-                }}
-              >
-                All
-              </button>
+                    // Also reset timer selection when going to All
+                    const timerSel = useTimerSelectionStore.getState();
+                    timerSel.setRaw({
+                      modeId: -1,
+                      goalId: null,
+                      projectId: null,
+                      milestoneId: null,
+                      taskId: null,
+                    });
+                  }}
+                  className="px-2 py-0.5 md:px-3 md:py-1 rounded-full border transition select-none text-sm md:text-base"
+                  style={{
+                    backgroundColor: selectedMode === "All" ? "#000" : "#F3F4F6",
+                    color: selectedMode === "All" ? "#fff" : "#111",
+                    borderColor: selectedMode === "All" ? "#000" : "#D1D5DB",
+                    cursor: "pointer",
+                  }}
+                >
+                  All
+                </button>
+              )}
 
               {sortedModes
                 .filter(

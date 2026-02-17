@@ -9,6 +9,7 @@ import React, {
   useState,
 } from "react";
 import clsx from "clsx";
+import { getContrastingText } from "@shared/utils/getContrastingText";
 
 type TabProps = {
   name: string;
@@ -51,6 +52,10 @@ export default function EntityWindowShell({
   const activeIndex = controlledIndex ?? uncontrolledIndex;
   const setActiveIndex = onTabChange ?? setUncontrolledIndex;
 
+  const activeTextColor = getContrastingText(modeColor);
+  // If modeColor is light (needs dark text on it), inactive icons on white bg also need to go dark
+  const inactiveIconColor = activeTextColor === "white" ? modeColor : "#1a1a1a";
+
   const tabButton = (tab: ReactElement<TabProps>, i: number) => {
     const isActive = i === activeIndex;
     return (
@@ -62,13 +67,13 @@ export default function EntityWindowShell({
         aria-label={tab.props.name}
         className={clsx(
           "w-9 h-9 md:w-10 md:h-10 rounded-md flex items-center justify-center border-2 transition-all duration-150",
-          isActive ? "text-white" : "bg-transparent hover:bg-muted/10"
+          !isActive && "bg-transparent hover:bg-muted/10"
         )}
         style={{
           backgroundColor: isActive ? modeColor : "transparent",
           opacity: 0.75,
           borderColor: modeColor,
-          color: isActive ? "white" : modeColor,
+          color: isActive ? activeTextColor : inactiveIconColor,
         }}
       >
         {isIconElement(tab.props.icon)

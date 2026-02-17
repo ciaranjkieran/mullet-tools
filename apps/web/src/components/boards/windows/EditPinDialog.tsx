@@ -216,6 +216,10 @@ export default function EditPinDialog({ modes, modeColor }: Props) {
 
   const kind = pin?.kind;
 
+  // Only allow manual mode change for pins flat to a mode (not attached to an entity)
+  const isFlatToMode =
+    !pin?.content_type || pin.content_type === "mode";
+
   return (
     <>
       <Dialog.Root open={isOpen} onOpenChange={(v) => !v && handleClose()}>
@@ -241,8 +245,9 @@ export default function EditPinDialog({ modes, modeColor }: Props) {
                   Edit Pin
                 </Dialog.Title>
                 <Dialog.Description className="mt-1 text-sm text-gray-500">
-                  Update the pin title, move it to another mode, or replace its
-                  content.
+                  {isFlatToMode
+                    ? "Update the pin title, move it to another mode, or replace its content."
+                    : "Update the pin title or replace its content."}
                 </Dialog.Description>
               </div>
 
@@ -258,15 +263,17 @@ export default function EditPinDialog({ modes, modeColor }: Props) {
               <div className="grid gap-6">
                 {renderPreview(pin || null)}
 
-                <div className="max-w-xl">
-                  <EditorModeSelect
-                    modes={safeModes}
-                    modeId={modeId}
-                    onChange={(id) => setModeId(id)}
-                    modeColor={resolvedModeColor}
-                    variant="edit"
-                  />
-                </div>
+                {isFlatToMode && (
+                  <div className="max-w-xl">
+                    <EditorModeSelect
+                      modes={safeModes}
+                      modeId={modeId}
+                      onChange={(id) => setModeId(id)}
+                      modeColor={resolvedModeColor}
+                      variant="edit"
+                    />
+                  </div>
+                )}
 
                 <div className="max-w-xl grid gap-2">
                   <label className="text-sm font-semibold text-gray-900">

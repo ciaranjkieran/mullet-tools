@@ -72,10 +72,7 @@ export default function EditMilestoneTemplateWindow({
     const nextModeId = resolveInitialModeId(template, modes);
     if (nextModeId == null) return;
 
-    setModeId((prev) => {
-      const hasPrev = prev != null && modes.some((m) => m.id === prev);
-      return hasPrev ? prev : nextModeId;
-    });
+    setModeId(nextModeId);
   }, [template, modes]);
 
   /** ----------------

@@ -1,5 +1,5 @@
 // getContrastingText.ts
-export function getContrastingText(bgColor: string): "black" | "white" {
+export function getContrastingText(bgColor: string): string {
   const hex = bgColor.replace("#", "");
   const r = parseInt(hex.substr(0, 2), 16);
   const g = parseInt(hex.substr(2, 2), 16);
@@ -7,5 +7,5 @@ export function getContrastingText(bgColor: string): "black" | "white" {
 
   const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
 
-  return luminance > 0.6 ? "black" : "white";
+  return luminance > 0.6 ? "#1a1a1a" : "white";
 }
