@@ -112,8 +112,6 @@ export default function ModeDndWrapper({
     return () => document.removeEventListener("click", handler);
   }, [clearSelectedTasks]);
 
-  console.log("🌀 ModeDndWrapper mounted for mode:", modeId);
-
   if (unscheduledTasks.length === 0) return null;
 
   return (

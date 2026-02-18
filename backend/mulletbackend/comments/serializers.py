@@ -27,6 +27,7 @@ from .models import Comment, CommentAttachment
 
 
 class CommentSerializer(serializers.ModelSerializer):
+    body = serializers.CharField(max_length=50000, required=False, allow_blank=True)
     # write-only inputs for create/update
     entity = serializers.CharField(write_only=True, required=False)
     entity_id = serializers.IntegerField(write_only=True, required=False)

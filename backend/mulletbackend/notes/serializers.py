@@ -13,6 +13,7 @@ def _extract_title(obj):
 
 
 class NoteSerializer(serializers.ModelSerializer):
+    body = serializers.CharField(max_length=50000)
     # Readable content_type for frontend ("mode"|"goal"|...)
     content_type = serializers.SerializerMethodField()
     display_title = serializers.SerializerMethodField()

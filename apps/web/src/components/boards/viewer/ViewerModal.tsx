@@ -112,6 +112,12 @@ export default function ViewerModal() {
 
   const openLink = (href?: string | null) => {
     if (!href) return;
+    try {
+      const u = new URL(href);
+      if (u.protocol !== "https:" && u.protocol !== "http:") return;
+    } catch {
+      return;
+    }
     window.open(href, "_blank", "noopener,noreferrer");
   };
 

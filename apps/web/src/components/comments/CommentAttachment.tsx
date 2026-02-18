@@ -8,7 +8,20 @@ type Props = {
   mime?: string;
 };
 
+function isSafeUrl(url: string): boolean {
+  try {
+    const u = new URL(url, window.location.origin);
+    return u.protocol === "https:" || u.protocol === "http:";
+  } catch {
+    return false;
+  }
+}
+
 export default function CommentAttachment({ url, name, mime = "" }: Props) {
+  if (!isSafeUrl(url)) {
+    return <span className="text-sm text-gray-400">Invalid attachment URL</span>;
+  }
+
   const isImage =
     mime.startsWith("image/") || /\.(png|jpe?g|gif|webp|avif|svg)$/i.test(url);
   const isVideo = mime.startsWith("video/") || /\.(mp4|webm|ogg)$/i.test(url);
@@ -52,7 +65,7 @@ export default function CommentAttachment({ url, name, mime = "" }: Props) {
   if (isPDF) {
     return (
       <div className="rounded border border-gray-200">
-        <iframe src={url} className="w-full h-96 rounded" />
+        <iframe src={url} className="w-full h-96 rounded" sandbox="allow-same-origin" />
         <div className="px-2 py-1 text-xs">
           <a
             href={url}

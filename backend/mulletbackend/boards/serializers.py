@@ -1,12 +1,16 @@
 # boards/serializers.py
+import logging
 import os
 from mimetypes import guess_type
+
+logger = logging.getLogger(__name__)
 
 from rest_framework import serializers
 from django.contrib.contenttypes.models import ContentType
 
 from .models import Pin
 from .linkmeta import fetch_link_meta, try_fetch_favicon_url
+from .validation import ALLOWED_FILE_MIMES, ALLOWED_FILE_EXTS, MAX_FILE_BYTES
 
 # local thumbnail generators (Pillow + PyMuPDF)
 from .thumbs import make_image_thumb, make_pdf_thumb
@@ -102,6 +106,19 @@ class PinSerializer(serializers.ModelSerializer):
             if not (uploaded.content_type or "").startswith("image/"):
                 raise serializers.ValidationError({"file": "Must be an image."})
 
+        if kind == "file" and uploaded:
+            ext = os.path.splitext(uploaded.name or "")[1].lstrip(".").lower()
+            if ext and ext not in ALLOWED_FILE_EXTS:
+                raise serializers.ValidationError({"file": f"File type '.{ext}' is not allowed."})
+            mime = getattr(uploaded, "content_type", "") or ""
+            if mime and mime not in ALLOWED_FILE_MIMES:
+                raise serializers.ValidationError({"file": f"MIME type '{mime}' is not allowed."})
+
+        if uploaded and uploaded.size > MAX_FILE_BYTES:
+            raise serializers.ValidationError(
+                {"file": f"File too large. Max is {MAX_FILE_BYTES // (1024 * 1024)}MB."}
+            )
+
         if kind == "link":
             if not url:
                 raise serializers.ValidationError({"url": "Required for links."})
@@ -150,12 +167,12 @@ class PinSerializer(serializers.ModelSerializer):
             ext = "webp"
 
         pin.thumbnail.save(f"{pin.id}_linkthumb.{ext}", ContentFile(r.content), save=True)
-        print("LINK THUMB SAVED:", pin.thumbnail.name)
+        logger.debug("LINK THUMB SAVED: %s", pin.thumbnail.name)
         try:
-            print("LINK THUMB PATH:", pin.thumbnail.path)
-            print("LINK THUMB EXISTS:", os.path.exists(pin.thumbnail.path))
+            logger.debug("LINK THUMB PATH: %s", pin.thumbnail.path)
+            logger.debug("LINK THUMB EXISTS: %s", os.path.exists(pin.thumbnail.path))
         except Exception as e:
-            print("LINK THUMB PATH ERROR:", repr(e))
+            logger.debug("LINK THUMB PATH ERROR: %s", repr(e))
 
     def update(self, instance, validated_data):
         new_mode = validated_data.get("mode", None)
@@ -208,7 +225,7 @@ class PinSerializer(serializers.ModelSerializer):
                 meta_desc = meta.get("description") or None
                 meta_img = meta.get("image") or None
             except Exception as e:
-                print("LINK META FAILED:", repr(e))
+                logger.debug("LINK META FAILED: %s", repr(e))
 
         if not validated_data.get("title") and meta_title:
             validated_data["title"] = meta_title
@@ -237,26 +254,26 @@ class PinSerializer(serializers.ModelSerializer):
                 if pin.kind == "image" or mt.startswith("image/"):
                     thumb_cf = make_image_thumb(pin.file)
                     pin.thumbnail.save(f"{pin.id}_thumb.jpg", thumb_cf, save=True)
-                    print("THUMB SAVED:", pin.thumbnail.name)
+                    logger.debug("THUMB SAVED: %s", pin.thumbnail.name)
                     try:
-                        print("THUMB PATH:", pin.thumbnail.path)
-                        print("THUMB EXISTS:", os.path.exists(pin.thumbnail.path))
+                        logger.debug("THUMB PATH: %s", pin.thumbnail.path)
+                        logger.debug("THUMB EXISTS: %s", os.path.exists(pin.thumbnail.path))
                     except Exception as e:
-                        print("THUMB PATH ERROR:", repr(e))
+                        logger.debug("THUMB PATH ERROR: %s", repr(e))
 
                 # pdf thumb
                 elif mt == "application/pdf" or name.endswith(".pdf"):
                     thumb_cf = make_pdf_thumb(pin.file)
                     pin.thumbnail.save(f"{pin.id}_thumb.jpg", thumb_cf, save=True)
-                    print("PDF THUMB SAVED:", pin.thumbnail.name)
+                    logger.debug("PDF THUMB SAVED: %s", pin.thumbnail.name)
                     try:
-                        print("PDF THUMB PATH:", pin.thumbnail.path)
-                        print("PDF THUMB EXISTS:", os.path.exists(pin.thumbnail.path))
+                        logger.debug("PDF THUMB PATH: %s", pin.thumbnail.path)
+                        logger.debug("PDF THUMB EXISTS: %s", os.path.exists(pin.thumbnail.path))
                     except Exception as e:
-                        print("PDF THUMB PATH ERROR:", repr(e))
+                        logger.debug("PDF THUMB PATH ERROR: %s", repr(e))
 
         except Exception as e:
-            print("THUMBNAIL GEN FAILED:", repr(e))
+            logger.debug("THUMBNAIL GEN FAILED: %s", repr(e))
 
         # Link thumbnails from OG image / favicon (download and store)
         if not pin.thumbnail:
@@ -267,7 +284,7 @@ class PinSerializer(serializers.ModelSerializer):
                 if img_url:
                     self._download_to_thumbnail(pin, img_url)
             except Exception as e:
-                print("LINK THUMB FAILED:", repr(e))
+                logger.debug("LINK THUMB FAILED: %s", repr(e))
 
         # Keep this for safety; thumbnail.save(save=True) already persists thumbnail,
         # but calling pin.save() is harmless for other field changes.

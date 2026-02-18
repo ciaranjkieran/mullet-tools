@@ -85,13 +85,6 @@ export default function PastDueSection({
   ) {
     return null;
   }
-  console.log({
-    pastGoals,
-    pastMilestones,
-    pastProjects,
-    pastTasks,
-  });
-
   return (
     <section className="mt-2">
       <div className="flex items-center justify-end mb-1">

@@ -1,7 +1,22 @@
 from django.contrib import admin
 from django.urls import path, include, re_path
 from django.conf import settings
-from django.views.static import serve
+from django.http import FileResponse, Http404, HttpResponseForbidden
+import os
+
+def protected_media(request, path):
+    """Serve media files only to authenticated users."""
+    if not request.user.is_authenticated:
+        return HttpResponseForbidden("Authentication required.")
+    file_path = os.path.join(settings.MEDIA_ROOT, path)
+    if not os.path.isfile(file_path):
+        raise Http404
+    # Prevent path traversal
+    real_media = os.path.realpath(settings.MEDIA_ROOT)
+    real_file = os.path.realpath(file_path)
+    if not real_file.startswith(real_media):
+        raise Http404
+    return FileResponse(open(file_path, "rb"))
 
 urlpatterns = [
     # Admin
@@ -17,10 +32,6 @@ urlpatterns = [
     path("api/", include("timers.urls")),
     path("api/batch/", include("batch.urls")),
 
-    # ✅ MEDIA FILES (must be INSIDE urlpatterns)
-    re_path(
-        r"^media/(?P<path>.*)$",
-        serve,
-        {"document_root": settings.MEDIA_ROOT},
-    ),
+    # Media files — auth-gated
+    re_path(r"^media/(?P<path>.*)$", protected_media),
 ]

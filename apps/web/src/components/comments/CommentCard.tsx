@@ -1,19 +1,22 @@
 // components/comments/CommentCard.tsx
 "use client";
 
+import { useState } from "react";
 import { Comment } from "@shared/types/Comment";
 import { format } from "date-fns";
 import { useDeleteComment } from "@shared/api/hooks/comments/useDeleteComment";
 import { Trash2 } from "lucide-react";
 import Linkify from "linkify-react";
 import CommentAttachment from "./CommentAttachment";
+import ConfirmDialog from "../../lib/utils/ConfirmDialog";
 
 type Props = { comment: Comment };
 
 export default function CommentCard({ comment }: Props) {
-  const { mutate: deleteComment } = useDeleteComment();
+  const { mutate: deleteComment, isPending } = useDeleteComment();
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
-  const handleDelete = () => {
+  const handleConfirmDelete = () => {
     deleteComment(comment.id);
   };
 
@@ -51,12 +54,22 @@ export default function CommentCard({ comment }: Props) {
       </span>
 
       <div
-        onDoubleClick={handleDelete}
+        onClick={() => setConfirmOpen(true)}
         className="absolute top-2 right-2 p-1 rounded-md hover:bg-gray-200 text-gray-500 group-hover:visible invisible cursor-pointer"
-        title="Double-click to delete comment"
+        title="Delete comment"
       >
         <Trash2 className="w-4 h-4" />
       </div>
+
+      <ConfirmDialog
+        open={confirmOpen}
+        onClose={() => setConfirmOpen(false)}
+        onConfirm={handleConfirmDelete}
+        title="Delete this comment?"
+        description="This action cannot be undone. The comment will be permanently deleted."
+        confirmText={isPending ? "Deleting..." : "Delete"}
+        cancelText="Cancel"
+      />
     </div>
   );
 }

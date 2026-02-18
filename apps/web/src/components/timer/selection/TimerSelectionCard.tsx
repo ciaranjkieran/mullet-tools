@@ -360,72 +360,15 @@ export default function TimerSelectionCard({
   }, [milestoneId, milestonesSorted, milestones, sortAlpha]);
 
   // ─────────────────────────────────────────────
-  // Debug logging
-  // ─────────────────────────────────────────────
-
-  useEffect(() => {
-    console.log("[TimerSelectionCard] render snapshot", {
-      selectedModeKind: selectedMode === "All" ? "All" : "Single",
-      selectedModeId,
-      modeId,
-      effectiveModeId,
-      selection: { goalId, projectId, milestoneId, taskId },
-      showSwitch,
-      counts: {
-        goalsScoped: goalsScoped.length,
-        projectsScoped: projectsScoped.length,
-        milestonesScoped: milestonesScoped.length,
-        tasksScoped: tasksScoped.length,
-        goalsSorted: goalsSorted.length,
-        projectsSorted: projectsSorted.length,
-        milestonesSorted: milestonesSorted.length,
-        tasksSorted: tasksSorted.length,
-        tasksWithSelected: tasksWithSelected.length,
-        projectsWithSelected: projectsWithSelected.length,
-        milestonesWithSelected: milestonesWithSelected.length,
-      },
-    });
-  }, [
-    selectedMode,
-    selectedModeId,
-    modeId,
-    effectiveModeId,
-    goalId,
-    projectId,
-    milestoneId,
-    taskId,
-    goalsScoped.length,
-    projectsScoped.length,
-    milestonesScoped.length,
-    tasksScoped.length,
-    goalsSorted.length,
-    projectsSorted.length,
-    milestonesSorted.length,
-    tasksSorted.length,
-    tasksWithSelected.length,
-    projectsWithSelected.length,
-    milestonesWithSelected.length,
-    showSwitch,
-  ]);
-
-  // ─────────────────────────────────────────────
   // Handlers
   // ─────────────────────────────────────────────
 
   const handleModeChange = (id: number) => {
-    console.log("[TimerSelectionCard] handleModeChange", {
-      prevModeId: modeId,
-      nextModeId: id,
-    });
     setModeId(id);
     if (onRequestFilterMode) onRequestFilterMode(id);
   };
 
   const handleGoalChange = (id: number | null) => {
-    console.log("[TimerSelectionCard] handleGoalChange", {
-      prevGoalId: goalId,
-      nextGoalId: id,
-    });
     setGoalId(id);
     setProjectId(null);
     setMilestoneId(null);
@@ -433,11 +376,6 @@ export default function TimerSelectionCard({
   };
 
   const handleProjectChange = (id: number | null) => {
-    console.log("[TimerSelectionCard] handleProjectChange", {
-      prevProjectId: projectId,
-      nextProjectId: id,
-    });
-
     if (id == null) {
       setProjectId(null);
       setMilestoneId(null);
@@ -455,11 +393,6 @@ export default function TimerSelectionCard({
   };
 
   const handleMilestoneChange = (id: number | null) => {
-    console.log("[TimerSelectionCard] handleMilestoneChange", {
-      prevMilestoneId: milestoneId,
-      nextMilestoneId: id,
-    });
-
     if (id == null) {
       setMilestoneId(null);
       setTaskId(null);
@@ -478,11 +411,6 @@ export default function TimerSelectionCard({
   };
 
   const handleTaskChange = (id: number | null) => {
-    console.log("[TimerSelectionCard] handleTaskChange", {
-      prevTaskId: taskId,
-      nextTaskId: id,
-    });
-
     if (id == null) {
       setTaskId(null);
       return;

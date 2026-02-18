@@ -58,9 +58,6 @@ export default function ModeBoardsView({ mode, isAllMode, modes }: Props) {
   const { isOpen, openViewer } = useViewerStore();
   const { open: openEditPin } = useEditPinDialogStore();
 
-  // 🔍 Debug: raw pins
-  console.log("[ModeBoardsView] pins for mode", mode.id, pins);
-
   const [showFilterOptions, setShowFilterOptions] = useState(false);
   const [selectedEntity, setSelectedEntity] = useState<{
     type: EntityType;
@@ -123,9 +120,6 @@ export default function ModeBoardsView({ mode, isAllMode, modes }: Props) {
     const ordered = [...nonMode, ...modeOptions].map(
       ({ latestCreatedAt: _latestCreatedAt, ...rest }) => rest
     );
-
-    // 🔍 Debug: derived entity options in final order
-    console.log("[ModeBoardsView] entityOptions for mode", mode.id, ordered);
 
     return ordered;
   }, [pins, mode.id]);

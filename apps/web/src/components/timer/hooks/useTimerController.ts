@@ -515,13 +515,6 @@ export function useTimerController({
       entityId: target.entityId,
     });
 
-    console.log(
-      "[handleComplete] completed",
-      resp.completed,
-      "next",
-      resp.next
-    );
-
     // ✅ We only want "load next" behaviour for TASKS
     if (target.entityType !== "task") {
       // For non-tasks: just clear the completed type (no auto-advance)
@@ -740,8 +733,6 @@ export function useTimerController({
 
     const intent = useTimerUIStore.getState().consumeLaunchSelectionIntent();
     if (!intent) return;
-
-    console.log("[useTimerController] consume launchIntent", { intent });
 
     const sel: SelectionLike = {
       modeId: intent.modeId,
@@ -1127,17 +1118,6 @@ export function useTimerController({
 
     lastShowSwitchRef.current = showSwitch;
 
-    console.log("[useTimerController] showSwitch state changed", {
-      activeKind: active?.kind,
-      canInlineSwitch,
-      baselineSel,
-      baselineSelCanonical,
-      currentSel,
-      currentSelRaw,
-      switchArmed,
-      isDirtySelection,
-      showSwitch,
-    });
   }, [
     showSwitch,
     canInlineSwitch,
@@ -1153,12 +1133,6 @@ export function useTimerController({
   async function handleSwitchToSelection() {
     const token = ++commitTokenRef.current;
     const committed = { ...currentSelRaw };
-
-    console.log("[useTimerController] handleSwitchToSelection", {
-      committed,
-      activeKind: active?.kind,
-      clockType,
-    });
 
     // Set baseline to the committed selection (this is now the "original")
     setBaselineSel(committed);
@@ -1293,15 +1267,6 @@ export function useTimerController({
     lastLeafTitleRef.current ||
     (clockType === "timer" ? "Timer" : "Stopwatch");
 
-  console.log("[useTimerController] breadcrumb debug", {
-    activeKind: active?.kind,
-    pathIds,
-    selectionFromPath,
-    rawLeafTitle,
-    leafTitleFromIds,
-    finalLeafTitle: leafTitle,
-  });
-
   const remainingLive = (() => {
     if (!active) return null;
 
@@ -1371,7 +1336,6 @@ export function useTimerController({
 
   function handleStop() {
     if (completingRef.current) {
-      console.log("[useTimerController] handleStop ignored (completing)");
       return;
     }
 

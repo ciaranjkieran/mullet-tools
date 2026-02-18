@@ -1,24 +1,22 @@
-from django.shortcuts import render
-
-# Create your views here.
-# accounts/views.py
 from django.middleware.csrf import get_token
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.throttling import AnonRateThrottle
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.utils.decorators import method_decorator
-from django.contrib.auth import authenticate, login
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework.permissions import AllowAny
-from rest_framework import status
+from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.models import User
+from rest_framework import serializers, status
 import uuid
-from rest_framework.permissions import IsAuthenticated
 from core.services.create_default_modes_for_user import create_default_modes_for_user
 from django.db import transaction
 
 from .serializers import UserSerializer
+
+
+class AuthRateThrottle(AnonRateThrottle):
+    scope = "auth"
 
 
 @method_decorator(ensure_csrf_cookie, name="dispatch")
@@ -28,20 +26,11 @@ class CSRFTokenView(APIView):
     def get(self, request):
         csrf_token = get_token(request)
         return Response({"csrftoken": csrf_token})
-    
-# accounts/views.py
-from django.contrib.auth import authenticate, login, logout
-from django.contrib.auth.models import User
-from rest_framework import serializers
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework.permissions import AllowAny
-from .serializers import UserSerializer
 
-from django.contrib.auth import login, logout
 
 class RegisterView(APIView):
     permission_classes = [AllowAny]
+    throttle_classes = [AuthRateThrottle]
 
     def post(self, request):
         # If a different user is already logged in in this browser, drop it
@@ -88,6 +77,7 @@ class RegisterView(APIView):
 
 class LoginView(APIView):
     permission_classes = [AllowAny]
+    throttle_classes = [AuthRateThrottle]
 
     def post(self, request):
         data = request.data
@@ -115,9 +105,6 @@ class LogoutView(APIView):
     def post(self, request):
         logout(request)
         return Response(status=status.HTTP_204_NO_CONTENT)
-
-# accounts/views.py
-from rest_framework.permissions import IsAuthenticated
 
 class MeView(APIView):
     permission_classes = [IsAuthenticated]

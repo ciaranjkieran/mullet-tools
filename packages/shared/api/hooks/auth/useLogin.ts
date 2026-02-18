@@ -1,11 +1,12 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "../../axios";
+import { ensureCsrf } from "./ensureCsrf";
 
 export function useLogin() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (body: { email: string; password: string }) => {
-      // make sure you do ensureCsrf() here if your login requires it
+      await ensureCsrf();
       const res = await api.post("/auth/login/", body);
       return res.data;
     },

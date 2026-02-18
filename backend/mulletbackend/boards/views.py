@@ -1,7 +1,10 @@
 # boards/views.py
+import logging
 import os
 
 from django.conf import settings
+
+logger = logging.getLogger(__name__)
 from django.contrib.contenttypes.models import ContentType
 from rest_framework import viewsets, filters
 from rest_framework.decorators import action
@@ -50,17 +53,17 @@ class PinViewSet(viewsets.ModelViewSet):
         pin = serializer.save(user=self.request.user)
 
         # --- DEBUG LOGS ---
-        print("MEDIA_ROOT:", settings.MEDIA_ROOT)
+        logger.debug("MEDIA_ROOT: %s", settings.MEDIA_ROOT)
         if pin.file:
-            print("Saved file name:", pin.file.name)
+            logger.debug("Saved file name: %s", pin.file.name)
             try:
-                print("Saved file path:", pin.file.path)
-                print("File exists:", os.path.exists(pin.file.path))
+                logger.debug("Saved file path: %s", pin.file.path)
+                logger.debug("File exists: %s", os.path.exists(pin.file.path))
             except Exception as e:
                 # Some storages (S3) don't have .path
-                print("Could not resolve file path:", repr(e))
+                logger.debug("Could not resolve file path: %s", repr(e))
         else:
-            print("No file attached to this pin.")
+            logger.debug("No file attached to this pin.")
         # ---------------
 
         return pin

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Note } from "@shared/types/Note";
 import { format } from "date-fns";
 import parse from "html-react-parser";
+import DOMPurify from "dompurify";
 import clsx from "clsx";
 import { usePatchNote } from "@shared/api/hooks/notes/usePatchNote";
 import { useDeleteNote } from "@shared/api/hooks/notes/useDeleteNote";
@@ -68,7 +69,7 @@ export default function NoteCard({ note, breadcrumb, modeLevel }: Props) {
 
   const previewText = useMemo(() => {
     const tmp = document.createElement("div");
-    tmp.innerHTML = body || note.body || "";
+    tmp.innerHTML = DOMPurify.sanitize(body || note.body || "");
     const text = tmp.textContent || tmp.innerText || "";
     return text.trim().slice(0, 120) + (text.length > 120 ? "…" : "");
   }, [body, note.body]);
@@ -154,7 +155,7 @@ export default function NoteCard({ note, breadcrumb, modeLevel }: Props) {
             className="bg-white border p-2 rounded outline-none min-h-[80px]"
           />
         ) : (
-          parse(note.body)
+          parse(DOMPurify.sanitize(note.body))
         )}
       </div>
 

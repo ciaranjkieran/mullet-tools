@@ -438,6 +438,8 @@ class BulkMilestonePositionUpdateView(APIView):
     permission_classes = [IsAuthenticated]
 
     def patch(self, request):
+        if not isinstance(request.data, list) or len(request.data) > 500:
+            return Response({"error": "Invalid or too many items (max 500)."}, status=400)
         for update in request.data:
             try:
                 milestone = Milestone.objects.get(user=request.user, id=update["id"])
@@ -659,6 +661,8 @@ class BulkTaskPositionUpdateView(APIView):
     permission_classes = [IsAuthenticated]
 
     def patch(self, request):
+        if not isinstance(request.data, list) or len(request.data) > 500:
+            return Response({"error": "Invalid or too many items (max 500)."}, status=400)
         for update in request.data:
             try:
                 task = Task.objects.get(user=request.user, id=update["id"])

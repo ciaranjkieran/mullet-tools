@@ -203,48 +203,6 @@ export default function CalendarDndProvider({
         dateStr,
         err,
       });
-
-      const snakeBody = JSON.stringify({ due_date: dateStr });
-      const base = "http://127.0.0.1:8000/api";
-
-      try {
-        if (entityType === "task") {
-          await fetch(`${base}/tasks/${id}/`, {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: snakeBody,
-          });
-          queryClient.invalidateQueries({ queryKey: ["tasks"] });
-        } else if (entityType === "milestone") {
-          await fetch(`${base}/milestones/${id}/`, {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: snakeBody,
-          });
-          queryClient.invalidateQueries({ queryKey: ["milestones"] });
-        } else if (entityType === "project") {
-          await fetch(`${base}/projects/${id}/`, {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: snakeBody,
-          });
-          queryClient.invalidateQueries({ queryKey: ["projects"] });
-        } else if (entityType === "goal") {
-          await fetch(`${base}/goals/${id}/`, {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: snakeBody,
-          });
-          queryClient.invalidateQueries({ queryKey: ["goals"] });
-        }
-      } catch (fallbackErr) {
-        console.error("[persistDueDate] fallback fetch failed", {
-          entityType,
-          id,
-          dateStr,
-          fallbackErr,
-        });
-      }
     }
   };
 

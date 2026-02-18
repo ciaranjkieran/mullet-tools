@@ -24,10 +24,10 @@ DEBUG = not IS_PROD
 # Security
 # ------------------------------------------------------------------------------
 
-SECRET_KEY = os.environ.get(
-    "SECRET_KEY",
-    "django-insecure-dev-only-change-me",
-)
+if IS_PROD:
+    SECRET_KEY = os.environ["SECRET_KEY"]  # crash on startup if missing
+else:
+    SECRET_KEY = os.environ.get("SECRET_KEY", "django-insecure-dev-only-change-me")
 
 ALLOWED_HOSTS = [
     "127.0.0.1",
@@ -174,9 +174,9 @@ CORS_ALLOWED_ORIGINS = [
     "https://www.mullet.tools",
 ]
 
-# Allow any Vercel preview deployment URL
+# Allow Vercel preview deployments scoped to the mullet project
 CORS_ALLOWED_ORIGIN_REGEXES = [
-    r"^https://.*\.vercel\.app$",
+    r"^https://mullet-tools-web.*\.vercel\.app$",
 ]
 
 CSRF_TRUSTED_ORIGINS = [
@@ -221,6 +221,17 @@ else:
 CSRF_COOKIE_HTTPONLY = False
 
 # ------------------------------------------------------------------------------
+# Production HTTPS security headers
+# ------------------------------------------------------------------------------
+if IS_PROD:
+    SECURE_SSL_REDIRECT = True
+    SECURE_HSTS_SECONDS = 31536000
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+# ------------------------------------------------------------------------------
 # REST Framework
 # ------------------------------------------------------------------------------
 
@@ -231,6 +242,15 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.IsAuthenticated",
     ],
+    "DEFAULT_THROTTLE_CLASSES": [
+        "rest_framework.throttling.AnonRateThrottle",
+        "rest_framework.throttling.UserRateThrottle",
+    ],
+    "DEFAULT_THROTTLE_RATES": {
+        "anon": "20/minute",
+        "user": "200/minute",
+        "auth": "5/minute",
+    },
 }
 
 # ------------------------------------------------------------------------------

@@ -1,12 +1,32 @@
 import logging
+import os
 
 from rest_framework import viewsets, permissions
+from rest_framework.exceptions import ValidationError
 from django.contrib.contenttypes.models import ContentType
 
 from .models import Comment, CommentAttachment
 from .serializers import CommentSerializer, CommentAttachmentSerializer
+from boards.validation import ALLOWED_FILE_MIMES, ALLOWED_FILE_EXTS, MAX_FILE_BYTES
 
 logger = logging.getLogger(__name__)
+
+COMMENT_ALLOWED_IMAGE_MIMES = {"image/png", "image/jpeg", "image/gif", "image/webp"}
+COMMENT_ALLOWED_MIMES = ALLOWED_FILE_MIMES | COMMENT_ALLOWED_IMAGE_MIMES
+COMMENT_ALLOWED_EXTS = ALLOWED_FILE_EXTS | {"png", "jpg", "jpeg", "gif", "webp"}
+
+
+def _validate_attachment(f):
+    ext = os.path.splitext(f.name or "")[1].lstrip(".").lower()
+    if ext not in COMMENT_ALLOWED_EXTS:
+        raise ValidationError(f"File type '.{ext}' is not allowed.")
+    mime = getattr(f, "content_type", "") or ""
+    if mime not in COMMENT_ALLOWED_MIMES:
+        raise ValidationError(f"MIME type '{mime}' is not allowed.")
+    if f.size > MAX_FILE_BYTES:
+        raise ValidationError(
+            f"File too large ({f.size} bytes). Max is {MAX_FILE_BYTES} bytes."
+        )
 
 
 class CommentViewSet(viewsets.ModelViewSet):
@@ -57,8 +77,9 @@ class CommentViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         comment = serializer.save(user=self.request.user)
 
-        # ✅ create attachments from multipart files
         files = self.request.FILES.getlist("attachments")
+        for f in files:
+            _validate_attachment(f)
         for f in files:
             CommentAttachment.objects.create(
                 comment=comment,
