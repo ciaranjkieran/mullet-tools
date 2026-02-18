@@ -17,6 +17,13 @@ import {
   projectEffectiveLineage,
 } from "@shared/lineage/effective";
 
+/** Task augmented with the link fields the server includes but the base Task type omits. */
+export type TaskWithLinks = Task & {
+  goalId?: number | null;
+  projectId?: number | null;
+  milestoneId?: number | null;
+};
+
 export type SelectionLike = {
   modeId: number;
   goalId: number | null;

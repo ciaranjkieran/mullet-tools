@@ -30,6 +30,16 @@ import { useTimeEntries } from "@shared/api/hooks/timer/useTimeEntries";
 import { useRetargetActiveTimer } from "../utils/useRetargetActiveTimer";
 import { useActiveTimerPolling } from "../hooks/useActiveTimerPolling";
 import { useTimerTick } from "../hooks/useTimerTick";
+import { useTimerCountdown } from "../hooks/useTimerCountdown";
+import {
+  type EntityType,
+  getDeepestEntity,
+  nextAfter,
+  scopedGoalsByPosition,
+  scopedProjectsByPosition,
+  scopedMilestonesByPosition,
+  scopedTasksByPosition,
+} from "../utils/timerEntityScope";
 
 import { useTimerSelectionStore } from "@/lib/store/useTimerSelectionStore";
 import { useTimerUIStore } from "@/lib/store/useTimerUIStore";
@@ -52,6 +62,7 @@ import {
   normalizePathIdsToSelection,
   resolveModeIdFromPathStrict,
   type SelectionLike,
+  type TaskWithLinks,
   type TimerPathIds,
 } from "../types/timerTypes";
 
@@ -64,12 +75,6 @@ type Args = {
   tasks: Task[];
   onRequestFilterMode?: (modeId: number) => void;
 };
-type TaskWithLinks = Task & {
-  goalId?: number | null;
-  projectId?: number | null;
-  milestoneId?: number | null;
-};
-
 export function useTimerController({
   modes,
   selectedMode,
@@ -107,19 +112,44 @@ export function useTimerController({
     markHydratedSession,
   } = useTimerSelectionStore();
 
-  // shared refs for launch/restore/baseline interplay
+  // ─── Launch / restore / baseline coordination ─────────────────────────────
+  // These refs coordinate three async concerns so they don't stomp each other:
+  //   1. Explicit selection writes (launch intents, complete, stop) must win
+  //      over the restore effect for at least one render cycle.
+  //   2. The restore effect must hydrate from the server path exactly once per
+  //      session, then yield to snapshots.
+  //   3. "Switch to selection" baseline commits must not be clobbered by a
+  //      concurrent restore triggered by active-session changes.
+
+  /** Set by any explicit selection write; restore effect consumes it to skip once. */
   const skipOneRestoreRef = useRef(false);
+
+  /**
+   * Non-task launches set this to defer a parent-clear policy to the next
+   * restore pass (after the two launch-skips have been consumed).
+   */
   const forceParentsNoneOnceRef = useRef<{
     clearProject: boolean;
     clearMilestone: boolean;
     clearTask: boolean;
   } | null>(null);
+
+  /** Captures selection at stop time; restored by the effect that watches active → null. */
   const lastStoppedSelRef = useRef<SelectionLike | null>(null);
+
+  /** Monotonic token; guards the async microtask/rAF callbacks in handleSwitchToSelection. */
   const commitTokenRef = useRef(0);
+
   const completeNextMut = useCompleteNextTimer();
+
+  /** True while handleComplete is awaiting the server — blocks handleStop from firing. */
   const completingRef = useRef(false);
 
-  // track explicit launches so restore doesn't stomp on them
+  /**
+   * Counter pair: the launch effect increments launchGenerationRef; the restore
+   * effect syncs lastRestoreSeenLaunchRef. Provides one additional skip beyond
+   * skipOneRestoreRef for the post-session-start restore triggered by active changing.
+   */
   const launchGenerationRef = useRef(0);
   const lastRestoreSeenLaunchRef = useRef(0);
 
@@ -180,25 +210,6 @@ export function useTimerController({
     () => new Map(tasksWithLinks.map((t) => [t.id, t])),
     [tasksWithLinks]
   );
-  type EntityType = "task" | "milestone" | "project" | "goal";
-
-  function getDeepestEntity(selection: {
-    taskId: number | null;
-    milestoneId: number | null;
-    projectId: number | null;
-    goalId: number | null;
-  }): { entityType: EntityType; entityId: number } | null {
-    if (selection.taskId != null)
-      return { entityType: "task", entityId: selection.taskId };
-    if (selection.milestoneId != null)
-      return { entityType: "milestone", entityId: selection.milestoneId };
-    if (selection.projectId != null)
-      return { entityType: "project", entityId: selection.projectId };
-    if (selection.goalId != null)
-      return { entityType: "goal", entityId: selection.goalId };
-    return null;
-  }
-
   function applyPathToSelection(path: {
     modeId: number | null;
     goalId: number | null;
@@ -212,144 +223,6 @@ export function useTimerController({
     setProjectId(path.projectId ?? null);
     setMilestoneId(path.milestoneId ?? null);
     setTaskId(path.taskId ?? null);
-  }
-  function sortByPosition<T extends { position: number; id: number }>(
-    arr: T[]
-  ) {
-    return [...arr].sort((a, b) => a.position - b.position || a.id - b.id);
-  }
-
-  function nextAfter<T extends { position: number; id: number }>(
-    ordered: T[],
-    currentId: number
-  ): T | null {
-    if (!ordered.length) return null;
-    const idx = ordered.findIndex((x) => x.id === currentId);
-    if (idx < 0) return ordered[0] ?? null;
-    return ordered[idx + 1] ?? null;
-  }
-
-  // ---------- GOALS ----------
-  function scopedGoalsByPosition(): Goal[] {
-    if (typeof modeId !== "number") return [];
-    return sortByPosition(
-      goals.filter((g) => g.modeId === modeId && !g.isCompleted)
-    );
-  }
-
-  // ---------- PROJECTS ----------
-  function scopedProjectsByPosition(): Project[] {
-    if (typeof modeId !== "number") return [];
-    const base = tasksWithLinks.filter(
-      (t) => t.modeId === modeId && !t.isCompleted
-    );
-
-    if (milestoneId != null) {
-      return sortByPosition(base.filter((t) => t.milestoneId === milestoneId));
-    }
-
-    if (projectId != null) {
-      return sortByPosition(
-        base.filter((t) => t.projectId === projectId && t.milestoneId == null)
-      );
-    }
-
-    if (goalId != null) {
-      return sortByPosition(
-        base.filter(
-          (t) =>
-            t.goalId === goalId && t.projectId == null && t.milestoneId == null
-        )
-      );
-    }
-
-    return sortByPosition(
-      base.filter(
-        (t) => t.goalId == null && t.projectId == null && t.milestoneId == null
-      )
-    );
-  }
-
-  // ---------- MILESTONES ----------
-  function scopedMilestonesByPosition(): Milestone[] {
-    if (typeof modeId !== "number") return [];
-
-    const base = milestones.filter(
-      (m) => m.modeId === modeId && !m.isCompleted
-    );
-
-    // Lane is: siblings under same parent milestone (if nested),
-    // else project lane, else goal lane, else mode-root lane.
-    if (milestoneId != null) {
-      const current = milestonesById.get(milestoneId) ?? null;
-      const parentId = current?.parentId ?? null;
-      if (parentId != null) {
-        return sortByPosition(base.filter((m) => m.parentId === parentId));
-      }
-    }
-
-    if (projectId != null) {
-      return sortByPosition(
-        base.filter((m) => m.projectId === projectId && m.parentId == null)
-      );
-    }
-
-    if (goalId != null) {
-      return sortByPosition(
-        base.filter(
-          (m) =>
-            m.goalId === goalId && m.projectId == null && m.parentId == null
-        )
-      );
-    }
-
-    return sortByPosition(
-      base.filter(
-        (m) => m.goalId == null && m.projectId == null && m.parentId == null
-      )
-    );
-  }
-
-  // ---------- TASKS ----------
-  function scopedTasksByPosition(): Task[] {
-    if (typeof modeId !== "number") return [];
-
-    const base = tasks.filter((t) => t.modeId === modeId && !t.isCompleted);
-
-    if (milestoneId != null) {
-      return sortByPosition(
-        base.filter((t) => (t as any).milestoneId === milestoneId)
-      );
-    }
-
-    if (projectId != null) {
-      return sortByPosition(
-        base.filter(
-          (t) =>
-            (t as any).projectId === projectId && (t as any).milestoneId == null
-        )
-      );
-    }
-
-    if (goalId != null) {
-      return sortByPosition(
-        base.filter(
-          (t) =>
-            (t as any).goalId === goalId &&
-            (t as any).projectId == null &&
-            (t as any).milestoneId == null
-        )
-      );
-    }
-
-    return sortByPosition(
-      base.filter(
-        (t) =>
-          (t as any).goalId == null &&
-          (t as any).projectId == null &&
-          (t as any).milestoneId == null
-      )
-    );
   }
   function clearForType(t: EntityType) {
     if (t === "task") {
@@ -377,8 +250,10 @@ export function useTimerController({
     const target = getDeepestEntity({ taskId, milestoneId, projectId, goalId });
     if (!target) return;
 
+    const scope = { modeId, goalId, projectId, milestoneId };
+
     if (target.entityType === "task") {
-      const ordered = scopedTasksByPosition();
+      const ordered = scopedTasksByPosition(tasksWithLinks, scope);
       const next = nextAfter(ordered, target.entityId);
       if (!next) return clearForType("task");
       setTaskId(next.id);
@@ -386,7 +261,7 @@ export function useTimerController({
     }
 
     if (target.entityType === "milestone") {
-      const ordered = scopedMilestonesByPosition();
+      const ordered = scopedMilestonesByPosition(milestones, milestonesById, scope);
       const next = nextAfter(ordered, target.entityId);
       if (!next) return clearForType("milestone");
       setMilestoneId(next.id);
@@ -395,7 +270,7 @@ export function useTimerController({
     }
 
     if (target.entityType === "project") {
-      const ordered = scopedProjectsByPosition();
+      const ordered = scopedProjectsByPosition(tasksWithLinks, scope);
       const next = nextAfter(ordered, target.entityId);
       if (!next) return clearForType("project");
       setProjectId(next.id);
@@ -405,7 +280,7 @@ export function useTimerController({
     }
 
     // goal
-    const ordered = scopedGoalsByPosition();
+    const ordered = scopedGoalsByPosition(goals, modeId);
     const next = nextAfter(ordered, target.entityId);
     if (!next) return clearForType("goal");
     setGoalId(next.id);
@@ -510,87 +385,92 @@ export function useTimerController({
 
     if (!target) return;
 
-    const resp = await completeNextMut.mutateAsync({
-      entityType: target.entityType,
-      entityId: target.entityId,
-    });
-
-    // ✅ We only want "load next" behaviour for TASKS
-    if (target.entityType !== "task") {
-      // For non-tasks: just clear the completed type (no auto-advance)
-      clearForType(target.entityType);
-      return;
-    }
-
-    // ─────────────────────────────────────────────
-    // TASK: if backend returns a next.path, apply it
-    // but normalise parents from lineage first.
-    // ─────────────────────────────────────────────
-    const nextPath = resp.next?.path ?? null;
-
-    if (nextPath && typeof nextPath.taskId === "number") {
-      let next = {
-        modeId: nextPath.modeId ?? modeId,
-        goalId: nextPath.goalId ?? null,
-        projectId: nextPath.projectId ?? null,
-        milestoneId: nextPath.milestoneId ?? null,
-        taskId: nextPath.taskId ?? null,
-      };
-
-      // Fill missing parents from the task + effective lineage
-      const t = taskById.get(next.taskId!);
-      if (t) {
-        const tMsId = (t as any).milestoneId as number | null | undefined;
-        const tPrId = (t as any).projectId as number | null | undefined;
-        const tGoId = (t as any).goalId as number | null | undefined;
-
-        let msId = next.milestoneId ?? tMsId ?? null;
-        let prId = next.projectId ?? tPrId ?? null;
-        let goId = next.goalId ?? tGoId ?? null;
-
-        if (msId != null) {
-          const eff = milestoneEffectiveLineage(
-            msId,
-            milestonesById,
-            projectsById
-          );
-          prId = prId ?? eff.projectId ?? null;
-          goId = goId ?? eff.goalId ?? null;
-        } else if (prId != null) {
-          const eff = projectEffectiveLineage(prId, projectsById);
-          goId = goId ?? eff.goalId ?? null;
-        }
-
-        next = { ...next, milestoneId: msId, projectId: prId, goalId: goId };
-      }
-
-      // ✅ atomic write so no intermediate "None" states
-      useTimerSelectionStore.getState().setRaw({
-        modeId: typeof next.modeId === "number" ? next.modeId : modeId,
-        goalId: next.goalId ?? null,
-        projectId: next.projectId ?? null,
-        milestoneId: next.milestoneId ?? null,
-        taskId: next.taskId ?? null,
+    completingRef.current = true;
+    try {
+      const resp = await completeNextMut.mutateAsync({
+        entityType: target.entityType,
+        entityId: target.entityId,
       });
 
-      // prevent restore effect from immediately overriding
-      skipOneRestoreRef.current = true;
+      // ✅ We only want "load next" behaviour for TASKS
+      if (target.entityType !== "task") {
+        // For non-tasks: just clear the completed type (no auto-advance)
+        clearForType(target.entityType);
+        return;
+      }
 
-      // (optional) keep snapshot in sync
-      if (typeof next.modeId === "number") {
-        saveSnapshotForMode(next.modeId, {
+      // ─────────────────────────────────────────────
+      // TASK: if backend returns a next.path, apply it
+      // but normalise parents from lineage first.
+      // ─────────────────────────────────────────────
+      const nextPath = resp.next?.path ?? null;
+
+      if (nextPath && typeof nextPath.taskId === "number") {
+        let next = {
+          modeId: nextPath.modeId ?? modeId,
+          goalId: nextPath.goalId ?? null,
+          projectId: nextPath.projectId ?? null,
+          milestoneId: nextPath.milestoneId ?? null,
+          taskId: nextPath.taskId ?? null,
+        };
+
+        // Fill missing parents from the task + effective lineage
+        const t = taskById.get(next.taskId!);
+        if (t) {
+          const tMsId = t.milestoneId;
+          const tPrId = t.projectId;
+          const tGoId = t.goalId;
+
+          let msId = next.milestoneId ?? tMsId ?? null;
+          let prId = next.projectId ?? tPrId ?? null;
+          let goId = next.goalId ?? tGoId ?? null;
+
+          if (msId != null) {
+            const eff = milestoneEffectiveLineage(
+              msId,
+              milestonesById,
+              projectsById
+            );
+            prId = prId ?? eff.projectId ?? null;
+            goId = goId ?? eff.goalId ?? null;
+          } else if (prId != null) {
+            const eff = projectEffectiveLineage(prId, projectsById);
+            goId = goId ?? eff.goalId ?? null;
+          }
+
+          next = { ...next, milestoneId: msId, projectId: prId, goalId: goId };
+        }
+
+        // ✅ atomic write so no intermediate "None" states
+        useTimerSelectionStore.getState().setRaw({
+          modeId: typeof next.modeId === "number" ? next.modeId : modeId,
           goalId: next.goalId ?? null,
           projectId: next.projectId ?? null,
           milestoneId: next.milestoneId ?? null,
           taskId: next.taskId ?? null,
         });
+
+        // prevent restore effect from immediately overriding
+        skipOneRestoreRef.current = true;
+
+        // (optional) keep snapshot in sync
+        if (typeof next.modeId === "number") {
+          saveSnapshotForMode(next.modeId, {
+            goalId: next.goalId ?? null,
+            projectId: next.projectId ?? null,
+            milestoneId: next.milestoneId ?? null,
+            taskId: next.taskId ?? null,
+          });
+        }
+
+        return;
       }
 
-      return;
+      // No next task -> clear just the task selection (keep parents stable)
+      setTaskId(null);
+    } finally {
+      completingRef.current = false;
     }
-
-    // No next task -> clear just the task selection (keep parents stable)
-    setTaskId(null);
   }
 
   useEffect(() => {
@@ -639,9 +519,7 @@ export function useTimerController({
   const { clockType, setClockType } = useTimerClockType();
 
   // Countdown local state
-  const [cdMin, setCdMin] = useState(25);
-  const [cdSec, setCdSec] = useState(0);
-  const durationSec = cdMin * 60 + cdSec;
+  const { cdMin, setCdMin, cdSec, setCdSec, durationSec } = useTimerCountdown();
 
   // sync selection modeId with external page filter
   useEffect(() => {
@@ -887,9 +765,9 @@ export function useTimerController({
     if (src.taskId != null) {
       const t = taskById.get(src.taskId);
       if (t) {
-        const tMsId = (t as any)?.milestoneId as number | null | undefined;
-        const tPrId = (t as any)?.projectId as number | null | undefined;
-        const tGoId = (t as any)?.goalId as number | null | undefined;
+        const tMsId = t.milestoneId;
+        const tPrId = t.projectId;
+        const tGoId = t.goalId;
 
         let msId = src.milestoneId ?? tMsId ?? null;
         let prId = src.projectId ?? tPrId ?? null;
@@ -924,16 +802,16 @@ export function useTimerController({
           targetTaskId != null ? taskById.get(targetTaskId) : null;
 
         const tMsId =
-          targetTask && typeof (targetTask as any).milestoneId === "number"
-            ? (targetTask as any).milestoneId
+          targetTask && typeof targetTask.milestoneId === "number"
+            ? targetTask.milestoneId
             : null;
         const tPrId =
-          targetTask && typeof (targetTask as any).projectId === "number"
-            ? (targetTask as any).projectId
+          targetTask && typeof targetTask.projectId === "number"
+            ? targetTask.projectId
             : null;
         const tGoId =
-          targetTask && typeof (targetTask as any).goalId === "number"
-            ? (targetTask as any).goalId
+          targetTask && typeof targetTask.goalId === "number"
+            ? targetTask.goalId
             : null;
 
         const taskIsFlatToProject = Boolean(targetTaskId && tMsId == null);
@@ -1108,28 +986,6 @@ export function useTimerController({
 
   const showSwitch = switchArmed && isDirtySelection;
 
-  // ─────────────────────────────────────────────
-  // Clean logging: only when showSwitch actually changes
-  // ─────────────────────────────────────────────
-  const lastShowSwitchRef = useRef<boolean | null>(null);
-  useEffect(() => {
-    const prev = lastShowSwitchRef.current;
-    if (prev === showSwitch && prev !== null) return;
-
-    lastShowSwitchRef.current = showSwitch;
-
-  }, [
-    showSwitch,
-    canInlineSwitch,
-    switchArmed,
-    currentSel,
-    currentSelRaw,
-    baselineSel,
-    baselineSelCanonical,
-    active?.kind,
-    isDirtySelection,
-  ]);
-
   async function handleSwitchToSelection() {
     const token = ++commitTokenRef.current;
     const committed = { ...currentSelRaw };
@@ -1204,68 +1060,17 @@ export function useTimerController({
     });
   }
 
-  // Breadcrumbs: prefer hook result, but fall back to a stable selection
-  // derived from the active path, independent of the current mode filter.
-  const { leafTitle: rawLeafTitle, ancestors } = useTimerBreadcrumbs({
+  // Breadcrumbs + leaf title (fallback chain is owned by the hook)
+  const { leafTitle, ancestors } = useTimerBreadcrumbs({
     active,
     modes,
     goals,
     projects,
     milestones,
     tasks,
+    selectionFromPath,
+    clockType,
   });
-
-  // Derive a leaf title from the normalised selection + global entities.
-  const leafTitleFromIds = useMemo(() => {
-    if (!selectionFromPath) return null;
-
-    const {
-      taskId,
-      milestoneId,
-      projectId,
-      goalId,
-      modeId: selModeId,
-    } = selectionFromPath;
-
-    if (taskId != null) {
-      const t = tasks.find((x) => x.id === taskId);
-      if (t) return t.title;
-    }
-
-    if (milestoneId != null) {
-      const m = milestones.find((x) => x.id === milestoneId);
-      if (m) return m.title;
-    }
-
-    if (projectId != null) {
-      const p = projects.find((x) => x.id === projectId);
-      if (p) return p.title;
-    }
-
-    if (goalId != null) {
-      const g = goals.find((x) => x.id === goalId);
-      if (g) return g.title;
-    }
-
-    if (selModeId != null) {
-      const m = modes.find((x) => x.id === selModeId);
-      if (m) return m.title;
-    }
-
-    return null;
-  }, [selectionFromPath, tasks, milestones, projects, goals, modes]);
-
-  const lastLeafTitleRef = useRef<string | null>(null);
-
-  useEffect(() => {
-    if (leafTitleFromIds) lastLeafTitleRef.current = leafTitleFromIds;
-  }, [leafTitleFromIds]);
-
-  const leafTitle =
-    rawLeafTitle ||
-    leafTitleFromIds ||
-    lastLeafTitleRef.current ||
-    (clockType === "timer" ? "Timer" : "Stopwatch");
 
   const remainingLive = (() => {
     if (!active) return null;
