@@ -20,6 +20,7 @@ export const useFetchNotesByMode = (modeId: number) =>
         content_type: note.content_type,
         object_id: note.object_id,
         entityTitle: note.entity_title,
+        display_title: note.display_title,
       }));
     },
     enabled: !!modeId,
