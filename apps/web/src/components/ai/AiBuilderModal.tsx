@@ -5,15 +5,14 @@ import {
   X,
   Send,
   Sparkles,
-  Target,
-  FolderOpen,
-  Flag,
-  CheckSquare,
-  Info,
+  Folder,
+  MessageSquare,
   Loader2,
   ChevronRight,
   ChevronDown,
 } from "lucide-react";
+import GoalIcon from "../entities/goals/UI/GoalIcon";
+import GoalTarget from "../entities/goals/UI/GoalTarget";
 import clsx from "clsx";
 
 import { useAiBuild } from "@shared/api/hooks/ai/useAiBuild";
@@ -27,20 +26,6 @@ type Props = {
 };
 
 type CommandEntry = { prompt: string; summary: string };
-
-const TYPE_ICONS: Record<BuilderNodeType, typeof Target> = {
-  goal: Target,
-  project: FolderOpen,
-  milestone: Flag,
-  task: CheckSquare,
-};
-
-const TYPE_LABELS: Record<BuilderNodeType, string> = {
-  goal: "Goal",
-  project: "Project",
-  milestone: "Milestone",
-  task: "Task",
-};
 
 /** Mark all nodes as included (default from AI response). */
 function markIncluded(nodes: BuilderNode[]): BuilderNode[] {
@@ -153,7 +138,6 @@ function TreeNode({
   const [collapsed, setCollapsed] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const Icon = TYPE_ICONS[node.type];
   const hasChildren = node.children.length > 0;
 
   useEffect(() => {
@@ -192,7 +176,31 @@ function TreeNode({
         />
 
         {/* Type icon */}
-        <Icon className="w-4 h-4 flex-shrink-0" style={{ color: modeColor }} />
+        {node.type === "goal" ? (
+          <span className="flex-shrink-0" style={{ color: modeColor }}>
+            <GoalIcon size={16}>
+              <GoalTarget />
+            </GoalIcon>
+          </span>
+        ) : node.type === "project" ? (
+          <Folder className="w-4 h-4 flex-shrink-0" style={{ color: modeColor }} />
+        ) : node.type === "milestone" ? (
+          <span
+            className="flex-shrink-0"
+            style={{
+              width: 0,
+              height: 0,
+              borderLeft: "5px solid transparent",
+              borderRight: "5px solid transparent",
+              borderTop: `9px solid ${modeColor}`,
+            }}
+          />
+        ) : (
+          <span
+            className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+            style={{ backgroundColor: modeColor }}
+          />
+        )}
 
         {/* Title */}
         {isEditing ? (
@@ -254,7 +262,7 @@ function TreeNode({
           </button>
         )}
 
-        {/* Comment info icon */}
+        {/* Comment tooltip */}
         {node.comment && (
           <div className="relative flex-shrink-0">
             <button
@@ -262,10 +270,10 @@ function TreeNode({
               onMouseLeave={() => setShowComment(false)}
               className="text-gray-400 hover:text-gray-600"
             >
-              <Info className="w-3.5 h-3.5" />
+              <MessageSquare className="w-3.5 h-3.5" />
             </button>
             {showComment && (
-              <div className="absolute z-50 bottom-full left-1/2 -translate-x-1/2 mb-1 w-64 p-2 bg-gray-900 text-white text-xs rounded shadow-lg">
+              <div className="absolute z-[200] top-full right-0 mt-1 w-64 p-2 bg-gray-900 text-white text-xs rounded shadow-lg pointer-events-none">
                 {node.comment}
               </div>
             )}
@@ -401,7 +409,7 @@ export default function AiBuilderModal({ isOpen, onClose }: Props) {
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col mx-4">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[85vh] flex flex-col mx-4">
         {/* Header */}
         <div
           className="flex items-center justify-between px-5 py-3 rounded-t-xl"

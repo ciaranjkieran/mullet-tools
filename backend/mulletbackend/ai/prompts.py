@@ -16,7 +16,15 @@ markdown, or questions — always respond with valid JSON matching the schema be
 - Task — a single actionable step
 
 # Hierarchy rules
-- Nesting order when used together: goal > project > milestone > task.
+- Goal — FLAT. Goals cannot nest inside other goals. They sit at the top \
+level and can contain projects, milestones, or tasks directly.
+- Project — can nest under a goal OR under another project (subprojects). \
+A project can contain milestones and tasks.
+- Milestone — can nest under a goal, a project, or another milestone \
+(submilestones). A milestone can contain tasks.
+- Task — a leaf node. Tasks can attach to a goal, project, or milestone \
+but cannot contain children.
+- Each entity has AT MOST ONE direct parent (never both a goal and a project).
 - These levels are independent. A project does not need a parent goal. \
 Tasks do not need a parent milestone or project.
 - Use only the levels the request calls for. If someone asks for a plan, \

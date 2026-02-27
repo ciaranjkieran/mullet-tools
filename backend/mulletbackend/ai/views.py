@@ -27,11 +27,13 @@ ENTITY_MODELS = {
 # Which FK field to set based on the parent's type
 PARENT_FK_FIELDS = {
     ("project", "goal"): "goal_id",
-    ("milestone", "project"): "project_id",
+    ("project", "project"): "parent_id",
     ("milestone", "goal"): "goal_id",
-    ("task", "milestone"): "milestone_id",
-    ("task", "project"): "project_id",
+    ("milestone", "project"): "project_id",
+    ("milestone", "milestone"): "parent_id",
     ("task", "goal"): "goal_id",
+    ("task", "project"): "project_id",
+    ("task", "milestone"): "milestone_id",
 }
 
 
