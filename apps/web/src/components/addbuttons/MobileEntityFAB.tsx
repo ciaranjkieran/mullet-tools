@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
-import { Plus, TargetIcon, FolderIcon } from "lucide-react";
+import { Plus, TargetIcon, FolderIcon, Sparkles } from "lucide-react";
 import { getContrastingText } from "@shared/utils/getContrastingText";
 
 /* ── Composite icon: milestone (top), project (bottom-left), goal (bottom-right) ── */
@@ -27,6 +27,7 @@ type Props = {
   onAddGoal: () => void;
   onAddProject: () => void;
   onAddMilestone: () => void;
+  onOpenAiBuilder?: () => void;
 };
 
 /* ── Drag threshold (px) to distinguish tap from drag ── */
@@ -38,6 +39,7 @@ export default function MobileEntityFAB({
   onAddGoal,
   onAddProject,
   onAddMilestone,
+  onOpenAiBuilder,
 }: Props) {
   const textColor = getContrastingText(modeColor);
   const [expanded, setExpanded] = useState(false);
@@ -244,6 +246,22 @@ export default function MobileEntityFAB({
         >
           <Plus className="w-7 h-7" />
         </button>
+
+        {/* AI Builder button */}
+        {onOpenAiBuilder && (
+          <button
+            onClick={() => { if (!wasDrag()) { setExpanded(false); onOpenAiBuilder(); } }}
+            onTouchStart={onTouchStart}
+            onTouchMove={onTouchMove}
+            onTouchEnd={onTouchEnd}
+            className="w-12 h-12 rounded-full shadow-xl flex items-center justify-center pointer-events-auto"
+            style={{ backgroundColor: modeColor, color: textColor }}
+            aria-label="AI Builder"
+            type="button"
+          >
+            <Sparkles className="w-5 h-5" />
+          </button>
+        )}
       </div>
     </div>
   );

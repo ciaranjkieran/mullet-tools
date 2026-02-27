@@ -552,6 +552,7 @@ export default function DashboardPage() {
                 setMilestoneToEdit(null);
                 setIsMilestoneDialogOpen(true);
               }}
+              onOpenAiBuilder={activeMode ? () => setIsAiBuilderOpen(true) : undefined}
             />
 
             {/* Desktop: full stack */}
@@ -589,11 +590,11 @@ export default function DashboardPage() {
         )}
       </section>
 
-      {/* AI Builder — fixed bottom-left */}
+      {/* AI Builder — fixed bottom-left (desktop only, hidden on mobile where FAB handles it) */}
       {activeMode && !viewerOpen && (
         <button
           onClick={() => setIsAiBuilderOpen(true)}
-          className="fixed bottom-10 left-12 z-50 p-3 rounded-full shadow-lg transition cursor-pointer hover:scale-105"
+          className="fixed bottom-10 left-12 z-50 hidden lg:flex w-14 h-14 rounded-full shadow-lg items-center justify-center transition cursor-pointer hover:scale-105"
           style={{
             backgroundColor: modeColor,
             color: "#fff",
@@ -602,7 +603,7 @@ export default function DashboardPage() {
           title="AI Builder"
           type="button"
         >
-          <Sparkles className="w-5 h-5" />
+          <Sparkles className="w-6 h-6" />
         </button>
       )}
 
