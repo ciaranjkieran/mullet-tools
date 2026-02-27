@@ -21,6 +21,8 @@ import {
   addDays,
 } from "date-fns";
 
+import EditorAssigneeSelect from "@/components/inputs/editor/EditorAssigneeSelect";
+
 /** Smart orchestrator + pure helpers */
 import EditorEntityInputs from "@/components/inputs/editor/EditorEntityInputs";
 import {
@@ -41,6 +43,7 @@ type Props = {
   parentId: number | null | undefined; // parent milestone id
   projectId: number | null | undefined;
   goalId: number | null | undefined;
+  assignedToId: number | null;
 
   setTitle: (val: string) => void;
   setDueDate: (val: string) => void;
@@ -50,6 +53,7 @@ type Props = {
   setParentId: (id: number | null | undefined) => void;
   setProjectId: (id: number | null | undefined) => void;
   setGoalId: (id: number | null | undefined) => void;
+  setAssignedToId: (id: number | null) => void;
 
   handleSubmit: (e?: React.FormEvent) => void;
   onCancel: () => void;
@@ -70,6 +74,7 @@ export default function EditMilestoneForm({
   parentId,
   projectId,
   goalId,
+  assignedToId,
   setTitle,
   setDueDate,
   setDueTime,
@@ -77,6 +82,7 @@ export default function EditMilestoneForm({
   setParentId,
   setProjectId,
   setGoalId,
+  setAssignedToId,
   handleSubmit,
   onCancel,
   onDelete,
@@ -431,6 +437,11 @@ export default function EditMilestoneForm({
               onProjectChange={onProjectChange}
               onMilestoneChange={onMilestoneChange}
               modeColor={modeColor}
+            />
+            <EditorAssigneeSelect
+              modeId={modeId}
+              assignedToId={assignedToId}
+              onChange={setAssignedToId}
             />
           </div>
         </div>

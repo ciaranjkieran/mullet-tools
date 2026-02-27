@@ -5,7 +5,7 @@ from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 import logging
-from django.db.models import F, Max
+from django.db.models import F, Max, Q, Count, Subquery
 
 logger = logging.getLogger(__name__)
 from django.db import transaction
@@ -30,6 +30,7 @@ from .utils.archive_guard import destroy_or_archive
 from timers.services import stop_active_if_targeting
 
 from comments.services import soft_delete_comments_for_instance
+from collaboration.permissions import accessible_mode_ids, writable_mode_ids, validate_mode_write_access
 
 # ─────────────────────────────────────────────
 # MODES
@@ -39,7 +40,16 @@ class ModeViewSet(ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        return Mode.objects.filter(user=self.request.user).order_by("position", "id")
+        user = self.request.user
+        return (
+            Mode.objects.filter(
+                Q(user=user) | Q(collaborators__user=user)
+            )
+            .distinct()
+            .annotate(_collaborator_count=Count("collaborators"))
+            .select_related("user__profile")
+            .order_by("position", "id")
+        )
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
@@ -54,8 +64,9 @@ class ModeViewSet(ModelViewSet):
         }
 
         if not id_to_pos:
-            return Response(ModeSerializer(self.get_queryset(), many=True).data)
+            return Response(ModeSerializer(self.get_queryset(), many=True, context={"request": request}).data)
 
+        # Only reorder modes the user owns
         qs = Mode.objects.filter(
             user=request.user,
             id__in=id_to_pos.keys(),
@@ -63,7 +74,7 @@ class ModeViewSet(ModelViewSet):
 
         modes = list(qs)
         if not modes:
-            return Response(ModeSerializer(self.get_queryset(), many=True).data)
+            return Response(ModeSerializer(self.get_queryset(), many=True, context={"request": request}).data)
 
         # Choose a safe offset so phase-1 positions never collide
         # (max position + a buffer bigger than count is plenty)
@@ -81,7 +92,7 @@ class ModeViewSet(ModelViewSet):
                 m.position = id_to_pos.get(m.id, m.position)
             Mode.objects.bulk_update(modes, ["position"])
 
-        return Response(ModeSerializer(self.get_queryset(), many=True).data)
+        return Response(ModeSerializer(self.get_queryset(), many=True, context={"request": request}).data)
 
 
 
@@ -93,9 +104,15 @@ class GoalViewSet(ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        return Goal.objects.filter(user=self.request.user).order_by("position", "id")
+        user = self.request.user
+        if self.request.method in ("GET", "HEAD", "OPTIONS"):
+            mode_ids = accessible_mode_ids(user)
+        else:
+            mode_ids = writable_mode_ids(user)
+        return Goal.objects.filter(mode_id__in=mode_ids).select_related("assigned_to__profile").order_by("position", "id")
 
     def perform_create(self, serializer):
+        validate_mode_write_access(self.request.user, serializer.validated_data.get("mode"))
         serializer.save(user=self.request.user)
 
     @transaction.atomic
@@ -134,7 +151,7 @@ class GoalBulkUpdateView(APIView):
         if not goal_ids:
             return Response({"error": "Missing goalIds"}, status=400)
 
-        goals = Goal.objects.filter(user=request.user, id__in=goal_ids)
+        goals = Goal.objects.filter(mode_id__in=writable_mode_ids(request.user), id__in=goal_ids)
         for goal in goals:
             old_mode_id = goal.mode_id
 
@@ -172,8 +189,10 @@ class GoalReorderHomeView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        if not Mode.objects.filter(id=mode_id, id__in=writable_mode_ids(request.user)).exists():
+            return Response({"detail": "No write access to this mode."}, status=status.HTTP_403_FORBIDDEN)
+
         filter_kwargs = {
-            "user": request.user,
             "mode_id": mode_id,
         }
 
@@ -207,7 +226,7 @@ class GoalReorderTodayView(APIView):
         pos = {c["id"]: c["position"] for c in changes}
 
         qs = Goal.objects.filter(
-            user=request.user,
+            mode_id__in=writable_mode_ids(request.user),
             mode_id=mode_id,
             due_date=date,
             id__in=ids,
@@ -229,9 +248,15 @@ class ProjectViewSet(ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        return Project.objects.filter(user=self.request.user).order_by("position", "id")
+        user = self.request.user
+        if self.request.method in ("GET", "HEAD", "OPTIONS"):
+            mode_ids = accessible_mode_ids(user)
+        else:
+            mode_ids = writable_mode_ids(user)
+        return Project.objects.filter(mode_id__in=mode_ids).select_related("assigned_to__profile").order_by("position", "id")
 
     def perform_create(self, serializer):
+        validate_mode_write_access(self.request.user, serializer.validated_data.get("mode"))
         serializer.save(user=self.request.user)
 
     @transaction.atomic
@@ -269,7 +294,7 @@ class ProjectBulkUpdateView(APIView):
         if not project_ids:
             return Response({"error": "Missing projectIds"}, status=400)
 
-        projects = Project.objects.filter(user=request.user, id__in=project_ids)
+        projects = Project.objects.filter(mode_id__in=writable_mode_ids(request.user), id__in=project_ids)
         for project in projects:
             old_mode_id = project.mode_id
 
@@ -304,7 +329,7 @@ class ProjectReorderTodayView(APIView):
         pos = {c["id"]: c["position"] for c in changes}
 
         qs = Project.objects.filter(
-            user=request.user,
+            mode_id__in=writable_mode_ids(request.user),
             mode_id=mode_id,
             due_date=date,
             id__in=ids,
@@ -332,8 +357,10 @@ class ProjectReorderHomeView(APIView):
         container_kind = container["kind"]
         container_id = container["id"]
 
+        if not Mode.objects.filter(id=mode_id, id__in=writable_mode_ids(request.user)).exists():
+            return Response({"detail": "No write access to this mode."}, status=status.HTTP_403_FORBIDDEN)
+
         filter_kwargs = {
-            "user": request.user,
             "mode_id": mode_id,
         }
 
@@ -377,8 +404,15 @@ class MilestoneViewSet(ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        return Milestone.objects.filter(user=self.request.user)
+        user = self.request.user
+        if self.request.method in ("GET", "HEAD", "OPTIONS"):
+            mode_ids = accessible_mode_ids(user)
+        else:
+            mode_ids = writable_mode_ids(user)
+        return Milestone.objects.filter(mode_id__in=mode_ids).select_related("assigned_to__profile")
+
     def perform_create(self, serializer):
+        validate_mode_write_access(self.request.user, serializer.validated_data.get("mode"))
         serializer.save(user=self.request.user)
     @transaction.atomic
     def perform_update(self, serializer):
@@ -420,7 +454,7 @@ class MilestoneReorderTodayView(APIView):
         pos = {c["id"]: c["position"] for c in changes}
 
         qs = Milestone.objects.filter(
-            user=request.user,
+            mode_id__in=writable_mode_ids(request.user),
             mode_id=mode_id,
             due_date=date,
             id__in=ids,
@@ -442,7 +476,7 @@ class BulkMilestonePositionUpdateView(APIView):
             return Response({"error": "Invalid or too many items (max 500)."}, status=400)
         for update in request.data:
             try:
-                milestone = Milestone.objects.get(user=request.user, id=update["id"])
+                milestone = Milestone.objects.get(mode_id__in=writable_mode_ids(request.user), id=update["id"])
                 milestone.position = update["position"]
                 milestone.save()
             except Milestone.DoesNotExist:
@@ -461,7 +495,7 @@ class MilestoneBulkUpdateView(APIView):
         if not milestone_ids:
             return Response({"error": "Missing milestoneIds"}, status=400)
 
-        milestones = Milestone.objects.filter(user=request.user, id__in=milestone_ids)
+        milestones = Milestone.objects.filter(mode_id__in=writable_mode_ids(request.user), id__in=milestone_ids)
         for milestone in milestones:
             old_mode_id = milestone.mode_id
 
@@ -495,8 +529,10 @@ class MilestoneReorderHomeView(APIView):
         container_kind = container["kind"]
         container_id = container["id"]
 
+        if not Mode.objects.filter(id=mode_id, id__in=writable_mode_ids(request.user)).exists():
+            return Response({"detail": "No write access to this mode."}, status=status.HTTP_403_FORBIDDEN)
+
         filter_kwargs = {
-            "user": request.user,
             "mode_id": mode_id,
         }
 
@@ -546,9 +582,15 @@ class TaskViewSet(ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        return Task.objects.filter(user=self.request.user).order_by("position", "id")
+        user = self.request.user
+        if self.request.method in ("GET", "HEAD", "OPTIONS"):
+            mode_ids = accessible_mode_ids(user)
+        else:
+            mode_ids = writable_mode_ids(user)
+        return Task.objects.filter(mode_id__in=mode_ids).select_related("assigned_to__profile").order_by("position", "id")
 
     def perform_create(self, serializer):
+        validate_mode_write_access(self.request.user, serializer.validated_data.get("mode"))
         serializer.save(user=self.request.user)
 
     @transaction.atomic
@@ -610,7 +652,7 @@ class TaskBulkUpdateView(APIView):
         if not task_ids:
             return Response({"error": "Missing taskIds"}, status=400)
 
-        tasks = Task.objects.filter(user=request.user, id__in=task_ids)
+        tasks = Task.objects.filter(mode_id__in=writable_mode_ids(request.user), id__in=task_ids)
         for task in tasks:
             if due_date is not None:
                 task.due_date = due_date
@@ -639,7 +681,7 @@ class TaskReorderTodayView(APIView):
         position_map = {c["id"]: c["position"] for c in changes}
 
         filter_kwargs = {
-            "user": request.user,
+            "mode_id__in": writable_mode_ids(request.user),
             "is_completed": False,
             "mode_id": mode_id,
             "due_date": date,
@@ -665,7 +707,7 @@ class BulkTaskPositionUpdateView(APIView):
             return Response({"error": "Invalid or too many items (max 500)."}, status=400)
         for update in request.data:
             try:
-                task = Task.objects.get(user=request.user, id=update["id"])
+                task = Task.objects.get(mode_id__in=writable_mode_ids(request.user), id=update["id"])
                 task.position = update["position"]
                 task.save()
             except Task.DoesNotExist:
@@ -688,7 +730,7 @@ class TaskReorderHomeView(APIView):
         container_id = container["id"]
 
         filter_kwargs = {
-            "user": request.user,
+            "mode_id__in": writable_mode_ids(request.user),
             "is_completed": False,
             "due_date__isnull": True,
             "mode_id": mode_id,

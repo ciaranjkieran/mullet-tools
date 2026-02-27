@@ -1,7 +1,7 @@
 // apps/web/src/components/entities/tasks/windows/tabs/TaskStatsTab.tsx
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useEffect, useState } from "react";
 
 import type { Task } from "@shared/types/Task";
 import type { Mode } from "@shared/types/Mode";
@@ -13,6 +13,9 @@ import {
 } from "@shared/store/useStatsFilterStore";
 
 import { useStatsTree } from "@shared/api/hooks/stats/useStatsTree";
+import { useModeMembers } from "@shared/api/hooks/collaboration/useModeMembers";
+import { useMe } from "@shared/api/hooks/auth/useMe";
+import AssigneeAvatar from "@/components/common/AssigneeAvatar";
 
 import { fmtDuration } from "@/components/stats/utils/format";
 import { getContrastingText } from "@shared/utils/getContrastingText";
@@ -34,6 +37,25 @@ export default function TaskStatsTab({ task, modes }: Props) {
   const headerColor = modeColor;
   const headerTextColor = getContrastingText(headerColor);
 
+  // Collaboration: member filtering
+  const { data: meData } = useMe();
+  const myUserId = meData?.id ?? null;
+  const { data: membersData } = useModeMembers(task.modeId);
+  const members = membersData?.members ?? [];
+  const isCollaborative = members.length > 1;
+  const [selectedMemberId, setSelectedMemberId] = useState<number | "all" | null>(null);
+
+  useEffect(() => {
+    setSelectedMemberId(myUserId);
+  }, [myUserId]);
+
+  const statsMemberId = useMemo(() => {
+    if (!isCollaborative) return undefined;
+    if (selectedMemberId === "all") return "all" as const;
+    if (selectedMemberId != null && selectedMemberId !== myUserId) return selectedMemberId;
+    return undefined;
+  }, [isCollaborative, selectedMemberId, myUserId]);
+
   const {
     data: tree,
     isLoading,
@@ -45,6 +67,7 @@ export default function TaskStatsTab({ task, modes }: Props) {
           modeId: task.modeId,
           from,
           to,
+          memberId: statsMemberId,
         }
       : null
   );
@@ -146,6 +169,45 @@ export default function TaskStatsTab({ task, modes }: Props) {
             />
           </div>
         </div>
+
+        {/* Team member selector (collaborative modes only) */}
+        {isCollaborative && (
+          <div className="flex items-center gap-2 mt-2">
+            <span className="text-xs font-medium text-gray-600">Team</span>
+            <div className="flex items-center gap-1.5">
+              {members.map((member) => {
+                const isSelected = selectedMemberId === member.id;
+                return (
+                  <button
+                    key={member.id}
+                    type="button"
+                    onClick={() => setSelectedMemberId(member.id)}
+                    className="rounded-full transition"
+                    style={{
+                      outline: isSelected ? `2px solid ${headerColor}` : "2px solid transparent",
+                      outlineOffset: "2px",
+                    }}
+                    title={member.displayName || member.username}
+                  >
+                    <AssigneeAvatar assignee={member} size={24} />
+                  </button>
+                );
+              })}
+              <button
+                type="button"
+                onClick={() => setSelectedMemberId("all")}
+                className="rounded-full border px-3 py-1 text-xs font-medium transition hover:bg-gray-50"
+                style={
+                  selectedMemberId === "all"
+                    ? { backgroundColor: headerColor, borderColor: headerColor, color: headerTextColor }
+                    : { backgroundColor: "#FFFFFF", borderColor: "#D1D5DB", color: "#374151" }
+                }
+              >
+                Everyone
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Loading / error / empty / content */}

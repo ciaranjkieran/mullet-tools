@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { CalendarIcon, HomeIcon } from "lucide-react";
+import { CalendarIcon, HomeIcon, Users, Sparkles } from "lucide-react";
 
 import PageTitle from "@/components/views/PageTitle";
 import ViewHandler from "@/components/views/ViewHandler";
@@ -145,6 +145,8 @@ export default function DashboardPage() {
     setIsGoalDialogOpen,
     setGoalToEdit,
     setIsEditModesOpen,
+    openCollaborationModal,
+    setIsAiBuilderOpen,
   } = useDialogStore();
 
   const fallbackModeId = activeMode?.id ?? modes[0]?.id;
@@ -360,14 +362,34 @@ export default function DashboardPage() {
       <section className="max-w-4xl mx-auto p-8">
         <div className="flex justify-between items-center mb-4">
           <PageTitle />
-          {!isModeFocus && (
-            <button
-              onClick={() => setIsEditModesOpen(true)}
-              className="text-sm bg-black text-white px-3 py-1 rounded cursor-pointer"
-            >
-              Edit Modes
-            </button>
-          )}
+          <div className="flex items-center gap-2">
+            {!isModeFocus && activeMode && (
+              <>
+                <button
+                  onClick={() => openCollaborationModal(activeMode.id)}
+                  className="p-2 rounded-full border-2 transition cursor-pointer hover:opacity-80"
+                  style={{
+                    borderColor: modeColor,
+                    backgroundColor: modeColor + "18",
+                    color: modeColor,
+                  }}
+                  aria-label="Collaboration"
+                  title="Collaboration"
+                  type="button"
+                >
+                  <Users className="w-4 h-4" />
+                </button>
+              </>
+            )}
+            {!isModeFocus && (
+              <button
+                onClick={() => setIsEditModesOpen(true)}
+                className="text-sm bg-black text-white px-3 py-1 rounded cursor-pointer"
+              >
+                Edit Modes
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Mobile view buttons */}
@@ -566,6 +588,23 @@ export default function DashboardPage() {
           </>
         )}
       </section>
+
+      {/* AI Builder — fixed bottom-left */}
+      {activeMode && !viewerOpen && (
+        <button
+          onClick={() => setIsAiBuilderOpen(true)}
+          className="fixed bottom-10 left-12 z-50 p-3 rounded-full shadow-lg transition cursor-pointer hover:scale-105"
+          style={{
+            backgroundColor: modeColor,
+            color: "#fff",
+          }}
+          aria-label="AI Builder"
+          title="AI Builder"
+          type="button"
+        >
+          <Sparkles className="w-5 h-5" />
+        </button>
+      )}
 
       {jumperPos && (
         <div className="hidden md:block">

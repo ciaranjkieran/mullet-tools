@@ -43,6 +43,17 @@ type DialogStore = {
   // Modes (no tabs needed)
   isEditModesOpen: boolean;
   setIsEditModesOpen: (open: boolean) => void;
+
+  // Collaboration modal
+  isCollaborationModalOpen: boolean;
+  collaborationModeId: number | null;
+  setIsCollaborationModalOpen: (open: boolean) => void;
+  setCollaborationModeId: (id: number | null) => void;
+  openCollaborationModal: (modeId: number) => void;
+
+  // AI Builder modal
+  isAiBuilderOpen: boolean;
+  setIsAiBuilderOpen: (open: boolean) => void;
 };
 
 export const useDialogStore = create<DialogStore>((set) => ({
@@ -81,4 +92,16 @@ export const useDialogStore = create<DialogStore>((set) => ({
   // Modes modal
   isEditModesOpen: false,
   setIsEditModesOpen: (open) => set({ isEditModesOpen: open }),
+
+  // Collaboration modal
+  isCollaborationModalOpen: false,
+  collaborationModeId: null,
+  setIsCollaborationModalOpen: (open) => set({ isCollaborationModalOpen: open }),
+  setCollaborationModeId: (id) => set({ collaborationModeId: id }),
+  openCollaborationModal: (modeId) =>
+    set({ isCollaborationModalOpen: true, collaborationModeId: modeId }),
+
+  // AI Builder modal
+  isAiBuilderOpen: false,
+  setIsAiBuilderOpen: (open) => set({ isAiBuilderOpen: open }),
 }));

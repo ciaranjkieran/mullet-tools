@@ -114,6 +114,13 @@ class Goal(ArchivableModel):
         on_delete=models.CASCADE,
         related_name="goals",
     )
+    assigned_to = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="assigned_goals",
+    )
 
     class Meta:
         ordering = ["position", "id"]
@@ -239,6 +246,13 @@ class Project(ArchivableModel):
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name="projects",
+    )
+    assigned_to = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="assigned_projects",
     )
 
     class Meta:
@@ -369,6 +383,13 @@ class Milestone(ArchivableModel):
         on_delete=models.CASCADE,
         related_name="milestones",
     )
+    assigned_to = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="assigned_milestones",
+    )
 
     class Meta:
         constraints = [
@@ -473,6 +494,13 @@ class Task(ArchivableModel):
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name="tasks",
+    )
+    assigned_to = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="assigned_tasks",
     )
 
     class Meta:

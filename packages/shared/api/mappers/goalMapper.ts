@@ -13,6 +13,9 @@ export const mapGoalFromApi = (data: any): Goal => ({
   isCompleted: data.isCompleted ?? data.is_completed ?? false,
 
   modeId: data.modeId ?? data.mode_id,
+
+  assignedToId: data.assignedToId ?? data.assigned_to_id ?? null,
+  assignee: data.assignee ?? null,
 });
 
 /** Write (PATCH-only): include a key iff caller provided it. */
@@ -48,6 +51,8 @@ export function mapGoalToApi(goal: Partial<Goal>) {
   if ("position" in goal && goal.position !== undefined) {
     out.position = goal.position;
   }
+
+  if ("assignedToId" in goal) out.assignedToId = goal.assignedToId ?? null;
 
   return out;
 }

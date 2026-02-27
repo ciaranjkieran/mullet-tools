@@ -14,6 +14,8 @@ import Underline from "@tiptap/extension-underline";
 import Placeholder from "@tiptap/extension-placeholder";
 
 import ConfirmDialog from "../../lib/utils/ConfirmDialog";
+import AssigneeAvatar from "../common/AssigneeAvatar";
+import { useModeMembers } from "@shared/api/hooks/collaboration/useModeMembers";
 
 import { useModeStore } from "@shared/store/useModeStore";
 import { useGoalStore } from "@shared/store/useGoalStore";
@@ -32,6 +34,8 @@ export default function NoteCard({ note, breadcrumb, modeLevel }: Props) {
   const [isEditing, setIsEditing] = useState(false);
   const [body, setBody] = useState(note.body);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const { data: membersData } = useModeMembers(note.modeId);
+  const isCollaborative = (membersData?.members?.length ?? 0) > 1;
 
   const patchNote = usePatchNote();
   const deleteNote = useDeleteNote();
@@ -160,7 +164,15 @@ export default function NoteCard({ note, breadcrumb, modeLevel }: Props) {
       </div>
 
       <div className="border-t pt-2 text-xs text-gray-500">
-        <p className="mb-1">{date}</p>
+        <div className="flex items-center gap-2 mb-1">
+          {isCollaborative && note.author && (
+            <div className="flex items-center gap-1">
+              <AssigneeAvatar assignee={note.author} size={18} />
+              <span className="font-medium text-gray-700">{note.author.displayName || note.author.username}</span>
+            </div>
+          )}
+          <span>{date}</span>
+        </div>
 
         {modeLevel && (
           <>

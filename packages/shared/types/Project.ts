@@ -1,3 +1,5 @@
+import type { Assignee } from "./Assignee";
+
 export type Project = {
   id: number;
   title: string;
@@ -11,4 +13,7 @@ export type Project = {
   parentId?: number | null;
   goalId?: number | null;
   modeId: number;
+
+  assignedToId?: number | null;
+  assignee?: Assignee | null;
 };

@@ -61,6 +61,7 @@ export default function GoalWindow({
   const [modeId, setModeId] = useState(goal.modeId);
   const [dueDate, setDueDate] = useState(goal.dueDate ?? "");
   const [dueTime, setDueTime] = useState(goal.dueTime ?? "");
+  const [assignedToId, setAssignedToId] = useState<number | null>(goal.assignedToId ?? null);
   const clockType = useTimerUIStore((s) => s.clockType);
   useCloseAllModals(onClose);
 
@@ -102,6 +103,7 @@ export default function GoalWindow({
     setModeId(goal.modeId);
     setDueDate(goal.dueDate ?? "");
     setDueTime(goal.dueTime ?? "");
+    setAssignedToId(goal.assignedToId ?? null);
   }, [goal]);
 
   const handleSubmit = (e?: React.FormEvent) => {
@@ -113,6 +115,7 @@ export default function GoalWindow({
         modeId,
         dueDate: dueDate || null,
         dueTime: dueTime || null,
+        assignedToId,
       },
       { onSuccess: onClose }
     );
@@ -184,6 +187,8 @@ export default function GoalWindow({
                     setDueTime={setDueTime}
                     modeId={modeId}
                     setModeId={setModeId}
+                    assignedToId={assignedToId}
+                    setAssignedToId={setAssignedToId}
                     onSubmit={handleSubmit}
                     onCancel={onClose}
                     onDelete={handleDelete}

@@ -70,6 +70,7 @@ export default function ProjectWindow({
   );
   const [dueDate, setDueDate] = useState(project.dueDate ?? "");
   const [dueTime, setDueTime] = useState(project.dueTime ?? "");
+  const [assignedToId, setAssignedToId] = useState<number | null>(project.assignedToId ?? null);
   const { mutate: updateProject } = useUpdateProject();
   const { mutate: deleteProject } = useDeleteProject();
 
@@ -112,6 +113,7 @@ export default function ProjectWindow({
     setParentId(project.parentId ?? null);
     setDueDate(project.dueDate ?? "");
     setDueTime(project.dueTime ?? "");
+    setAssignedToId(project.assignedToId ?? null);
   }, [
     project.id,
     project.title,
@@ -120,6 +122,7 @@ export default function ProjectWindow({
     project.parentId,
     project.dueDate,
     project.dueTime,
+    project.assignedToId,
   ]);
 
   const handleSubmit = (e?: React.FormEvent) => {
@@ -136,6 +139,7 @@ export default function ProjectWindow({
         // ✅ send explicit nulls when empty so buildPatch keeps/clears them properly
         dueDate: dueDate || null,
         dueTime: dueTime || null,
+        assignedToId,
       },
       { onSuccess: onClose }
     );
@@ -223,6 +227,8 @@ export default function ProjectWindow({
                     setParentId={setParentId}
                     setDueDate={setDueDate}
                     setDueTime={setDueTime}
+                    assignedToId={assignedToId}
+                    setAssignedToId={setAssignedToId}
                     handleSubmit={handleSubmit}
                     onCancel={onClose}
                     onDelete={handleDelete}

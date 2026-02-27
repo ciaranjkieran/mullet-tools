@@ -16,6 +16,7 @@ interface CreateMilestoneInput {
   parentId?: number | null;
   projectId?: number | null;
   goalId?: number | null;
+  assignedToId?: number | null;
 }
 
 async function createMilestone(

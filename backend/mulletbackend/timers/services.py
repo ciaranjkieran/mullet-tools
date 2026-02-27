@@ -47,13 +47,16 @@ def fetch_entities_by_ids(
     task_id=None,
 ):
     """
-    IMPORTANT: user-scoped fetch so you can’t point a timer at someone else’s entities.
+    Fetch entities scoped to modes the user can access (owns or collaborates on).
+    Prevents pointing a timer at entities in modes you have no access to.
     """
-    mode = Mode.objects.filter(user=user, id=mode_id).first() if mode_id else None
-    goal = Goal.objects.filter(user=user, id=goal_id).first() if goal_id else None
-    project = Project.objects.filter(user=user, id=project_id).first() if project_id else None
-    milestone = Milestone.objects.filter(user=user, id=milestone_id).first() if milestone_id else None
-    task = Task.objects.filter(user=user, id=task_id).first() if task_id else None
+    from collaboration.permissions import accessible_mode_ids
+    modes = accessible_mode_ids(user)
+    mode = Mode.objects.filter(id=mode_id, id__in=modes).first() if mode_id else None
+    goal = Goal.objects.filter(id=goal_id, mode_id__in=modes).first() if goal_id else None
+    project = Project.objects.filter(id=project_id, mode_id__in=modes).first() if project_id else None
+    milestone = Milestone.objects.filter(id=milestone_id, mode_id__in=modes).first() if milestone_id else None
+    task = Task.objects.filter(id=task_id, mode_id__in=modes).first() if task_id else None
     return dict(mode=mode, goal=goal, project=project, milestone=milestone, task=task)
 
 

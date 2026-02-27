@@ -15,6 +15,7 @@ import {
 
 import { useSelectionStore } from "@/lib/store/useSelectionStore";
 import EntityDragHandle from "@/components/common/EntityDragHandle";
+import AssigneeAvatar from "@/components/common/AssigneeAvatar";
 
 import type {
   DragAttributes,
@@ -133,8 +134,9 @@ export default function ProjectRendererCalendar({
           </div>
         </div>
 
-        {/* Right: drag handle + checkbox */}
+        {/* Right: avatar + drag handle + checkbox */}
         <div className="flex items-center gap-2">
+          <AssigneeAvatar assignee={project.assignee} size={18} />
           <EntityDragHandle
             entityKind="project"
             entityId={project.id}

@@ -10,6 +10,7 @@ interface CreateGoalInput {
   dueDate?: string | null;
   dueTime?: string | null;
   modeId?: number | null;
+  assignedToId?: number | null;
 }
 
 export function useCreateGoal() {

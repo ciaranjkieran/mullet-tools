@@ -2,6 +2,7 @@
 from rest_framework import serializers
 from django.contrib.contenttypes.models import ContentType
 from .models import Note
+from core.serializers import AssigneeSerializer
 
 
 def _extract_title(obj):
@@ -22,6 +23,8 @@ class NoteSerializer(serializers.ModelSerializer):
     target_type = serializers.CharField(write_only=True, required=False)
     target_id = serializers.IntegerField(write_only=True, required=False)
 
+    author = AssigneeSerializer(source="user", read_only=True)
+
     class Meta:
         model = Note
         fields = [
@@ -35,6 +38,7 @@ class NoteSerializer(serializers.ModelSerializer):
             "display_title",
             "target_type",
             "target_id",
+            "author",
         ]
         read_only_fields = [
         "id", "created_at", "content_type", "display_title",
@@ -53,17 +57,18 @@ class NoteSerializer(serializers.ModelSerializer):
         req = self.context.get("request")
         user = getattr(req, "user", None)
 
-        # If mode provided, ensure it belongs to the user
+        # If mode provided, ensure the user has access (owner or collaborator)
         mode = attrs.get("mode")
         if mode and user and user.is_authenticated:
-            if getattr(mode, "user_id", None) != user.id:
+            from collaboration.permissions import accessible_mode_ids
+            if mode.id not in accessible_mode_ids(user):
                 raise serializers.ValidationError({"mode": "Invalid mode."})
 
         return attrs
 
     def _resolve_target(self, target_type: str, target_id: int):
         """
-        Resolve target object and enforce ownership: target.user == request.user (if model has user_id).
+        Resolve target object and ensure the user has access via mode membership.
         """
         req = self.context.get("request")
         user = getattr(req, "user", None)
@@ -72,8 +77,9 @@ class NoteSerializer(serializers.ModelSerializer):
         model_cls = ct.model_class()
 
         qs = model_cls.objects.all()
-        if user and user.is_authenticated and hasattr(model_cls, "user_id"):
-            qs = qs.filter(user_id=user.id)
+        if user and user.is_authenticated and hasattr(model_cls, "mode_id"):
+            from collaboration.permissions import accessible_mode_ids
+            qs = qs.filter(mode_id__in=accessible_mode_ids(user))
 
         obj = qs.get(id=target_id)
         title = _extract_title(obj) or "(Untitled)"

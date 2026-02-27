@@ -53,6 +53,7 @@ type UpdateMilestonePayload = {
   projectId: number | null;
   goalId: number | null;
   isCompleted: boolean;
+  assignedToId: number | null;
 }>;
 
 export function useUpdateMilestone() {

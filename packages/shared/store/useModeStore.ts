@@ -6,6 +6,9 @@ export interface Mode {
   title: string;
   color: string;
   position: number;
+  isOwned: boolean;
+  collaboratorCount: number;
+  ownerName: string | null;
 }
 
 // Small helpers

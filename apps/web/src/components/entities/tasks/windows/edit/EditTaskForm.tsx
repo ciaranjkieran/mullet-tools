@@ -25,6 +25,7 @@ import {
 
 /** Unified lineage orchestrator (smart selects) */
 import EditorEntityInputs from "@/components/inputs/editor/EditorEntityInputs";
+import EditorAssigneeSelect from "@/components/inputs/editor/EditorAssigneeSelect";
 import {
   filterEditorOptions,
   reconcileAfterChange,
@@ -53,6 +54,9 @@ type Props = {
   setProjectId: (id: number | null | undefined) => void;
   setGoalId: (id: number | null | undefined) => void;
 
+  assignedToId: number | null;
+  setAssignedToId: (id: number | null) => void;
+
   handleSubmit: (e?: React.FormEvent) => void;
   onCancel: () => void;
   onDelete: () => void;
@@ -79,6 +83,8 @@ export default function EditTaskForm({
   setMilestoneId,
   setProjectId,
   setGoalId,
+  assignedToId,
+  setAssignedToId,
   handleSubmit,
   onCancel,
   onDelete,
@@ -419,6 +425,11 @@ export default function EditTaskForm({
               onProjectChange={onProjectChange}
               onMilestoneChange={onMilestoneChange}
               modeColor={modeColor}
+            />
+            <EditorAssigneeSelect
+              modeId={modeId}
+              assignedToId={assignedToId}
+              onChange={setAssignedToId}
             />
           </div>
         </div>

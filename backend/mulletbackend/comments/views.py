@@ -8,6 +8,7 @@ from django.contrib.contenttypes.models import ContentType
 from .models import Comment, CommentAttachment
 from .serializers import CommentSerializer, CommentAttachmentSerializer
 from boards.validation import ALLOWED_FILE_MIMES, ALLOWED_FILE_EXTS, MAX_FILE_BYTES
+from collaboration.permissions import accessible_mode_ids, writable_mode_ids, validate_mode_write_access
 
 logger = logging.getLogger(__name__)
 
@@ -50,8 +51,8 @@ class CommentViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         qs = (
             Comment.objects
-            .filter(user=self.request.user, is_deleted=False)
-            .select_related("content_type", "mode")
+            .filter(mode_id__in=accessible_mode_ids(self.request.user), is_deleted=False)
+            .select_related("content_type", "mode", "user__profile")
             .prefetch_related("attachments")
         )
 
@@ -75,6 +76,7 @@ class CommentViewSet(viewsets.ModelViewSet):
         return qs.order_by("created_at")
 
     def perform_create(self, serializer):
+        validate_mode_write_access(self.request.user, serializer.validated_data.get("mode"))
         comment = serializer.save(user=self.request.user)
 
         files = self.request.FILES.getlist("attachments")
@@ -96,8 +98,10 @@ class CommentAttachmentViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        # Only attachments owned by this user
-        return CommentAttachment.objects.filter(user=self.request.user).select_related("comment")
+        # Attachments on comments in accessible modes
+        return CommentAttachment.objects.filter(
+            comment__mode_id__in=accessible_mode_ids(self.request.user)
+        ).select_related("comment")
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)

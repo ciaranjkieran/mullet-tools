@@ -14,6 +14,7 @@ import { useDialogStore } from "../../../../../lib/dialogs/useDialogStore";
 // selection + reusable handle
 import { useSelectionStore } from "../../../../../lib/store/useSelectionStore";
 import EntityDragHandle from "../../../../common/EntityDragHandle";
+import AssigneeAvatar from "../../../../common/AssigneeAvatar";
 
 // NEW: global collapse store
 import { useEntityUIStore } from "@/lib/store/useEntityUIStore";
@@ -152,9 +153,10 @@ export default function MilestoneRenderer({
         </div>
       </div>
 
-      {/* RIGHT: checkbox (only when collapsed) */}
+      {/* RIGHT: assignee avatar + checkbox (only when collapsed) */}
       {isCollapsed === true ? (
         <div className="flex items-center gap-2">
+          <AssigneeAvatar assignee={milestone.assignee} size={20} />
           <input
             type="checkbox"
             className="w-4 h-4 rounded-full border border-gray-400 checked:bg-black checked:border-black cursor-pointer"
@@ -165,7 +167,7 @@ export default function MilestoneRenderer({
           />
         </div>
       ) : (
-        <div /> // keeps spacing consistent when expanded
+        <AssigneeAvatar assignee={milestone.assignee} size={20} />
       )}
     </div>
   );

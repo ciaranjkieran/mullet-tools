@@ -3,10 +3,16 @@
 import { useQuery } from "@tanstack/react-query";
 import api from "../../axios";
 
+export type UserProfile = {
+  displayName: string;
+  avatar: string | null;
+};
+
 export type MeResponse = {
   id: number;
   username: string;
   email: string;
+  profile: UserProfile | null;
 };
 
 export function useMe() {

@@ -15,6 +15,7 @@ import { PencilSquareIcon } from "@heroicons/react/24/outline";
 
 import { useSelectionStore } from "../../../../../lib/store/useSelectionStore";
 import EntityDragHandle from "../../../../common/EntityDragHandle";
+import AssigneeAvatar from "../../../../common/AssigneeAvatar";
 import { useEntityUIStore } from "@/lib/store/useEntityUIStore";
 
 type Props = {
@@ -166,9 +167,10 @@ export default function GoalRendererDashboard({
         </div>
       </div>
 
-      {/* RIGHT: checkbox (collapsed only) — checking deletes goal */}
+      {/* RIGHT: assignee avatar + checkbox (collapsed only) */}
       {isCollapsed === true ? (
         <div className="flex items-center gap-2">
+          <AssigneeAvatar assignee={goal.assignee} size={20} />
           <input
             type="checkbox"
             className="w-4 h-4 rounded-full border border-gray-400 checked:bg-black checked:border-black cursor-pointer"
@@ -179,7 +181,7 @@ export default function GoalRendererDashboard({
           />
         </div>
       ) : (
-        <div />
+        <AssigneeAvatar assignee={goal.assignee} size={20} />
       )}
     </div>
   );

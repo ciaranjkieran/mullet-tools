@@ -5,7 +5,10 @@ export function mapModeFromApi(apiMode: any): Mode {
     id: apiMode.id,
     title: apiMode.title,
     color: apiMode.color,
-    position: apiMode.position ?? 0, // ✅ Default to 0 if missing
+    position: apiMode.position ?? 0,
+    isOwned: apiMode.isOwned ?? true,
+    collaboratorCount: apiMode.collaboratorCount ?? 0,
+    ownerName: apiMode.ownerName ?? null,
   };
 }
 

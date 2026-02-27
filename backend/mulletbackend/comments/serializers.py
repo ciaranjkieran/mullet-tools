@@ -24,6 +24,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ObjectDoesNotExist
 
 from .models import Comment, CommentAttachment
+from core.serializers import AssigneeSerializer
 
 
 class CommentSerializer(serializers.ModelSerializer):
@@ -35,6 +36,7 @@ class CommentSerializer(serializers.ModelSerializer):
     entity_model = serializers.SerializerMethodField(read_only=True)
     entity_title = serializers.SerializerMethodField(read_only=True)
     attachments = CommentAttachmentSerializer(many=True, read_only=True)
+    author = AssigneeSerializer(source="user", read_only=True)
 
     class Meta:
         model = Comment
@@ -51,6 +53,7 @@ class CommentSerializer(serializers.ModelSerializer):
             "created_at",
             "is_deleted",
             "attachments",
+            "author",
         ]
         read_only_fields = [
             "content_type",

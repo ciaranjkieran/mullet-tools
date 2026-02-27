@@ -9,12 +9,16 @@ import { Trash2 } from "lucide-react";
 import Linkify from "linkify-react";
 import CommentAttachment from "./CommentAttachment";
 import ConfirmDialog from "../../lib/utils/ConfirmDialog";
+import AssigneeAvatar from "../common/AssigneeAvatar";
+import { useModeMembers } from "@shared/api/hooks/collaboration/useModeMembers";
 
 type Props = { comment: Comment };
 
 export default function CommentCard({ comment }: Props) {
   const { mutate: deleteComment, isPending } = useDeleteComment();
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const { data: membersData } = useModeMembers(comment.mode);
+  const isCollaborative = (membersData?.members?.length ?? 0) > 1;
 
   const handleConfirmDelete = () => {
     deleteComment(comment.id);
@@ -49,9 +53,15 @@ export default function CommentCard({ comment }: Props) {
         </div>
       )}
 
-      <span className="text-xs text-gray-500 mt-2 block">
-        {format(new Date(comment.created_at), "PPP p")}
-      </span>
+      <div className="flex items-center gap-2 text-xs text-gray-500 mt-2">
+        {isCollaborative && comment.author && (
+          <div className="flex items-center gap-1">
+            <AssigneeAvatar assignee={comment.author} size={18} />
+            <span className="font-medium text-gray-700">{comment.author.displayName || comment.author.username}</span>
+          </div>
+        )}
+        <span>{format(new Date(comment.created_at), "PPP p")}</span>
+      </div>
 
       <div
         onClick={() => setConfirmOpen(true)}

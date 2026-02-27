@@ -3,6 +3,9 @@ export type Mode = {
   title: string;
   color: string;
   position: number;
+  isOwned: boolean;
+  collaboratorCount: number;
+  ownerName: string | null;
 };
 
 export type CreateModeInput = {

@@ -10,9 +10,9 @@ from django.contrib.auth.models import User
 from rest_framework import serializers, status
 import uuid
 from core.services.create_default_modes_for_user import create_default_modes_for_user
+from .models import Profile
+from .serializers import UserSerializer, ProfileSerializer
 from django.db import transaction
-
-from .serializers import UserSerializer
 
 
 class AuthRateThrottle(AnonRateThrottle):
@@ -66,6 +66,9 @@ class RegisterView(APIView):
             # ✅ auto-create the 5 default modes
             create_default_modes_for_user(user)
 
+            # ✅ auto-create user profile
+            Profile.objects.create(user=user)
+
             # 🔑 new session + logged in as this new user
             request.session.flush()
             login(request, user)
@@ -111,3 +114,20 @@ class MeView(APIView):
 
     def get(self, request):
         return Response(UserSerializer(request.user).data)
+
+
+class ProfileView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        profile, _ = Profile.objects.get_or_create(user=request.user)
+        return Response(ProfileSerializer(profile, context={"request": request}).data)
+
+    def patch(self, request):
+        profile, _ = Profile.objects.get_or_create(user=request.user)
+        serializer = ProfileSerializer(
+            profile, data=request.data, partial=True, context={"request": request}
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)

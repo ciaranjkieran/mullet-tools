@@ -31,6 +31,8 @@ urlpatterns = [
     path("api/", include("templates.urls")),
     path("api/", include("timers.urls")),
     path("api/batch/", include("batch.urls")),
+    path("api/collaboration/", include("collaboration.urls")),
+    path("api/ai/", include("ai.urls")),
 
     # Media files — auth-gated
     re_path(r"^media/(?P<path>.*)$", protected_media),

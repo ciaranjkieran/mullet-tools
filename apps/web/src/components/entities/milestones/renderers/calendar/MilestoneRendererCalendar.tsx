@@ -17,6 +17,7 @@ import {
 // selection + reusable handle
 import { useSelectionStore } from "../../../../../lib/store/useSelectionStore";
 import EntityDragHandle from "../../../../common/EntityDragHandle";
+import AssigneeAvatar from "../../../../common/AssigneeAvatar";
 
 // shared drag types
 import type {
@@ -139,8 +140,9 @@ export default function MilestoneRendererCalendar({
           </div>
         </div>
 
-        {/* Right: drag handle + checkbox */}
+        {/* Right: avatar + drag handle + checkbox */}
         <div className="flex items-center gap-2">
+          <AssigneeAvatar assignee={milestone.assignee} size={18} />
           <EntityDragHandle
             entityKind="milestone"
             entityId={milestone.id}

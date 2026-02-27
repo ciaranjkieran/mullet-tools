@@ -64,6 +64,7 @@ export default function TaskWindow({
   const [goalId, setGoalId] = useState<number | null | undefined>(
     task.goalId ?? null
   );
+  const [assignedToId, setAssignedToId] = useState<number | null>(task.assignedToId ?? null);
 
   const { taskDialogTab, setTaskDialogTab } = useDialogStore();
   const tabNames = ["edit", "comments", "notes", "boards", "stats"] as const;
@@ -99,6 +100,7 @@ export default function TaskWindow({
     setMilestoneId(task.milestoneId ?? null);
     setProjectId(task.projectId ?? null);
     setGoalId(task.goalId ?? null);
+    setAssignedToId(task.assignedToId ?? null);
   }, [task]);
 
   function normalizeTaskAncestors(
@@ -126,6 +128,7 @@ export default function TaskWindow({
         modeId,
         dueDate: dueDate || undefined,
         dueTime: dueTime || undefined,
+        assignedToId,
         ...norm,
       },
       { onSuccess: onClose }
@@ -186,6 +189,8 @@ export default function TaskWindow({
                   setMilestoneId={setMilestoneId}
                   setProjectId={setProjectId}
                   setGoalId={setGoalId}
+                  assignedToId={assignedToId}
+                  setAssignedToId={setAssignedToId}
                   handleSubmit={handleSubmit}
                   onCancel={onClose}
                   onDelete={handleDelete}

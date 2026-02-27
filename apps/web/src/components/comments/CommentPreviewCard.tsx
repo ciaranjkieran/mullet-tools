@@ -8,6 +8,8 @@ import { Goal } from "@shared/types/Goal";
 import { format } from "date-fns";
 import clsx from "clsx";
 import { TargetIcon } from "lucide-react";
+import AssigneeAvatar from "../common/AssigneeAvatar";
+import { useModeMembers } from "@shared/api/hooks/collaboration/useModeMembers";
 
 import {
   openTaskDialogFromComments,
@@ -34,6 +36,8 @@ export default function CommentPreviewCard({
   title,
 }: Props) {
   const firstComment = comments[0];
+  const { data: membersData } = useModeMembers(firstComment?.mode);
+  const isCollaborative = (membersData?.members?.length ?? 0) > 1;
 
   const handleClick = () => {
     switch (entityType) {
@@ -118,9 +122,15 @@ export default function CommentPreviewCard({
       <p className="text-sm text-gray-800 mb-1 line-clamp-3">
         {firstComment.body || "[No comment body]"}
       </p>
-      <p className="text-xs text-gray-500">
-        {format(new Date(firstComment.created_at), "PPP p")}
-      </p>
+      <div className="flex items-center gap-2 text-xs text-gray-500">
+        {isCollaborative && firstComment.author && (
+          <div className="flex items-center gap-1">
+            <AssigneeAvatar assignee={firstComment.author} size={18} />
+            <span className="font-medium text-gray-700">{firstComment.author.displayName || firstComment.author.username}</span>
+          </div>
+        )}
+        <span>{format(new Date(firstComment.created_at), "PPP p")}</span>
+      </div>
       {comments.length > 1 && (
         <p className="text-xs font-semibold text-gray-800 italic mt-1 mb-2">
           {comments.length - 1} more comment{comments.length - 1 > 1 ? "s" : ""}

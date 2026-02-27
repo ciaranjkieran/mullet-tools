@@ -14,6 +14,7 @@ type UpdateGoalPayload = {
   dueDate: string | null;
   dueTime: string | null;
   isCompleted: boolean;
+  assignedToId: number | null;
 }>;
 
 export function useUpdateGoal() {

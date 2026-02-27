@@ -6,6 +6,8 @@ export type CommentAttachment = {
   uploaded_at: string;
 };
 
+import type { Assignee } from "./Assignee";
+
 export type Comment = {
   id: number;
   mode: number;
@@ -17,4 +19,5 @@ export type Comment = {
   created_at: string;
   is_deleted: boolean;
   attachments: CommentAttachment[];
+  author?: Assignee | null;
 };

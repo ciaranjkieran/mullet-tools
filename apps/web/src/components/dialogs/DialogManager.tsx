@@ -13,6 +13,8 @@ import ProjectWindow from "../entities/projects/windows/ProjectWindow";
 import BuildGoalWindow from "../entities/goals/windows/build/BuildGoalWindow";
 import GoalWindow from "../entities/goals/windows/GoalWindow";
 import EditModesModal from "../entities/modes/windows/EditModesModal";
+import ModeCollaborationModal from "@/components/collaboration/ModeCollaborationModal";
+import AiBuilderModal from "@/components/ai/AiBuilderModal";
 import BatchEditorWindow from "@/components/batch/BatchEditorWindow";
 import BatchEditorTrigger from "@/components/batch/BatchEditorTrigger";
 
@@ -67,6 +69,16 @@ export default function DialogManager({
     // Modes
     isEditModesOpen,
     setIsEditModesOpen,
+
+    // Collaboration
+    isCollaborationModalOpen,
+    collaborationModeId,
+    setIsCollaborationModalOpen,
+    setCollaborationModeId,
+
+    // AI Builder
+    isAiBuilderOpen,
+    setIsAiBuilderOpen,
   } = useDialogStore();
 
   // Back-button closes modals on mobile
@@ -94,11 +106,22 @@ export default function DialogManager({
     setIsEditModesOpen(false);
   }, [setIsEditModesOpen]);
 
+  const closeCollaboration = useCallback(() => {
+    setIsCollaborationModalOpen(false);
+    setCollaborationModeId(null);
+  }, [setIsCollaborationModalOpen, setCollaborationModeId]);
+
+  const closeAiBuilder = useCallback(() => {
+    setIsAiBuilderOpen(false);
+  }, [setIsAiBuilderOpen]);
+
   useBackClose(isTaskDialogOpen, closeTask);
   useBackClose(isMilestoneDialogOpen, closeMilestone);
   useBackClose(isProjectDialogOpen, closeProject);
   useBackClose(isGoalDialogOpen, closeGoal);
   useBackClose(isEditModesOpen, closeModes);
+  useBackClose(isCollaborationModalOpen, closeCollaboration);
+  useBackClose(isAiBuilderOpen, closeAiBuilder);
 
   return (
     <>
@@ -205,6 +228,18 @@ export default function DialogManager({
           onClose={closeModes}
           modes={modes}
         />
+      )}
+      {/* Collaboration Dialog */}
+      {isCollaborationModalOpen && (
+        <ModeCollaborationModal
+          isOpen={isCollaborationModalOpen}
+          onClose={closeCollaboration}
+          modeId={collaborationModeId}
+        />
+      )}
+      {/* AI Builder Dialog */}
+      {isAiBuilderOpen && (
+        <AiBuilderModal isOpen={isAiBuilderOpen} onClose={closeAiBuilder} />
       )}
     </>
   );

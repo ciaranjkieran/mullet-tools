@@ -10,6 +10,7 @@ import { useDeleteTask } from "@shared/api/hooks/tasks/useDeleteTask";
 import { useDialogStore } from "@/lib/dialogs/useDialogStore";
 import { useSelectionStore } from "../../../../../lib/store/useSelectionStore";
 import EntityDragHandle from "../../../../common/EntityDragHandle";
+import AssigneeAvatar from "../../../../common/AssigneeAvatar";
 
 type Props = {
   task: Task;
@@ -80,8 +81,9 @@ export default function TaskRendererDashboard({
           </div>
         </div>
 
-        {/* Right: handle + checkbox */}
+        {/* Right: avatar + handle + checkbox */}
         <div className="flex items-center gap-2 flex-shrink-0">
+          <AssigneeAvatar assignee={task.assignee} size={20} />
           <EntityDragHandle
             data-drag-handle
             entityKind="task"

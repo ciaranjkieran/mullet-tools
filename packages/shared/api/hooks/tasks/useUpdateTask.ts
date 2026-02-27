@@ -16,6 +16,7 @@ type UpdateTaskPayload = {
   goalId: number | null;
   isCompleted: boolean;
   position: number | undefined;
+  assignedToId: number | null;
 }>;
 
 export function useUpdateTask() {

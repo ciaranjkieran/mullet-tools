@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 
 import { useMe } from "@shared/api/hooks/auth/useMe";
 import { useLogout } from "@shared/api/hooks/auth/useLogout";
+import { useMyInvitations } from "@shared/api/hooks/collaboration/useMyInvitations";
 
 export default function Header() {
   const [isOpen, setIsOpen] = useState(false);
@@ -14,7 +15,9 @@ export default function Header() {
   const me = useMe();
   const logout = useLogout();
 
-  const isAuthed = !!me.data; // ✅ simple + reliable
+  const isAuthed = !!me.data;
+  const { data: invitations } = useMyInvitations(isAuthed);
+  const invitationCount = invitations?.length ?? 0;
 
   async function handleLogout() {
     try {
@@ -72,6 +75,17 @@ export default function Header() {
               </Link>
               <Link href="/contact" className="hover:text-black transition">
                 Contact
+              </Link>
+              <Link href="/settings" className="hover:text-black transition">
+                Settings
+              </Link>
+              <Link href="/invitations" className="hover:text-black transition relative">
+                Invitations
+                {invitationCount > 0 && (
+                  <span className="absolute -top-1.5 -right-3 bg-red-500 text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
+                    {invitationCount}
+                  </span>
+                )}
               </Link>
               <button
                 onClick={handleLogout}
@@ -165,6 +179,25 @@ export default function Header() {
                 onClick={() => setIsOpen(false)}
               >
                 About
+              </Link>
+              <Link
+                href="/settings"
+                className="block"
+                onClick={() => setIsOpen(false)}
+              >
+                Settings
+              </Link>
+              <Link
+                href="/invitations"
+                className="block"
+                onClick={() => setIsOpen(false)}
+              >
+                Invitations
+                {invitationCount > 0 && (
+                  <span className="ml-1.5 inline-flex items-center justify-center bg-red-500 text-white text-[10px] font-bold rounded-full w-4 h-4">
+                    {invitationCount}
+                  </span>
+                )}
               </Link>
 
               <button

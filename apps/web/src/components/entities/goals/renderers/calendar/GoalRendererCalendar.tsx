@@ -16,6 +16,7 @@ import { TargetIcon } from "lucide-react";
 
 import { useSelectionStore } from "@/lib/store/useSelectionStore";
 import EntityDragHandle from "@/components/common/EntityDragHandle";
+import AssigneeAvatar from "@/components/common/AssigneeAvatar";
 
 // shared drag types
 import type {
@@ -124,8 +125,9 @@ export default function GoalRendererCalendar({
           </div>
         </div>
 
-        {/* Right: drag handle + checkbox */}
+        {/* Right: avatar + drag handle + checkbox */}
         <div className="flex items-center gap-2">
+          <AssigneeAvatar assignee={goal.assignee} size={18} />
           <EntityDragHandle
             entityKind="goal"
             entityId={goal.id}

@@ -20,6 +20,9 @@ import {
 import { useStatsTree } from "@shared/api/hooks/stats/useStatsTree";
 import { useStatsChainUp } from "@shared/api/hooks/stats/useStatsChainUp";
 import type { ChainUpEntityType } from "@shared/api/hooks/stats/useStatsChainUp";
+import { useModeMembers } from "@shared/api/hooks/collaboration/useModeMembers";
+import { useMe } from "@shared/api/hooks/auth/useMe";
+import AssigneeAvatar from "../common/AssigneeAvatar";
 
 import { useModeStore } from "@shared/store/useModeStore";
 import type { EntityKind } from "./cards/StatsNodeCard";
@@ -71,6 +74,29 @@ export default function StatsView(props: Props) {
 
   const effectiveModeId = effectiveMode?.id ?? null;
 
+  // Collaboration: member filtering
+  const { data: meData } = useMe();
+  const myUserId = meData?.id ?? null;
+  const { data: membersData } = useModeMembers(
+    !isAllSelected && effectiveModeId ? effectiveModeId : null,
+  );
+  const members = membersData?.members ?? [];
+  const isCollaborative = members.length > 1;
+  const [selectedMemberId, setSelectedMemberId] = useState<number | "all" | null>(null);
+
+  // Reset member selection when mode changes, default to self
+  useEffect(() => {
+    setSelectedMemberId(myUserId);
+  }, [effectiveModeId, myUserId]);
+
+  // Determine memberId to pass to stats queries
+  const statsMemberId = useMemo(() => {
+    if (!isCollaborative) return undefined;
+    if (selectedMemberId === "all") return "all" as const;
+    if (selectedMemberId != null && selectedMemberId !== myUserId) return selectedMemberId;
+    return undefined; // self = default, no param needed
+  }, [isCollaborative, selectedMemberId, myUserId]);
+
   useEffect(() => {
     if (!isAllSelected && effectiveModeId != null) {
       setModeId(effectiveModeId);
@@ -85,7 +111,7 @@ export default function StatsView(props: Props) {
     error: errorSingle,
   } = useStatsTree(
     !isAllSelected && effectiveModeId && range.from && range.to
-      ? { modeId: effectiveModeId, from: range.from, to: range.to }
+      ? { modeId: effectiveModeId, from: range.from, to: range.to, memberId: statsMemberId }
       : null,
   );
 
@@ -95,6 +121,7 @@ export default function StatsView(props: Props) {
     range.from ?? null,
     range.to ?? null,
     isAllSelected,
+    statsMemberId,
   );
 
   const treesByMode: Record<number, StatsTree | undefined> = useMemo(() => {
@@ -343,6 +370,58 @@ export default function StatsView(props: Props) {
                 </div>
               </div>
             </div>
+
+            {/* Team member selector (collaborative modes only) */}
+            {!isAllSelected && isCollaborative && (
+              <div className="flex items-center gap-2 pt-1">
+                <span className="text-xs md:text-sm font-medium text-gray-600">
+                  Team
+                </span>
+                <div className="flex items-center gap-1.5">
+                  {members.map((member) => {
+                    const isSelected = selectedMemberId === member.id;
+                    return (
+                      <button
+                        key={member.id}
+                        type="button"
+                        onClick={() => setSelectedMemberId(member.id)}
+                        className="rounded-full transition"
+                        style={{
+                          outline: isSelected ? `2px solid ${headerColor}` : "2px solid transparent",
+                          outlineOffset: "2px",
+                        }}
+                        title={member.displayName || member.username}
+                      >
+                        <AssigneeAvatar
+                          assignee={member}
+                          size={28}
+                        />
+                      </button>
+                    );
+                  })}
+                  <button
+                    type="button"
+                    onClick={() => setSelectedMemberId("all")}
+                    className="rounded-full border px-2 md:px-3 py-0.5 md:py-1 text-xs md:text-sm font-medium transition hover:bg-gray-50"
+                    style={
+                      selectedMemberId === "all"
+                        ? {
+                            backgroundColor: headerColor,
+                            borderColor: headerColor,
+                            color: headerTextColor,
+                          }
+                        : {
+                            backgroundColor: "#FFFFFF",
+                            borderColor: "#D1D5DB",
+                            color: "#374151",
+                          }
+                    }
+                  >
+                    Everyone
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -542,17 +621,20 @@ function useAllModesStatsTrees(
   from: string | null,
   to: string | null,
   enabled: boolean,
+  memberId?: number | "all",
 ) {
   const queries = useQueries({
     queries: modes.map((mode) => ({
-      queryKey: ["statsTree", { modeId: mode.id, from, to }],
+      queryKey: ["statsTree", { modeId: mode.id, from, to, memberId }],
       queryFn: async () => {
         if (!from || !to) {
           throw new Error("Missing date range");
         }
-        const res = await api.get<StatsTree>("/stats/tree", {
-          params: { modeId: mode.id, from, to },
-        });
+        const params: Record<string, number | string> = { modeId: mode.id, from, to };
+        if (memberId != null) {
+          params.memberId = memberId;
+        }
+        const res = await api.get<StatsTree>("/stats/tree", { params });
         return res.data;
       },
       enabled: enabled && !!from && !!to,

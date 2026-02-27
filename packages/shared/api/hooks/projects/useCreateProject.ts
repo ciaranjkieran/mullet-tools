@@ -16,6 +16,7 @@ interface CreateProjectInput {
   goalId?: number | null;
   dueDate?: string | null;
   dueTime?: string | null;
+  assignedToId?: number | null;
 }
 
 async function createProject(input: CreateProjectInput): Promise<Project> {

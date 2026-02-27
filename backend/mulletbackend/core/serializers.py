@@ -1,6 +1,9 @@
+from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
 from .models import Mode, Goal, Project, Milestone, Task
+
+User = get_user_model()
 from core.services.ordering import (
     assign_end_position_for_task,
     container_changed_for_task,
@@ -40,14 +43,77 @@ def _merged(serializer, data):
 # MODE
 # ─────────────────────────────────────────────
 class ModeSerializer(serializers.ModelSerializer):
+    isOwned = serializers.SerializerMethodField()
+    collaboratorCount = serializers.SerializerMethodField()
+    ownerName = serializers.SerializerMethodField()
+
     class Meta:
         model = Mode
-        fields = ["id", "title", "color", "position"]
+        fields = ["id", "title", "color", "position", "isOwned", "collaboratorCount", "ownerName"]
 
     def validate_position(self, value):
         if value < 0:
             raise serializers.ValidationError("position must be >= 0")
         return value
+
+    def get_isOwned(self, obj):
+        request = self.context.get("request")
+        if not request:
+            return True
+        return obj.user_id == request.user.id
+
+    def get_collaboratorCount(self, obj):
+        if hasattr(obj, "_collaborator_count"):
+            return obj._collaborator_count
+        return obj.collaborators.count()
+
+    def get_ownerName(self, obj):
+        request = self.context.get("request")
+        if not request or obj.user_id == request.user.id:
+            return None
+        profile = getattr(obj.user, "profile", None)
+        if profile and profile.display_name:
+            return profile.display_name
+        return obj.user.username
+
+
+# ─────────────────────────────────────────────
+# ASSIGNEE (read-only nested user data)
+# ─────────────────────────────────────────────
+class AssigneeSerializer(serializers.Serializer):
+    id = serializers.IntegerField(read_only=True)
+    username = serializers.CharField(read_only=True)
+    displayName = serializers.SerializerMethodField()
+    avatar = serializers.SerializerMethodField()
+
+    def get_displayName(self, user):
+        profile = getattr(user, "profile", None)
+        if profile and profile.display_name:
+            return profile.display_name
+        return user.username
+
+    def get_avatar(self, user):
+        profile = getattr(user, "profile", None)
+        if profile and profile.avatar:
+            return profile.avatar.url
+        return None
+
+
+def _validate_assignee_access(attrs, instance=None):
+    """
+    If assigned_to is being set, verify the user has access to the entity's mode.
+    """
+    assigned_to = attrs.get("assigned_to")
+    if assigned_to is None:
+        return
+    mode_id = attrs.get("mode_id") or (instance.mode_id if instance else None)
+    if not mode_id:
+        return
+    from collaboration.permissions import accessible_mode_ids
+    if mode_id not in accessible_mode_ids(assigned_to):
+        raise serializers.ValidationError(
+            {"assignedToId": "This user does not have access to the entity's mode."}
+        )
 
 
 # ─────────────────────────────────────────────
@@ -70,6 +136,14 @@ class GoalSerializer(serializers.ModelSerializer):
 
     modeId = serializers.IntegerField(source="mode_id", allow_null=True, required=False)
 
+    assignedToId = serializers.PrimaryKeyRelatedField(
+        source="assigned_to",
+        queryset=User.objects.all(),
+        allow_null=True,
+        required=False,
+    )
+    assignee = AssigneeSerializer(source="assigned_to", read_only=True)
+
     class Meta:
         model = Goal
         fields = [
@@ -81,6 +155,8 @@ class GoalSerializer(serializers.ModelSerializer):
             "dueTime",
             "position",
             "modeId",
+            "assignedToId",
+            "assignee",
         ]
         read_only_fields = ("position",)
 
@@ -89,6 +165,7 @@ class GoalSerializer(serializers.ModelSerializer):
             attrs["due_date"] = _null_if_blank(attrs["due_date"])
         if "due_time" in attrs:
             attrs["due_time"] = _null_if_blank(attrs["due_time"])
+        _validate_assignee_access(attrs, self.instance)
         return attrs
 
     def create(self, validated_data):
@@ -124,6 +201,14 @@ class ProjectSerializer(serializers.ModelSerializer):
     goalId = serializers.IntegerField(source="goal_id", allow_null=True, required=False)
     modeId = serializers.IntegerField(source="mode_id", required=False)
 
+    assignedToId = serializers.PrimaryKeyRelatedField(
+        source="assigned_to",
+        queryset=User.objects.all(),
+        allow_null=True,
+        required=False,
+    )
+    assignee = AssigneeSerializer(source="assigned_to", read_only=True)
+
     class Meta:
         model = Project
         fields = (
@@ -137,6 +222,8 @@ class ProjectSerializer(serializers.ModelSerializer):
             "parentId",
             "goalId",
             "modeId",
+            "assignedToId",
+            "assignee",
         )
         read_only_fields = ("position",)
 
@@ -151,6 +238,7 @@ class ProjectSerializer(serializers.ModelSerializer):
         chosen = validate_at_most_one(merged, ["parent", "goal"], entity_name="project")
         validate_mode_matches_ancestor(merged, chosen, entity_name="project")
 
+        _validate_assignee_access(attrs, self.instance)
         return attrs
 
     def create(self, validated_data):
@@ -183,6 +271,14 @@ class TaskSerializer(serializers.ModelSerializer):
     goalId = serializers.IntegerField(source="goal_id", allow_null=True, required=False)
     modeId = serializers.IntegerField(source="mode_id")
 
+    assignedToId = serializers.PrimaryKeyRelatedField(
+        source="assigned_to",
+        queryset=User.objects.all(),
+        allow_null=True,
+        required=False,
+    )
+    assignee = AssigneeSerializer(source="assigned_to", read_only=True)
+
     class Meta:
         model = Task
         fields = (
@@ -196,6 +292,8 @@ class TaskSerializer(serializers.ModelSerializer):
             "projectId",
             "goalId",
             "modeId",
+            "assignedToId",
+            "assignee",
         )
         read_only_fields = ("position",)
 
@@ -212,6 +310,7 @@ class TaskSerializer(serializers.ModelSerializer):
         )
         validate_mode_matches_ancestor(merged, chosen, entity_name="task")
 
+        _validate_assignee_access(attrs, self.instance)
         return attrs
 
     def create(self, validated_data):
@@ -240,6 +339,14 @@ class MilestoneSerializer(serializers.ModelSerializer):
     goalId = serializers.IntegerField(source="goal_id", allow_null=True, required=False)
     modeId = serializers.IntegerField(source="mode_id")
 
+    assignedToId = serializers.PrimaryKeyRelatedField(
+        source="assigned_to",
+        queryset=User.objects.all(),
+        allow_null=True,
+        required=False,
+    )
+    assignee = AssigneeSerializer(source="assigned_to", read_only=True)
+
     class Meta:
         model = Milestone
         fields = (
@@ -253,6 +360,8 @@ class MilestoneSerializer(serializers.ModelSerializer):
             "projectId",
             "goalId",
             "modeId",
+            "assignedToId",
+            "assignee",
         )
         read_only_fields = ("position",)
 
@@ -269,6 +378,7 @@ class MilestoneSerializer(serializers.ModelSerializer):
         )
         validate_mode_matches_ancestor(merged, chosen, entity_name="milestone")
 
+        _validate_assignee_access(attrs, self.instance)
         return attrs
 
     def create(self, validated_data):

@@ -1,3 +1,5 @@
+import type { Assignee } from "./Assignee";
+
 export type Goal = {
   id: number;
   title: string;
@@ -8,4 +10,7 @@ export type Goal = {
   isCompleted: boolean;
   dueDate: string | null;
   dueTime?: string | null;
+
+  assignedToId?: number | null;
+  assignee?: Assignee | null;
 };

@@ -18,6 +18,7 @@ type UpdateProjectPayload = {
   dueDate: string | null;
   dueTime: string | null;
   isCompleted: boolean;
+  assignedToId: number | null;
 }>;
 
 function normalizeProjectAncestorsForPatch(p: UpdateProjectPayload) {

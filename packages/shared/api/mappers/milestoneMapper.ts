@@ -14,6 +14,9 @@ export const mapMilestoneFromApi = (data: any): Milestone => ({
   parentId: data.parentId ?? data.parent_id ?? null,
   projectId: data.projectId ?? data.project_id ?? null,
   goalId: data.goalId ?? data.goal_id ?? null,
+
+  assignedToId: data.assignedToId ?? data.assigned_to_id ?? null,
+  assignee: data.assignee ?? null,
 });
 
 /** Write (PATCH-only): only include keys you intend to change. */
@@ -51,6 +54,8 @@ export function mapMilestoneToApi(milestone: Partial<Milestone>) {
   if ("position" in milestone && milestone.position !== undefined) {
     out.position = milestone.position;
   }
+
+  if ("assignedToId" in milestone) out.assignedToId = milestone.assignedToId ?? null;
 
   return out;
 }

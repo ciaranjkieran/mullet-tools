@@ -14,6 +14,9 @@ export const mapProjectFromApi = (data: any): Project => ({
   parentId: data.parentId ?? data.parent_id ?? null,
   goalId: data.goalId ?? data.goal_id ?? null,
   modeId: data.modeId ?? data.mode_id,
+
+  assignedToId: data.assignedToId ?? data.assigned_to_id ?? null,
+  assignee: data.assignee ?? null,
 });
 
 // Write (PATCH-only): include only provided keys; parents only when explicit.
@@ -54,6 +57,8 @@ export function mapProjectToApi(project: Partial<Project>) {
   if ("position" in project && project.position !== undefined) {
     out.position = project.position;
   }
+
+  if ("assignedToId" in project) out.assignedToId = project.assignedToId ?? null;
 
   return out;
 }

@@ -17,6 +17,7 @@ import {
 import { useSelectionStore } from "@/lib/store/useSelectionStore";
 import { useTaskStore } from "@shared/store/useTaskStore"; // ⬅️ use live store
 import EntityDragHandle from "@/components/common/EntityDragHandle";
+import AssigneeAvatar from "@/components/common/AssigneeAvatar";
 
 import type {
   DragAttributes,
@@ -130,8 +131,9 @@ export default function TaskRendererCalendar({
           </div>
         </div>
 
-        {/* Right: drag handle + checkbox */}
+        {/* Right: avatar + drag handle + checkbox */}
         <div className="flex items-center gap-2">
+          <AssigneeAvatar assignee={liveTask.assignee} size={18} />
           <EntityDragHandle
             entityKind="task"
             entityId={liveTask.id}

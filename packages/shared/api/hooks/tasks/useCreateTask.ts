@@ -11,6 +11,7 @@ type CreateTaskPayload = {
   milestoneId?: number | null;
   projectId?: number | null;
   goalId?: number | null;
+  assignedToId?: number | null;
 };
 
 export function useCreateTask() {

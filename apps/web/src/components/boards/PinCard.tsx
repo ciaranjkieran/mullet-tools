@@ -107,6 +107,7 @@ export default function PinCard({ pin, onClick, onEditClick }: Props) {
             fill
             className="object-contain"
             sizes="(max-width: 768px) 50vw, 25vw"
+            unoptimized
           />
           <HoverTitleOverlay title={displayTitle} />
         </div>
@@ -136,6 +137,7 @@ export default function PinCard({ pin, onClick, onEditClick }: Props) {
               fill
               className="object-contain"
               sizes="(max-width: 768px) 50vw, 25vw"
+              unoptimized
             />
             <Play className="absolute w-10 h-10 text-white/90 drop-shadow left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2" />
             <HoverTitleOverlay title={displayTitle} />
@@ -158,6 +160,7 @@ export default function PinCard({ pin, onClick, onEditClick }: Props) {
               fill
               className="object-contain"
               sizes="(max-width: 768px) 50vw, 25vw"
+              unoptimized
             />
             <HoverTitleOverlay title={displayTitle} />
           </div>
@@ -208,6 +211,7 @@ export default function PinCard({ pin, onClick, onEditClick }: Props) {
                   fill
                   className="object-contain bg-white"
                   sizes="(max-width: 768px) 50vw, 25vw"
+                  unoptimized
                 />
 
                 {/* optional ext badge over thumbnail */}

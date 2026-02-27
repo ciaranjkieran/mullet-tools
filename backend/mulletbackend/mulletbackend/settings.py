@@ -5,6 +5,9 @@ Django settings for mulletbackend project.
 from pathlib import Path
 import os
 import dj_database_url
+from dotenv import load_dotenv
+
+load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 # ------------------------------------------------------------------------------
 # Base
@@ -43,10 +46,16 @@ if IS_PROD:
 
 # Local LAN access (phone testing)
 if not IS_PROD:
-    ALLOWED_HOSTS += ["192.168.0.7"]
+    ALLOWED_HOSTS += ["192.168.1.254"]
 
 
 
+
+# ------------------------------------------------------------------------------
+# AI (Anthropic)
+# ------------------------------------------------------------------------------
+
+ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 
 # ------------------------------------------------------------------------------
 # Applications
@@ -54,9 +63,11 @@ if not IS_PROD:
 
 INSTALLED_APPS = [
     "accounts",
+    "ai",
     "batch",
     "timers",
     "core",
+    "collaboration",
     "notes.apps.NotesConfig",
     "comments",
     "boards",
@@ -188,8 +199,8 @@ CSRF_TRUSTED_ORIGINS = [
 ]
 
 if not IS_PROD:
-    CORS_ALLOWED_ORIGINS += ["http://192.168.0.7:3000"]
-    CSRF_TRUSTED_ORIGINS += ["http://192.168.0.7:3000"]
+    CORS_ALLOWED_ORIGINS += ["http://192.168.1.254:3000"]
+    CSRF_TRUSTED_ORIGINS += ["http://192.168.1.254:3000"]
     
 if not IS_PROD:
     CSRF_COOKIE_SECURE = False
@@ -242,10 +253,14 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.IsAuthenticated",
     ],
-    "DEFAULT_THROTTLE_CLASSES": [
-        "rest_framework.throttling.AnonRateThrottle",
-        "rest_framework.throttling.UserRateThrottle",
-    ],
+    "DEFAULT_THROTTLE_CLASSES": (
+        [
+            "rest_framework.throttling.AnonRateThrottle",
+            "rest_framework.throttling.UserRateThrottle",
+        ]
+        if IS_PROD
+        else []
+    ),
     "DEFAULT_THROTTLE_RATES": {
         "anon": "20/minute",
         "user": "200/minute",

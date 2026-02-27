@@ -14,6 +14,7 @@ from rest_framework.response import Response
 from .models import Pin
 from .serializers import PinSerializer
 from .linkmeta import fetch_link_meta, try_fetch_favicon_url
+from collaboration.permissions import accessible_mode_ids, validate_mode_write_access
 
 
 class PinViewSet(viewsets.ModelViewSet):
@@ -24,7 +25,7 @@ class PinViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         qs = (
-            Pin.objects.filter(user=self.request.user)
+            Pin.objects.filter(mode_id__in=accessible_mode_ids(self.request.user))
             .select_related("content_type", "mode")
             # prefetch_related("content_object") is not valid for GenericForeignKey;
             # leaving it out avoids confusion.
@@ -50,6 +51,7 @@ class PinViewSet(viewsets.ModelViewSet):
         return qs.order_by("-created_at")
 
     def perform_create(self, serializer):
+        validate_mode_write_access(self.request.user, serializer.validated_data.get("mode"))
         pin = serializer.save(user=self.request.user)
 
         # --- DEBUG LOGS ---

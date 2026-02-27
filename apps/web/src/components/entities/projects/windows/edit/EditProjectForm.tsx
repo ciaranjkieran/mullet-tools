@@ -23,6 +23,7 @@ import {
 
 /** Unified editor orchestration */
 import EditorEntityInputs from "@/components/inputs/editor/EditorEntityInputs";
+import EditorAssigneeSelect from "@/components/inputs/editor/EditorAssigneeSelect";
 import {
   filterEditorOptions,
   reconcileAfterChange,
@@ -40,6 +41,7 @@ type Props = {
 
   dueDate: string;
   dueTime: string;
+  assignedToId: number | null;
 
   setTitle: (val: string) => void;
   setModeId: (id: number) => void;
@@ -47,6 +49,7 @@ type Props = {
   setParentId: (id: number | null | undefined) => void;
   setDueDate: (val: string) => void;
   setDueTime: (val: string) => void;
+  setAssignedToId: (id: number | null) => void;
 
   handleSubmit: (e?: React.FormEvent) => void;
   onCancel: () => void;
@@ -62,8 +65,10 @@ export default function EditProjectForm({
   title,
   dueDate,
   dueTime,
+  assignedToId,
   setDueDate,
   setDueTime,
+  setAssignedToId,
   modeId,
   goalId,
   parentId,
@@ -378,6 +383,11 @@ export default function EditProjectForm({
                 project: true,
                 milestone: false,
               }}
+            />
+            <EditorAssigneeSelect
+              modeId={modeId}
+              assignedToId={assignedToId}
+              onChange={setAssignedToId}
             />
           </div>
         </div>

@@ -71,6 +71,7 @@ export default function MilestoneWindow({
   const [projectId, setProjectId] = useState<number | undefined | null>(null);
   const [goalId, setGoalId] = useState<number | undefined | null>(null);
   const [parentId, setParentId] = useState<number | undefined | null>(null);
+  const [assignedToId, setAssignedToId] = useState<number | null>(milestone.assignedToId ?? null);
   const clockType = useTimerUIStore((s) => s.clockType);
   useCloseAllModals(onClose);
 
@@ -115,6 +116,7 @@ export default function MilestoneWindow({
     setGoalId(milestone.goalId ?? null);
     setDueDate(milestone.dueDate ?? "");
     setDueTime(milestone.dueTime ?? "");
+    setAssignedToId(milestone.assignedToId ?? null);
   }, [milestone]);
 
   function normalizeAncestors(
@@ -151,6 +153,7 @@ export default function MilestoneWindow({
         parentId: nParent,
         projectId: nProject,
         goalId: nGoal,
+        assignedToId,
       },
       { onSuccess: onClose }
     );
@@ -249,6 +252,8 @@ export default function MilestoneWindow({
                     setParentId={setParentId}
                     setProjectId={setProjectId}
                     setGoalId={setGoalId}
+                    assignedToId={assignedToId}
+                    setAssignedToId={setAssignedToId}
                     handleSubmit={handleSubmit}
                     onCancel={onClose}
                     onDelete={handleDelete}

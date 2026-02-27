@@ -30,6 +30,7 @@ from .services import (
     validate_duration_sec,
 )
 from .stats_tree import build_stats_tree
+from collaboration.permissions import accessible_mode_ids, writable_mode_ids
 
 log = logging.getLogger("timer")
 
@@ -448,7 +449,8 @@ class CompleteNextView(APIView):
         model_map = {"task": Task, "milestone": Milestone, "project": Project, "goal": Goal}
         Model = model_map[entity_type]
 
-        entity = Model.all_objects.select_for_update().filter(user=user, id=entity_id).first()
+        w_modes = writable_mode_ids(user)
+        entity = Model.all_objects.select_for_update().filter(mode_id__in=w_modes, id=entity_id).first()
         if not entity:
             return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
 
@@ -458,7 +460,7 @@ class CompleteNextView(APIView):
         next_entity = None
 
         if entity_type == "task":
-            qs = Task.objects.filter(user=user, is_completed=False, mode_id=entity.mode_id)
+            qs = Task.objects.filter(is_completed=False, mode_id=entity.mode_id)
             if entity.milestone_id:
                 qs = qs.filter(milestone_id=entity.milestone_id)
             elif entity.project_id:
@@ -470,7 +472,7 @@ class CompleteNextView(APIView):
             next_entity = _next_by_position(qs, current_position=entity.position, current_id=entity.id)
 
         elif entity_type == "milestone":
-            qs = Milestone.objects.filter(user=user, is_completed=False, mode_id=entity.mode_id)
+            qs = Milestone.objects.filter(is_completed=False, mode_id=entity.mode_id)
             if entity.parent_id is not None:
                 qs = qs.filter(parent_id=entity.parent_id)
             elif entity.project_id:
@@ -482,7 +484,7 @@ class CompleteNextView(APIView):
             next_entity = _next_by_position(qs, current_position=entity.position, current_id=entity.id)
 
         elif entity_type == "project":
-            qs = Project.objects.filter(user=user, is_completed=False, mode_id=entity.mode_id)
+            qs = Project.objects.filter(is_completed=False, mode_id=entity.mode_id)
             if entity.parent_id is not None:
                 qs = qs.filter(parent_id=entity.parent_id)
             elif entity.goal_id:
@@ -492,7 +494,7 @@ class CompleteNextView(APIView):
             next_entity = _next_by_position(qs, current_position=entity.position, current_id=entity.id)
 
         else:  # goal
-            qs = Goal.objects.filter(user=user, is_completed=False, mode_id=entity.mode_id)
+            qs = Goal.objects.filter(is_completed=False, mode_id=entity.mode_id)
             next_entity = _next_by_position(qs, current_position=entity.position, current_id=entity.id)
 
         destroy_or_archive(entity_type, entity)
@@ -564,6 +566,7 @@ class StatsTreeView(APIView):
         mode_raw = request.query_params.get("modeId")
         from_raw = request.query_params.get("from")
         to_raw = request.query_params.get("to")
+        member_raw = request.query_params.get("memberId")
 
         if not mode_raw or not from_raw or not to_raw:
             return Response(
@@ -583,11 +586,54 @@ class StatsTreeView(APIView):
         if to_date < from_date:
             return Response({"detail": "to must be on or after from."}, status=status.HTTP_400_BAD_REQUEST)
 
+        # Validate user has access to this mode
+        from core.models import Mode
+        if not Mode.objects.filter(id=mode_id, id__in=accessible_mode_ids(request.user)).exists():
+            return Response({"detail": "Mode not found or no access."}, status=status.HTTP_404_NOT_FOUND)
+
         tz = timezone.get_current_timezone()
         from_dt = timezone.make_aware(datetime.combine(from_date, datetime.min.time()), tz)
         to_dt = timezone.make_aware(datetime.combine(to_date + timedelta(days=1), datetime.min.time()), tz)
 
-        tree = build_stats_tree(user=request.user, mode_id=mode_id, from_dt=from_dt, to_dt=to_dt)
+        # Determine which user(s) to fetch stats for
+        tree_kwargs = {"mode_id": mode_id, "from_dt": from_dt, "to_dt": to_dt}
+
+        if member_raw == "all":
+            # "Everyone" — aggregate across all mode members
+            from collaboration.models import ModeCollaborator
+            mode_obj = Mode.objects.get(id=mode_id)
+            collab_ids = list(
+                ModeCollaborator.objects.filter(mode_id=mode_id).values_list("user_id", flat=True)
+            )
+            all_user_ids = list(set([mode_obj.user_id] + collab_ids))
+            tree_kwargs["user"] = request.user
+            tree_kwargs["user_ids"] = all_user_ids
+        elif member_raw:
+            # Specific member — validate they belong to this mode
+            try:
+                target_user_id = int(member_raw)
+            except (TypeError, ValueError):
+                return Response({"detail": "memberId must be an integer or 'all'."}, status=status.HTTP_400_BAD_REQUEST)
+
+            from collaboration.models import ModeCollaborator
+            mode_obj = Mode.objects.get(id=mode_id)
+            is_owner = mode_obj.user_id == target_user_id
+            is_collab = ModeCollaborator.objects.filter(mode_id=mode_id, user_id=target_user_id).exists()
+            if not is_owner and not is_collab:
+                return Response({"detail": "Member not found in this mode."}, status=status.HTTP_404_NOT_FOUND)
+
+            from django.contrib.auth import get_user_model
+            User = get_user_model()
+            try:
+                target_user = User.objects.get(id=target_user_id)
+            except User.DoesNotExist:
+                return Response({"detail": "User not found."}, status=status.HTTP_404_NOT_FOUND)
+            tree_kwargs["user"] = target_user
+        else:
+            # Default — current user's stats
+            tree_kwargs["user"] = request.user
+
+        tree = build_stats_tree(**tree_kwargs)
         return Response(tree, status=status.HTTP_200_OK)
 
 

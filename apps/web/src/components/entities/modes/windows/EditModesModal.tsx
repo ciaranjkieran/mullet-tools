@@ -134,6 +134,9 @@ export default function EditModesModal({ isOpen, onClose, modes }: Props) {
       title: newModeName.trim(),
       color: newModeColor,
       position: nextPosition,
+      isOwned: true,
+      collaboratorCount: 0,
+      ownerName: null,
     };
 
     setLocalModes((prev) => [...prev, newMode]);
@@ -199,6 +202,9 @@ export default function EditModesModal({ isOpen, onClose, modes }: Props) {
         color: created.color,
         position:
           typeof created.position === "number" ? created.position : m.position,
+        isOwned: true,
+        collaboratorCount: 0,
+        ownerName: null,
       });
     }
 

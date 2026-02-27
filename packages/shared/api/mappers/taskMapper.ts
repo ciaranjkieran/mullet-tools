@@ -14,6 +14,9 @@ export const mapTaskFromApi = (data: any): Task => ({
   milestoneId: data.milestoneId ?? data.milestone_id ?? null,
   projectId: data.projectId ?? data.project_id ?? null,
   goalId: data.goalId ?? data.goal_id ?? null,
+
+  assignedToId: data.assignedToId ?? data.assigned_to_id ?? null,
+  assignee: data.assignee ?? null,
 });
 
 // PATCH-only mapper: include a key iff caller provided it.
@@ -56,6 +59,8 @@ export function mapTaskToApi(task: Partial<Task>) {
   if ("position" in task && task.position !== undefined) {
     out.position = task.position;
   }
+
+  if ("assignedToId" in task) out.assignedToId = task.assignedToId ?? null;
 
   return out;
 }

@@ -10,6 +10,7 @@ import { getContrastingText } from "@shared/utils/getContrastingText";
 import DueDateInput from "@/components/inputs/DueDateInput";
 import DueTimeInput from "@/components/inputs/DueTimeInput";
 import EditorModeSelect from "@/components/inputs/editor/EditorModeSelect";
+import EditorAssigneeSelect from "@/components/inputs/editor/EditorAssigneeSelect";
 
 import {
   parseISO,
@@ -25,11 +26,13 @@ type Props = {
   modeId: number;
   dueDate: string;
   dueTime: string;
+  assignedToId: number | null;
 
   setTitle: (val: string) => void;
   setModeId: (id: number) => void;
   setDueDate: (val: string) => void;
   setDueTime: (val: string) => void;
+  setAssignedToId: (id: number | null) => void;
 
   onSubmit: (e?: React.FormEvent) => void;
   onCancel: () => void;
@@ -42,9 +45,11 @@ export default function EditGoalForm({
   title,
   dueDate,
   dueTime,
+  assignedToId,
   setTitle,
   setDueDate,
   setDueTime,
+  setAssignedToId,
   modeId,
   setModeId,
   onSubmit,
@@ -120,6 +125,11 @@ export default function EditGoalForm({
               onChange={setModeId}
               variant="edit"
               modeColor={modeColor}
+            />
+            <EditorAssigneeSelect
+              modeId={modeId}
+              assignedToId={assignedToId}
+              onChange={setAssignedToId}
             />
           </div>
         </div>

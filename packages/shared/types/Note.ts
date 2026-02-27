@@ -1,3 +1,5 @@
+import type { Assignee } from "./Assignee";
+
 export type Note = {
   id: number;
   modeId: number;
@@ -8,4 +10,5 @@ export type Note = {
   object_id: number;
   entityTitle?: string;
   display_title: string;
+  author?: Assignee | null;
 };

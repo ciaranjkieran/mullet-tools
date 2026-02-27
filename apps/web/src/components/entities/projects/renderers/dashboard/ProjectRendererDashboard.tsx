@@ -12,6 +12,7 @@ import { useDeleteProject } from "@shared/api/hooks/projects/useDeleteProject";
 
 import { useSelectionStore } from "../../../../../lib/store/useSelectionStore";
 import EntityDragHandle from "../../../../common/EntityDragHandle";
+import AssigneeAvatar from "../../../../common/AssigneeAvatar";
 import { useEntityUIStore } from "@/lib/store/useEntityUIStore";
 
 interface Props {
@@ -146,9 +147,10 @@ export default function ProjectRenderer({
         </div>
       </div>
 
-      {/* RIGHT: completion checkbox (collapsed only) */}
+      {/* RIGHT: assignee avatar + completion checkbox (collapsed only) */}
       {isCollapsed === true ? (
         <div className="flex items-center gap-2">
+          <AssigneeAvatar assignee={project.assignee} size={20} />
           <input
             type="checkbox"
             className="w-4 h-4 rounded-full border border-gray-400 checked:bg-black checked:border-black cursor-pointer"
@@ -159,7 +161,7 @@ export default function ProjectRenderer({
           />
         </div>
       ) : (
-        <div />
+        <AssigneeAvatar assignee={project.assignee} size={20} />
       )}
     </div>
   );

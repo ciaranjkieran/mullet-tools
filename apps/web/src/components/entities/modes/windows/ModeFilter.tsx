@@ -20,7 +20,7 @@ import { useModeStore } from "@shared/store/useModeStore";
 import { getContrastingText } from "@shared/utils/getContrastingText";
 import { useUpdateModePositions } from "@shared/api/hooks/modes/useUpdateModePositions";
 import { useState, useEffect, useRef } from "react";
-import { LocateFixed, X } from "lucide-react";
+import { LocateFixed, X, Users } from "lucide-react";
 import { Mode } from "@shared/types/Mode";
 import { useTimerSelectionStore } from "@/lib/store/useTimerSelectionStore";
 
@@ -106,7 +106,12 @@ function SortableModeButton({
           whiteSpace: "nowrap",
         }}
       >
-        {title}
+        <span className="inline-flex items-center gap-1">
+          {title}
+          {mode.collaboratorCount > 0 && (
+            <Users className="w-3 h-3 opacity-60" />
+          )}
+        </span>
       </button>
     </div>
   );

@@ -9,6 +9,7 @@ export type UseStatsTreeArgs = {
   modeId: number; // concrete mode
   from?: string; // "YYYY-MM-DD" (optional for all-time)
   to?: string; // "YYYY-MM-DD" (optional for all-time)
+  memberId?: number | "all"; // filter by team member (collaborative modes)
 };
 
 async function fetchStatsTree(args: UseStatsTreeArgs): Promise<StatsTree> {
@@ -19,6 +20,10 @@ async function fetchStatsTree(args: UseStatsTreeArgs): Promise<StatsTree> {
   if (args.from && args.to) {
     params.from = args.from;
     params.to = args.to;
+  }
+
+  if (args.memberId != null) {
+    params.memberId = args.memberId;
   }
 
   const res = await api.get<StatsTree>("/stats/tree", { params });

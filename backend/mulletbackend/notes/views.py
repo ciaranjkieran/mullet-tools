@@ -5,6 +5,7 @@ from django.contrib.contenttypes.models import ContentType
 
 from .models import Note
 from .serializers import NoteSerializer
+from collaboration.permissions import accessible_mode_ids, validate_mode_write_access
 
 
 class NoteViewSet(viewsets.ModelViewSet):
@@ -12,7 +13,7 @@ class NoteViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        qs = Note.objects.filter(user=self.request.user).select_related("content_type")
+        qs = Note.objects.filter(mode_id__in=accessible_mode_ids(self.request.user)).select_related("content_type", "user__profile")
 
         mode_id = self.request.query_params.get("mode_id")
         content_type_str = self.request.query_params.get("content_type")
@@ -31,5 +32,6 @@ class NoteViewSet(viewsets.ModelViewSet):
         return qs.order_by("created_at")
     
     def perform_create(self, serializer):
+        validate_mode_write_access(self.request.user, serializer.validated_data.get("mode"))
         serializer.save(user=self.request.user)
 

@@ -133,6 +133,7 @@ export default function ViewerModal() {
           width={300}
           height={200}
           className="object-contain rounded shadow max-h-[200px] w-auto bg-black/10"
+          unoptimized
         />
       );
     }
@@ -154,6 +155,7 @@ export default function ViewerModal() {
               alt={pin.title || "Video"}
               fill
               className="object-contain"
+              unoptimized
             />
             <Play className="absolute w-8 h-8 text-white left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2" />
           </div>
@@ -176,6 +178,7 @@ export default function ViewerModal() {
             width={300}
             height={200}
             className="object-contain rounded shadow max-h-[200px] w-auto bg-black/10"
+            unoptimized
           />
         );
       }
@@ -251,6 +254,7 @@ export default function ViewerModal() {
           width={1400}
           height={900}
           className="max-h-[85vh] w-auto object-contain rounded"
+          unoptimized
         />
       );
     }
@@ -277,6 +281,7 @@ export default function ViewerModal() {
               width={1400}
               height={900}
               className="max-h-[85vh] w-auto object-contain rounded"
+              unoptimized
             />
           </div>
         );
@@ -301,6 +306,7 @@ export default function ViewerModal() {
               width={1400}
               height={900}
               className="max-h-[70vh] w-auto object-contain rounded"
+              unoptimized
             />
             {pin.url && (
               <button
@@ -376,6 +382,7 @@ export default function ViewerModal() {
               width={1400}
               height={900}
               className="max-h-[80vh] w-auto object-contain rounded bg-white"
+              unoptimized
             />
             {href && (
               <button

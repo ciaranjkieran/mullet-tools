@@ -61,17 +61,22 @@ def _title_for_task(t: Task) -> str:
     return t.title or ""
 
 
-def build_stats_tree(*, user, mode_id: int, from_dt: datetime, to_dt: datetime) -> Dict[str, Any]:
+def build_stats_tree(*, user, mode_id: int, from_dt: datetime, to_dt: datetime,
+                     user_ids: List[int] | None = None) -> Dict[str, Any]:
     """
     Core stats aggregator for a single Mode over a date range [from_dt, to_dt).
 
-    (Only change vs original: TimeEntry queries are user-scoped.)
+    When user_ids is provided, aggregates across all those users (for "Everyone" view).
+    Otherwise scopes to the single user.
     """
+
+    # Build user filter kwargs once
+    _user_filter = {"user_id__in": user_ids} if user_ids else {"user": user}
 
     # --------------------------------------------------------------
     # -1) Compute all-time bounds for this mode (independent of window)
     # --------------------------------------------------------------
-    bounds = TimeEntry.objects.filter(user=user, mode_id=mode_id).aggregate(  # ✅ changed
+    bounds = TimeEntry.objects.filter(**_user_filter, mode_id=mode_id).aggregate(
         first_started=Min("started_at")
     )
     first_started = bounds["first_started"]
@@ -99,7 +104,7 @@ def build_stats_tree(*, user, mode_id: int, from_dt: datetime, to_dt: datetime) 
     # --------------------------------------------------------------
     entries: List[TimeEntry] = list(
         TimeEntry.objects.filter(
-            user=user,                 # ✅ changed
+            **_user_filter,
             mode_id=mode_id,
             started_at__gte=from_dt,
             started_at__lt=to_dt,
@@ -205,22 +210,22 @@ def build_stats_tree(*, user, mode_id: int, from_dt: datetime, to_dt: datetime) 
     # --------------------------------------------------------------
     goals_by_id: Dict[int, Goal] = {
         g.id: g
-        for g in Goal.all_objects.filter(user=user, id__in=goal_ids, mode_id=mode_id)
+        for g in Goal.all_objects.filter(id__in=goal_ids, mode_id=mode_id)
     }
 
     projects_by_id: Dict[int, Project] = {
         p.id: p
-        for p in Project.all_objects.filter(user=user, id__in=project_ids, mode_id=mode_id)
+        for p in Project.all_objects.filter(id__in=project_ids, mode_id=mode_id)
     }
 
     milestones_by_id: Dict[int, Milestone] = {
         m.id: m
-        for m in Milestone.all_objects.filter(user=user, id__in=milestone_ids, mode_id=mode_id)
+        for m in Milestone.all_objects.filter(id__in=milestone_ids, mode_id=mode_id)
     }
 
     tasks_by_id: Dict[int, Task] = {
         t.id: t
-        for t in Task.all_objects.filter(user=user, id__in=task_ids, mode_id=mode_id)
+        for t in Task.all_objects.filter(id__in=task_ids, mode_id=mode_id)
     }
 
 
@@ -241,15 +246,15 @@ def build_stats_tree(*, user, mode_id: int, from_dt: datetime, to_dt: datetime) 
 
         goals_by_id = {
             g.id: g
-            for g in Goal.all_objects.filter(user=user, id__in=goal_ids, mode_id=mode_id)
+            for g in Goal.all_objects.filter(id__in=goal_ids, mode_id=mode_id)
         }
         projects_by_id = {
             p.id: p
-            for p in Project.all_objects.filter(user=user, id__in=project_ids, mode_id=mode_id)
+            for p in Project.all_objects.filter(id__in=project_ids, mode_id=mode_id)
         }
         milestones_by_id = {
             m.id: m
-            for m in Milestone.all_objects.filter(user=user, id__in=milestone_ids, mode_id=mode_id)
+            for m in Milestone.all_objects.filter(id__in=milestone_ids, mode_id=mode_id)
         }
 
 
