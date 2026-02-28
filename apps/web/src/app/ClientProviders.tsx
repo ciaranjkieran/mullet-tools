@@ -24,5 +24,27 @@ export function ClientProviders({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener("subscription:expired", handleExpired);
   }, [client]);
 
+  // Toggle data-shift-held on <html> so CSS can show pointer cursor (selection mode)
+  useEffect(() => {
+    const html = document.documentElement;
+    const onDown = (e: KeyboardEvent) => {
+      if (e.key === "Shift") html.setAttribute("data-shift-held", "");
+    };
+    const onUp = (e: KeyboardEvent) => {
+      if (e.key === "Shift") html.removeAttribute("data-shift-held");
+    };
+    const onBlur = () => html.removeAttribute("data-shift-held");
+
+    window.addEventListener("keydown", onDown);
+    window.addEventListener("keyup", onUp);
+    window.addEventListener("blur", onBlur);
+    return () => {
+      window.removeEventListener("keydown", onDown);
+      window.removeEventListener("keyup", onUp);
+      window.removeEventListener("blur", onBlur);
+      html.removeAttribute("data-shift-held");
+    };
+  }, []);
+
   return <QueryClientProvider client={client}>{children}</QueryClientProvider>;
 }

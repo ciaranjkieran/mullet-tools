@@ -15,6 +15,7 @@ import {
 } from "date-fns";
 
 import { useSelectionStore } from "@/lib/store/useSelectionStore";
+import { useShiftClickSelect } from "@/lib/hooks/useShiftClickSelect";
 import { useTaskStore } from "@shared/store/useTaskStore"; // ⬅️ use live store
 import EntityDragHandle from "@/components/common/EntityDragHandle";
 import AssigneeAvatar from "@/components/common/AssigneeAvatar";
@@ -57,6 +58,7 @@ export default function TaskRendererCalendar({
   const isSelected = useSelectionStore((s) =>
     s.isSelected("task", liveTask.id),
   );
+  const { onClickCapture, onMouseDownCapture } = useShiftClickSelect("task", liveTask.id);
 
   let computedOverdueLabel: string | null = null;
   if (liveTask.dueDate) {
@@ -72,6 +74,8 @@ export default function TaskRendererCalendar({
       data-entity-card="true"
       data-entity-type="task"
       data-entity-id={liveTask.id}
+      onClickCapture={onClickCapture}
+      onMouseDownCapture={onMouseDownCapture}
       className={clsx(
         "px-2 sm:px-4 py-2 sm:py-3 bg-white group transition hover:bg-gray-50 relative",
         isSelected ? "ring-2 z-10" : "border-t border-transparent",

@@ -14,6 +14,7 @@ import GoalTarget from "../../UI/GoalTarget";
 import { PencilSquareIcon } from "@heroicons/react/24/outline";
 
 import { useSelectionStore } from "../../../../../lib/store/useSelectionStore";
+import { useShiftClickSelect } from "../../../../../lib/hooks/useShiftClickSelect";
 import EntityDragHandle from "../../../../common/EntityDragHandle";
 import AssigneeAvatar from "../../../../common/AssigneeAvatar";
 import { useEntityUIStore } from "@/lib/store/useEntityUIStore";
@@ -48,6 +49,7 @@ export default function GoalRendererDashboard({
 
   // selection
   const isSelected = useSelectionStore((s) => s.isSelected("goal", goal.id));
+  const { onClickCapture, onMouseDownCapture } = useShiftClickSelect("goal", goal.id);
 
   // collapse (store with optional overrides)
   const storeCollapsed = useEntityUIStore((s) => !!s.collapsed.goal?.[goal.id]);
@@ -82,6 +84,8 @@ export default function GoalRendererDashboard({
       data-entity-card="true"
       data-entity-type="goal"
       data-entity-id={goal.id}
+      onClickCapture={onClickCapture}
+      onMouseDownCapture={onMouseDownCapture}
     >
       {/* LEFT: drag handle (collapsed only) + collapse/expand icon + title */}
       <div className="flex items-center gap-2 min-w-0">

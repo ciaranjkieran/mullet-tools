@@ -11,6 +11,7 @@ import { useDialogStore } from "@/lib/dialogs/useDialogStore";
 import { useDeleteProject } from "@shared/api/hooks/projects/useDeleteProject";
 
 import { useSelectionStore } from "../../../../../lib/store/useSelectionStore";
+import { useShiftClickSelect } from "../../../../../lib/hooks/useShiftClickSelect";
 import EntityDragHandle from "../../../../common/EntityDragHandle";
 import AssigneeAvatar from "../../../../common/AssigneeAvatar";
 import { useEntityUIStore } from "@/lib/store/useEntityUIStore";
@@ -44,6 +45,7 @@ export default function ProjectRenderer({
   const isSelected = useSelectionStore((s) =>
     s.isSelected("project", project.id),
   );
+  const { onClickCapture, onMouseDownCapture } = useShiftClickSelect("project", project.id);
 
   // collapse (store with optional overrides)
   const storeCollapsed = useEntityUIStore(
@@ -73,6 +75,8 @@ export default function ProjectRenderer({
       data-entity-card="true"
       data-entity-type="project"
       data-entity-id={project.id}
+      onClickCapture={onClickCapture}
+      onMouseDownCapture={onMouseDownCapture}
       className={clsx(baseClasses, isSelected && "ring-2")}
       style={
         isSelected

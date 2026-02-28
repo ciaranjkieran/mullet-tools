@@ -3,10 +3,7 @@
 import clsx from "clsx";
 import { GripVertical } from "lucide-react";
 import * as React from "react";
-import {
-  EntityType,
-  useSelectionStore,
-} from "../../lib/store/useSelectionStore";
+import { EntityType } from "../../lib/store/useSelectionStore";
 
 type ButtonProps = Omit<
   React.ButtonHTMLAttributes<HTMLButtonElement>,
@@ -22,22 +19,6 @@ type Props = {
   activatorRef?: (el: HTMLElement | null) => void;
 } & ButtonProps;
 
-function stopNativeImmediatePropagation(e: React.SyntheticEvent) {
-  // Keep original behavior: call stopImmediatePropagation if it exists.
-  const native = e.nativeEvent as unknown;
-  if (
-    native &&
-    typeof native === "object" &&
-    "stopImmediatePropagation" in native &&
-    typeof (native as { stopImmediatePropagation?: unknown })
-      .stopImmediatePropagation === "function"
-  ) {
-    (
-      native as { stopImmediatePropagation: () => void }
-    ).stopImmediatePropagation();
-  }
-}
-
 export default function EntityDragHandle({
   entityKind,
   entityId,
@@ -47,10 +28,9 @@ export default function EntityDragHandle({
   onClick,
   ...rest
 }: Props) {
-  const isSelected = useSelectionStore((s) =>
-    s.isSelected(entityKind, entityId)
-  );
-  const toggle = useSelectionStore((s) => s.toggle);
+  // Suppress unused-var lint — kept for API compatibility
+  void entityKind;
+  void entityId;
 
   // If dragging is disabled, strip pointer-down listeners to be safe
   const sanitizedRest = canDrag
@@ -66,15 +46,12 @@ export default function EntityDragHandle({
 
   return (
     <button
-      ref={(el) => activatorRef?.(el)} // ✅ no `as any`, same behavior
+      ref={(el) => activatorRef?.(el)}
       type="button"
       aria-label="Drag"
-      aria-pressed={isSelected}
       data-drag-handle
       onClick={(e) => {
         e.stopPropagation();
-        stopNativeImmediatePropagation(e); // ✅ same intent as before
-        toggle(entityKind, entityId);
         onClick?.(e);
       }}
       className={clsx(

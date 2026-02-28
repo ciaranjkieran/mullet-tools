@@ -122,15 +122,14 @@ export async function routeCalendarDrop(e: DragEndEvent, deps: Deps) {
   );
   goalsToMove.forEach((g) => deps.optimisticMoveToDate("goal", g.id, destDate));
 
-  // ---- persist in parallel ----
-  await Promise.allSettled([
-    ...tasksToMove.map((t) => deps.persistDueDate("task", t.id, destDate)),
-    ...milestonesToMove.map((m) =>
-      deps.persistDueDate("milestone", m.id, destDate)
-    ),
-    ...projectsToMove.map((p) =>
-      deps.persistDueDate("project", p.id, destDate)
-    ),
-    ...goalsToMove.map((g) => deps.persistDueDate("goal", g.id, destDate)),
-  ]);
+  // ---- persist sequentially to avoid SQLite "database is locked" errors ----
+  const allMoves: Array<{ type: EntityType; id: number }> = [
+    ...tasksToMove.map((t) => ({ type: "task" as const, id: t.id })),
+    ...milestonesToMove.map((m) => ({ type: "milestone" as const, id: m.id })),
+    ...projectsToMove.map((p) => ({ type: "project" as const, id: p.id })),
+    ...goalsToMove.map((g) => ({ type: "goal" as const, id: g.id })),
+  ];
+  for (const item of allMoves) {
+    await deps.persistDueDate(item.type, item.id, destDate);
+  }
 }

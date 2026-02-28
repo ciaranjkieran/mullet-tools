@@ -7,12 +7,15 @@ type SelectedMap = Record<EntityType, Set<number>>;
 
 type SelectionState = {
   selected: SelectedMap;
+  lastSelected: { type: EntityType; id: number } | null;
 
   // basic ops
   isSelected: (type: EntityType, id: number) => boolean;
   toggle: (type: EntityType, id: number) => void;
   add: (type: EntityType, id: number) => void;
+  addMany: (items: Array<{ type: EntityType; id: number }>) => void;
   remove: (type: EntityType, id: number) => void;
+  setLastSelected: (type: EntityType, id: number) => void;
   clearAll: () => void;
 
   // derived helpers
@@ -32,6 +35,7 @@ function emptySelected(): SelectedMap {
 
 export const useSelectionStore = create<SelectionState>((set, get) => ({
   selected: emptySelected(),
+  lastSelected: null,
 
   isSelected: (type, id) => {
     const s = get().selected;
@@ -56,6 +60,16 @@ export const useSelectionStore = create<SelectionState>((set, get) => ({
       return { selected: { ...state.selected, [type]: next } };
     }),
 
+  addMany: (items) =>
+    set((state) => {
+      const next = { ...state.selected };
+      for (const { type, id } of items) {
+        next[type] = new Set(next[type]);
+        next[type].add(id);
+      }
+      return { selected: next };
+    }),
+
   remove: (type, id) =>
     set((state) => {
       const next = new Set(state.selected[type]);
@@ -63,7 +77,9 @@ export const useSelectionStore = create<SelectionState>((set, get) => ({
       return { selected: { ...state.selected, [type]: next } };
     }),
 
-  clearAll: () => set({ selected: emptySelected() }),
+  setLastSelected: (type, id) => set({ lastSelected: { type, id } }),
+
+  clearAll: () => set({ selected: emptySelected(), lastSelected: null }),
 
   countByType: () => {
     const s = get().selected;

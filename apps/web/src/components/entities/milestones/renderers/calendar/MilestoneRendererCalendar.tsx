@@ -16,6 +16,7 @@ import {
 
 // selection + reusable handle
 import { useSelectionStore } from "../../../../../lib/store/useSelectionStore";
+import { useShiftClickSelect } from "../../../../../lib/hooks/useShiftClickSelect";
 import EntityDragHandle from "../../../../common/EntityDragHandle";
 import AssigneeAvatar from "../../../../common/AssigneeAvatar";
 
@@ -56,6 +57,7 @@ export default function MilestoneRendererCalendar({
   const isSelected = useSelectionStore((s) =>
     s.isSelected("milestone", milestone.id),
   );
+  const { onClickCapture, onMouseDownCapture } = useShiftClickSelect("milestone", milestone.id);
 
   let computedOverdueLabel: string | null = null;
   if (milestone.dueDate && isBefore(parseISO(milestone.dueDate), today)) {
@@ -81,6 +83,8 @@ export default function MilestoneRendererCalendar({
       data-entity-card="true"
       data-entity-type="milestone"
       data-entity-id={milestone.id}
+      onClickCapture={onClickCapture}
+      onMouseDownCapture={onMouseDownCapture}
       className={clsx(
         "px-2 sm:px-4 py-2 sm:py-3 bg-white group transition hover:bg-gray-50 relative",
         isSelected

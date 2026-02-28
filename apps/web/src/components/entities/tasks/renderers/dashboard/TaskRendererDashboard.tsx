@@ -9,6 +9,7 @@ import clsx from "clsx";
 import { useDeleteTask } from "@shared/api/hooks/tasks/useDeleteTask";
 import { useDialogStore } from "@/lib/dialogs/useDialogStore";
 import { useSelectionStore } from "../../../../../lib/store/useSelectionStore";
+import { useShiftClickSelect } from "../../../../../lib/hooks/useShiftClickSelect";
 import EntityDragHandle from "../../../../common/EntityDragHandle";
 import AssigneeAvatar from "../../../../common/AssigneeAvatar";
 
@@ -27,6 +28,7 @@ export default function TaskRendererDashboard({
   const { mutate: deleteTask } = useDeleteTask();
   const { setIsTaskDialogOpen, setTaskToEdit } = useDialogStore();
   const isSelected = useSelectionStore((s) => s.isSelected("task", task.id));
+  const { onClickCapture, onMouseDownCapture } = useShiftClickSelect("task", task.id);
 
   const handleCompletion = () => deleteTask(task.id);
 
@@ -35,6 +37,8 @@ export default function TaskRendererDashboard({
       data-entity-card="true"
       data-entity-type="task"
       data-entity-id={task.id}
+      onClickCapture={onClickCapture}
+      onMouseDownCapture={onMouseDownCapture}
       className={clsx(
         "border rounded px-3 py-2 md:px-4 md:py-2.5 shadow-sm relative group transition",
         "cursor-default text-left",

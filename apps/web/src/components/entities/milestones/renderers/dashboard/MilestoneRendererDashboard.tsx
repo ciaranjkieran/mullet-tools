@@ -13,6 +13,7 @@ import { useDialogStore } from "../../../../../lib/dialogs/useDialogStore";
 
 // selection + reusable handle
 import { useSelectionStore } from "../../../../../lib/store/useSelectionStore";
+import { useShiftClickSelect } from "../../../../../lib/hooks/useShiftClickSelect";
 import EntityDragHandle from "../../../../common/EntityDragHandle";
 import AssigneeAvatar from "../../../../common/AssigneeAvatar";
 
@@ -53,6 +54,7 @@ export default function MilestoneRenderer({
   const isSelected = useSelectionStore((s) =>
     s.isSelected("milestone", milestone.id),
   );
+  const { onClickCapture, onMouseDownCapture } = useShiftClickSelect("milestone", milestone.id);
 
   // ---- Collapse (store-backed with optional overrides) ----
   const storeCollapsed = useEntityUIStore(
@@ -79,6 +81,8 @@ export default function MilestoneRenderer({
       data-entity-card="true"
       data-entity-type="milestone"
       data-entity-id={milestone.id}
+      onClickCapture={onClickCapture}
+      onMouseDownCapture={onMouseDownCapture}
       className={clsx(baseClasses, isSelected && "ring-2")}
       style={
         isSelected

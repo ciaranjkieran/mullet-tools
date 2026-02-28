@@ -139,3 +139,9 @@ body.dragging {
     display: none;
   }
 }
+
+/* Show pointer cursor everywhere when Shift is held (selection mode) */
+html[data-shift-held],
+html[data-shift-held] * {
+  cursor: pointer !important;
+}

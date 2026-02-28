@@ -15,6 +15,7 @@ import { useDeleteGoal } from "@shared/api/hooks/goals/useDeleteGoal";
 import { TargetIcon } from "lucide-react";
 
 import { useSelectionStore } from "@/lib/store/useSelectionStore";
+import { useShiftClickSelect } from "@/lib/hooks/useShiftClickSelect";
 import EntityDragHandle from "@/components/common/EntityDragHandle";
 import AssigneeAvatar from "@/components/common/AssigneeAvatar";
 
@@ -50,6 +51,7 @@ export default function GoalRendererCalendar({
   const today = startOfToday();
 
   const isSelected = useSelectionStore((s) => s.isSelected("goal", goal.id));
+  const { onClickCapture, onMouseDownCapture } = useShiftClickSelect("goal", goal.id);
 
   let computedOverdueLabel: string | null = null;
   if (goal.dueDate && isBefore(parseISO(goal.dueDate), today)) {
@@ -72,6 +74,8 @@ export default function GoalRendererCalendar({
       data-entity-card="true"
       data-entity-type="goal"
       data-entity-id={goal.id}
+      onClickCapture={onClickCapture}
+      onMouseDownCapture={onMouseDownCapture}
       className={clsx(
         "px-2 sm:px-4 py-2 sm:py-3 bg-white group transition hover:bg-gray-50 relative",
         isSelected
