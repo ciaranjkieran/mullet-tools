@@ -18,7 +18,7 @@ const FEATURES = [
   "Boards",
   "Templates",
   "Timer & Stats",
-  "AI Builder",
+  "AI Assistant",
   "Collaboration",
 ];
 

@@ -18,7 +18,16 @@ import clsx from "clsx";
 import { useAiBuild } from "@shared/api/hooks/ai/useAiBuild";
 import { useAiCommit } from "@shared/api/hooks/ai/useAiCommit";
 import { useModeStore } from "@shared/store/useModeStore";
-import type { BuilderNode, BuilderNodeType } from "@shared/types/AiBuilder";
+import { useTaskStore } from "@shared/store/useTaskStore";
+import { useMilestoneStore } from "@shared/store/useMilestoneStore";
+import { useProjectStore } from "@shared/store/useProjectStore";
+import { useGoalStore } from "@shared/store/useGoalStore";
+import type {
+  BuilderNode,
+  BuilderNodeType,
+  BuilderNodeOp,
+  ExistingEntity,
+} from "@shared/types/AiBuilder";
 
 type Props = {
   isOpen: boolean;
@@ -27,19 +36,71 @@ type Props = {
 
 type CommandEntry = { prompt: string; summary: string };
 
-/** Mark all nodes as included (default from AI response). */
+// ─── Entity snapshot builder ─────────────────
+function buildEntitySnapshot(modeId: number): ExistingEntity[] {
+  const goals = useGoalStore.getState().goals.filter((g) => g.modeId === modeId);
+  const projects = useProjectStore.getState().projects.filter((p) => p.modeId === modeId);
+  const milestones = useMilestoneStore.getState().milestones.filter((m) => m.modeId === modeId);
+  const tasks = useTaskStore.getState().tasks.filter((t) => t.modeId === modeId);
+
+  const entities: ExistingEntity[] = [];
+
+  for (const g of goals) {
+    entities.push({ id: g.id, type: "goal", title: g.title, dueDate: g.dueDate ?? null });
+  }
+  for (const p of projects) {
+    entities.push({
+      id: p.id,
+      type: "project",
+      title: p.title,
+      dueDate: p.dueDate ?? null,
+      parentId: p.parentId ?? null,
+      goalId: p.goalId ?? null,
+    });
+  }
+  for (const m of milestones) {
+    entities.push({
+      id: m.id,
+      type: "milestone",
+      title: m.title,
+      dueDate: m.dueDate ?? null,
+      parentId: m.parentId ?? null,
+      projectId: m.projectId ?? null,
+      goalId: m.goalId ?? null,
+    });
+  }
+  for (const t of tasks) {
+    entities.push({
+      id: t.id,
+      type: "task",
+      title: t.title,
+      dueDate: t.dueDate ?? null,
+      milestoneId: t.milestoneId ?? null,
+      projectId: t.projectId ?? null,
+      goalId: t.goalId ?? null,
+    });
+  }
+
+  return entities;
+}
+
+// ─── Tree helpers ────────────────────────────
+
+/** Mark all nodes as included; default `op` to "create" when absent. */
 function markIncluded(nodes: BuilderNode[]): BuilderNode[] {
   return nodes.map((n) => ({
     ...n,
+    op: n.op || "create",
     included: true,
     children: markIncluded(n.children ?? []),
   }));
 }
 
-/** Toggle a node and cascade to children. */
+/** Toggle a node and cascade to children. Skip noop/delete nodes. */
 function toggleNode(nodes: BuilderNode[], tempId: string): BuilderNode[] {
   return nodes.map((n) => {
     if (n.tempId === tempId) {
+      if (n.op === "noop" || n.op === "delete") return n;
       const next = !n.included;
       return { ...n, included: next, children: setAll(n.children, next) };
     }
@@ -50,7 +111,7 @@ function toggleNode(nodes: BuilderNode[], tempId: string): BuilderNode[] {
 function setAll(nodes: BuilderNode[], val: boolean): BuilderNode[] {
   return nodes.map((n) => ({
     ...n,
-    included: val,
+    included: n.op === "noop" ? true : val,
     children: setAll(n.children, val),
   }));
 }
@@ -86,17 +147,17 @@ function removeNode(nodes: BuilderNode[], tempId: string): BuilderNode[] {
     .map((n) => ({ ...n, children: removeNode(n.children, tempId) }));
 }
 
-/** Count included nodes by type. */
-function countIncluded(nodes: BuilderNode[]): Record<BuilderNodeType, number> {
-  const counts: Record<BuilderNodeType, number> = {
-    goal: 0,
-    project: 0,
-    milestone: 0,
-    task: 0,
+/** Count included nodes by operation. */
+function countByOp(nodes: BuilderNode[]): Record<BuilderNodeOp, number> {
+  const counts: Record<BuilderNodeOp, number> = {
+    create: 0,
+    update: 0,
+    delete: 0,
+    noop: 0,
   };
   function walk(list: BuilderNode[]) {
     for (const n of list) {
-      if (n.included) counts[n.type]++;
+      if (n.included && n.op !== "noop") counts[n.op]++;
       walk(n.children);
     }
   }
@@ -104,12 +165,43 @@ function countIncluded(nodes: BuilderNode[]): Record<BuilderNodeType, number> {
   return counts;
 }
 
-/** Filter tree to only included nodes. */
+/** Filter tree to only included nodes. Always include noop (needed for parent resolution). */
 function filterIncluded(nodes: BuilderNode[]): BuilderNode[] {
   return nodes
-    .filter((n) => n.included)
+    .filter((n) => n.included || n.op === "noop")
     .map((n) => ({ ...n, children: filterIncluded(n.children) }));
 }
+
+// ─── Operation badge colors ─────────────────
+const OP_STYLES: Record<
+  BuilderNodeOp,
+  { border: string; badge: string; badgeBg: string; label: string }
+> = {
+  create: {
+    border: "border-l-2 border-green-400",
+    badge: "text-green-700",
+    badgeBg: "bg-green-100",
+    label: "NEW",
+  },
+  update: {
+    border: "border-l-2 border-amber-400",
+    badge: "text-amber-700",
+    badgeBg: "bg-amber-100",
+    label: "EDIT",
+  },
+  delete: {
+    border: "border-l-2 border-red-400",
+    badge: "text-red-700",
+    badgeBg: "bg-red-100",
+    label: "DEL",
+  },
+  noop: {
+    border: "",
+    badge: "",
+    badgeBg: "",
+    label: "",
+  },
+};
 
 // ─────────────────────────────────────────────
 // Tree Node component
@@ -139,16 +231,28 @@ function TreeNode({
   const inputRef = useRef<HTMLInputElement>(null);
 
   const hasChildren = node.children.length > 0;
+  const op = node.op || "create";
+  const style = OP_STYLES[op];
+  const isNoop = op === "noop";
+  const isDelete = op === "delete";
+  const showCheckbox = !isNoop && !isDelete;
+  const showRemove = !isNoop;
+  const canEdit = !isNoop && !isDelete;
 
   useEffect(() => {
     if (isEditing) inputRef.current?.focus();
   }, [isEditing]);
 
   return (
-    <div className={clsx(!node.included && "opacity-40")}>
+    <div>
       <div
-        className="flex items-center gap-1.5 py-1 group"
-        style={{ paddingLeft: depth * 24 }}
+        className={clsx(
+          "flex items-center gap-1.5 py-1 group",
+          style.border,
+          isNoop && "opacity-50",
+          !isNoop && !node.included && "opacity-40"
+        )}
+        style={{ paddingLeft: depth * 24 + (style.border ? 0 : 2) }}
       >
         {/* Collapse toggle */}
         <button
@@ -166,14 +270,18 @@ function TreeNode({
           )}
         </button>
 
-        {/* Checkbox */}
-        <input
-          type="checkbox"
-          checked={node.included}
-          onChange={() => onToggle(node.tempId)}
-          className="accent-current flex-shrink-0"
-          style={{ accentColor: modeColor }}
-        />
+        {/* Checkbox (hide for noop/delete) */}
+        {showCheckbox ? (
+          <input
+            type="checkbox"
+            checked={node.included}
+            onChange={() => onToggle(node.tempId)}
+            className="accent-current flex-shrink-0"
+            style={{ accentColor: modeColor }}
+          />
+        ) : (
+          <span className="w-[13px] flex-shrink-0" />
+        )}
 
         {/* Type icon */}
         {node.type === "goal" ? (
@@ -202,8 +310,21 @@ function TreeNode({
           />
         )}
 
+        {/* Op badge */}
+        {style.label && (
+          <span
+            className={clsx(
+              "text-[10px] font-semibold px-1.5 py-0.5 rounded",
+              style.badge,
+              style.badgeBg
+            )}
+          >
+            {style.label}
+          </span>
+        )}
+
         {/* Title */}
-        {isEditing ? (
+        {canEdit && isEditing ? (
           <input
             ref={inputRef}
             value={editValue}
@@ -226,33 +347,41 @@ function TreeNode({
           />
         ) : (
           <span
-            className="text-sm cursor-pointer hover:underline truncate flex-1 min-w-0"
+            className={clsx(
+              "text-sm truncate flex-1 min-w-0",
+              canEdit && "cursor-pointer hover:underline",
+              isDelete && "line-through text-red-600",
+              isNoop && "text-gray-500"
+            )}
             onClick={() => {
+              if (!canEdit) return;
               setEditValue(node.title);
               setIsEditing(true);
             }}
-            title="Click to rename"
+            title={canEdit ? "Click to rename" : undefined}
           >
             {node.title}
           </span>
         )}
 
         {/* Date chip */}
-        {node.dueDate ? (
+        {!isNoop && node.dueDate ? (
           <span className="flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-600 flex-shrink-0">
             {node.dueDate}
-            <button
-              onClick={() => onDateChange(node.tempId, null)}
-              className="hover:text-red-500"
-            >
-              <X className="w-3 h-3" />
-            </button>
+            {canEdit && (
+              <button
+                onClick={() => onDateChange(node.tempId, null)}
+                className="hover:text-red-500"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            )}
           </span>
-        ) : (
+        ) : canEdit ? (
           <button
             className="text-xs text-gray-400 hover:text-gray-600 opacity-0 group-hover:opacity-100 transition flex-shrink-0"
             onClick={() => {
-              const val = prompt("Set date (YYYY-MM-DD):");
+              const val = window.prompt("Set date (YYYY-MM-DD):");
               if (val && /^\d{4}-\d{2}-\d{2}$/.test(val)) {
                 onDateChange(node.tempId, val);
               }
@@ -260,7 +389,7 @@ function TreeNode({
           >
             + date
           </button>
-        )}
+        ) : null}
 
         {/* Comment tooltip */}
         {node.comment && (
@@ -280,14 +409,16 @@ function TreeNode({
           </div>
         )}
 
-        {/* Remove */}
-        <button
-          className="text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition flex-shrink-0"
-          onClick={() => onRemove(node.tempId)}
-          title="Remove"
-        >
-          <X className="w-3.5 h-3.5" />
-        </button>
+        {/* Remove (hide for noop) */}
+        {showRemove && (
+          <button
+            className="text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition flex-shrink-0"
+            onClick={() => onRemove(node.tempId)}
+            title="Remove"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        )}
       </div>
 
       {/* Children */}
@@ -330,26 +461,30 @@ export default function AiBuilderModal({ isOpen, onClose }: Props) {
 
   const treeRef = useRef<HTMLDivElement>(null);
 
-  const counts = useMemo(() => countIncluded(nodes), [nodes]);
-  const totalIncluded =
-    counts.goal + counts.project + counts.milestone + counts.task;
+  const opCounts = useMemo(() => countByOp(nodes), [nodes]);
+  const totalActionable = opCounts.create + opCounts.update + opCounts.delete;
 
   const summaryParts = [
-    counts.goal > 0 && `${counts.goal} goal${counts.goal > 1 ? "s" : ""}`,
-    counts.project > 0 &&
-      `${counts.project} project${counts.project > 1 ? "s" : ""}`,
-    counts.milestone > 0 &&
-      `${counts.milestone} milestone${counts.milestone > 1 ? "s" : ""}`,
-    counts.task > 0 && `${counts.task} task${counts.task > 1 ? "s" : ""}`,
+    opCounts.create > 0 && `create ${opCounts.create}`,
+    opCounts.update > 0 && `update ${opCounts.update}`,
+    opCounts.delete > 0 && `remove ${opCounts.delete}`,
   ]
     .filter(Boolean)
     .join(", ");
 
+  const isMixed = [opCounts.create, opCounts.update, opCounts.delete].filter(
+    (c) => c > 0
+  ).length > 1;
+  const isPureCreate =
+    opCounts.create > 0 && opCounts.update === 0 && opCounts.delete === 0;
+
   const handleBuild = useCallback(async () => {
     if (!prompt.trim() || !mode) return;
 
+    const entities = buildEntitySnapshot(mode.id);
+
     buildMutation.mutate(
-      { prompt: prompt.trim(), modeId: mode.id, history },
+      { prompt: prompt.trim(), modeId: mode.id, history, entities },
       {
         onSuccess: (data) => {
           const markedNodes = markIncluded(data.nodes ?? []);
@@ -370,7 +505,7 @@ export default function AiBuilderModal({ isOpen, onClose }: Props) {
   }, [prompt, mode, history, buildMutation]);
 
   const handleCommit = useCallback(async () => {
-    if (!mode || totalIncluded === 0) return;
+    if (!mode || totalActionable === 0) return;
 
     const included = filterIncluded(nodes);
     commitMutation.mutate(
@@ -392,7 +527,7 @@ export default function AiBuilderModal({ isOpen, onClose }: Props) {
         },
       }
     );
-  }, [mode, nodes, totalIncluded, commitMutation, onClose]);
+  }, [mode, nodes, totalActionable, commitMutation, onClose]);
 
   // Reset on open
   useEffect(() => {
@@ -418,7 +553,7 @@ export default function AiBuilderModal({ isOpen, onClose }: Props) {
           <div className="flex items-center gap-2">
             <Sparkles className="w-5 h-5" style={{ color: modeColor }} />
             <h2 className="font-semibold text-gray-900">
-              AI Builder
+              AI Assistant
               {mode && (
                 <span
                   className="ml-2 text-sm font-normal"
@@ -444,7 +579,7 @@ export default function AiBuilderModal({ isOpen, onClose }: Props) {
               <div key={i} className="text-xs py-0.5">
                 <span className="text-gray-500">You:</span>{" "}
                 <span className="text-gray-700">{entry.prompt}</span>
-                <span className="mx-1.5 text-gray-300">→</span>
+                <span className="mx-1.5 text-gray-300">&rarr;</span>
                 <span className="text-gray-500 italic">{entry.summary}</span>
               </div>
             ))}
@@ -460,7 +595,8 @@ export default function AiBuilderModal({ isOpen, onClose }: Props) {
             <div className="flex flex-col items-center justify-center h-full text-gray-400 gap-2">
               <Sparkles className="w-8 h-8" />
               <p className="text-sm">
-                Describe what you want to build and the AI will generate a plan.
+                Describe what you want to build or change and the AI will
+                generate a plan.
               </p>
             </div>
           )}
@@ -504,7 +640,7 @@ export default function AiBuilderModal({ isOpen, onClose }: Props) {
         <div className="border-t px-5 py-3">
           {!mode && (
             <p className="text-xs text-amber-600 mb-2">
-              Select a mode first to use the AI Builder.
+              Select a mode first to use the AI Assistant.
             </p>
           )}
           <div className="flex gap-2">
@@ -518,7 +654,7 @@ export default function AiBuilderModal({ isOpen, onClose }: Props) {
                   handleBuild();
                 }
               }}
-              placeholder="Describe what you want to build..."
+              placeholder="Describe what you want to build or change..."
               disabled={!mode || buildMutation.isPending}
               className="flex-1 border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 disabled:opacity-50"
               style={
@@ -538,18 +674,18 @@ export default function AiBuilderModal({ isOpen, onClose }: Props) {
           </div>
         </div>
 
-        {/* Footer — commit */}
+        {/* Footer -- commit */}
         {nodes.length > 0 && (
           <div className="border-t px-5 py-3 flex items-center justify-between bg-gray-50 rounded-b-xl">
             <span className="text-xs text-gray-500">
-              {totalIncluded > 0
-                ? `Will create ${summaryParts}`
+              {totalActionable > 0
+                ? `Will ${summaryParts}`
                 : "No items selected"}
             </span>
             <button
               onClick={handleCommit}
               disabled={
-                totalIncluded === 0 ||
+                totalActionable === 0 ||
                 commitMutation.isPending ||
                 commitSuccess
               }
@@ -559,12 +695,14 @@ export default function AiBuilderModal({ isOpen, onClose }: Props) {
               {commitMutation.isPending ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  Creating...
+                  Applying...
                 </>
               ) : commitSuccess ? (
-                "Added!"
+                "Done!"
+              ) : isPureCreate ? (
+                "Add"
               ) : (
-                "Add to mode"
+                "Apply changes"
               )}
             </button>
           </div>

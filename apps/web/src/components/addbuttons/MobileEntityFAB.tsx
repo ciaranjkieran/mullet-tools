@@ -256,7 +256,7 @@ export default function MobileEntityFAB({
             onTouchEnd={onTouchEnd}
             className="w-12 h-12 rounded-full shadow-xl flex items-center justify-center pointer-events-auto"
             style={{ backgroundColor: modeColor, color: textColor }}
-            aria-label="AI Builder"
+            aria-label="AI Assistant"
             type="button"
           >
             <Sparkles className="w-5 h-5" />

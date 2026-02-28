@@ -599,8 +599,8 @@ export default function DashboardPage() {
             backgroundColor: modeColor,
             color: "#fff",
           }}
-          aria-label="AI Builder"
-          title="AI Builder"
+          aria-label="AI Assistant"
+          title="AI Assistant"
           type="button"
         >
           <Sparkles className="w-6 h-6" />

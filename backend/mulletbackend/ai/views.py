@@ -49,6 +49,7 @@ class AiBuildView(APIView):
         prompt = (request.data.get("prompt") or "").strip()
         mode_id = request.data.get("modeId")
         history = request.data.get("history") or []
+        entities = request.data.get("entities") or []
 
         if not prompt:
             return Response(
@@ -78,6 +79,17 @@ class AiBuildView(APIView):
 
         # Build messages for Claude
         messages = []
+
+        # Inject existing entity snapshot as context (if provided)
+        if entities:
+            entity_json = json.dumps(entities, default=str)
+            messages.append(
+                {"role": "user", "content": f"EXISTING ENTITIES IN THIS MODE:\n{entity_json}"}
+            )
+            messages.append(
+                {"role": "assistant", "content": "Understood. I have the current entity snapshot and will reference it when needed."}
+            )
+
         for entry in history:
             role = entry.get("role", "user")
             content = entry.get("content", "")
@@ -128,7 +140,8 @@ class AiBuildView(APIView):
 class AiCommitView(APIView):
     """
     POST /api/ai/commit/
-    Create all entities from an approved AI-generated tree.
+    Apply all operations from an approved AI-generated tree.
+    Supports create, update, delete, and noop operations.
     """
 
     permission_classes = [permissions.IsAuthenticated]
@@ -162,12 +175,78 @@ class AiCommitView(APIView):
         flat_nodes = []
         self._flatten(nodes, flat_nodes)
 
-        temp_id_map = {}  # tempId -> real database ID
-        counts = {"goals": 0, "projects": 0, "milestones": 0, "tasks": 0}
+        # Separate by operation
+        deletes = [n for n in flat_nodes if n.get("op") == "delete"]
+        updates = [n for n in flat_nodes if n.get("op") == "update"]
+        noops = [n for n in flat_nodes if n.get("op") == "noop"]
+        creates = [n for n in flat_nodes if n.get("op", "create") == "create"]
+
+        temp_id_map = {}  # tempId -> (real_id, entity_type)
+        zero_counts = {"goals": 0, "projects": 0, "milestones": 0, "tasks": 0}
+        counts = {
+            "created": dict(zero_counts),
+            "updated": dict(zero_counts),
+            "deleted": dict(zero_counts),
+        }
 
         try:
             with transaction.atomic():
-                for node in flat_nodes:
+                # --- DELETES first (avoids FK issues) ---
+                for node in deletes:
+                    entity_type = node.get("type")
+                    entity_id = node.get("id")
+                    if entity_type not in ENTITY_MODELS or not entity_id:
+                        continue
+                    Model = ENTITY_MODELS[entity_type]
+                    try:
+                        entity = Model.objects.get(
+                            id=entity_id, mode=mode, user=request.user
+                        )
+                        entity.delete()
+                        counts["deleted"][entity_type + "s"] += 1
+                    except Model.DoesNotExist:
+                        continue
+
+                # --- UPDATES ---
+                for node in updates:
+                    entity_type = node.get("type")
+                    entity_id = node.get("id")
+                    if entity_type not in ENTITY_MODELS or not entity_id:
+                        continue
+                    Model = ENTITY_MODELS[entity_type]
+                    try:
+                        entity = Model.objects.get(
+                            id=entity_id, mode=mode, user=request.user
+                        )
+                    except Model.DoesNotExist:
+                        continue
+
+                    title = (node.get("title") or "").strip()
+                    if title:
+                        entity.title = title
+                    if "dueDate" in node:
+                        entity.due_date = node["dueDate"] or None
+                    if "description" in node and hasattr(Model, "description"):
+                        entity.description = node["description"] or ""
+
+                    entity.save()
+
+                    temp_id = node.get("tempId")
+                    if temp_id:
+                        temp_id_map[temp_id] = (entity.id, entity_type)
+
+                    counts["updated"][entity_type + "s"] += 1
+
+                # --- NOOP: register in temp_id_map for parent resolution ---
+                for node in noops:
+                    temp_id = node.get("tempId")
+                    entity_id = node.get("id")
+                    entity_type = node.get("type")
+                    if temp_id and entity_id:
+                        temp_id_map[temp_id] = (entity_id, entity_type)
+
+                # --- CREATES (existing logic) ---
+                for node in creates:
                     entity_type = node.get("type")
                     title = (node.get("title") or "").strip()
                     temp_id = node.get("tempId")
@@ -206,8 +285,7 @@ class AiCommitView(APIView):
                     entity = Model.objects.create(**create_kwargs)
                     temp_id_map[temp_id] = (entity.id, entity_type)
 
-                    count_key = entity_type + "s"
-                    counts[count_key] = counts.get(count_key, 0) + 1
+                    counts["created"][entity_type + "s"] += 1
 
                     # Create explanation comment if provided
                     if comment_text:
@@ -223,11 +301,11 @@ class AiCommitView(APIView):
         except Exception:
             logger.exception("AI commit failed")
             return Response(
-                {"error": "Failed to create entities."},
+                {"error": "Failed to apply changes."},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
-        return Response({"created": counts}, status=status.HTTP_201_CREATED)
+        return Response(counts, status=status.HTTP_200_OK)
 
     def _flatten(self, nodes, result):
         """Recursively flatten nested nodes into a list (parents first)."""
