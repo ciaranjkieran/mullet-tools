@@ -10,6 +10,7 @@ from django.contrib.auth.models import User
 from rest_framework import serializers, status
 import uuid
 from core.services.create_default_modes_for_user import create_default_modes_for_user
+from billing.models import Subscription
 from .models import Profile
 from .serializers import UserSerializer, ProfileSerializer
 from django.db import transaction
@@ -68,6 +69,9 @@ class RegisterView(APIView):
 
             # ✅ auto-create user profile
             Profile.objects.create(user=user)
+
+            # ✅ auto-create trial subscription (30 days)
+            Subscription.objects.create(user=user)
 
             # 🔑 new session + logged in as this new user
             request.session.flush()

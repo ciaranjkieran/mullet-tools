@@ -3,11 +3,14 @@ export const revalidate = 0;
 
 import InvitationsPage from "./InvitationsPage";
 import RequireAuth from "@/components/auth/RequireAuth";
+import RequireSubscription from "@/components/billing/RequireSubscription";
 
 export default function Invitations() {
   return (
     <RequireAuth>
-      <InvitationsPage />
+      <RequireSubscription>
+        <InvitationsPage />
+      </RequireSubscription>
     </RequireAuth>
   );
 }

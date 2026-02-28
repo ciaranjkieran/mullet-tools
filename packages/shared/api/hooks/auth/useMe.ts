@@ -8,11 +8,23 @@ export type UserProfile = {
   avatar: string | null;
 };
 
+export type SubscriptionStatus = "trialing" | "active" | "cancelled" | "expired";
+
+export type SubscriptionInfo = {
+  status: SubscriptionStatus;
+  isActive: boolean;
+  trialDaysRemaining: number;
+  trialEnd: string | null;
+  currentPeriodEnd: string | null;
+  cancelAtPeriodEnd: boolean;
+};
+
 export type MeResponse = {
   id: number;
   username: string;
   email: string;
   profile: UserProfile | null;
+  subscription: SubscriptionInfo | null;
 };
 
 export function useMe() {

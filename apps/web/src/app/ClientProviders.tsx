@@ -2,7 +2,7 @@
 "use client";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useGlobalOutsideDeselect } from "../lib/hooks/useGlobalOutsideDeselect";
 
 export function ClientProviders({ children }: { children: React.ReactNode }) {
@@ -14,6 +14,15 @@ export function ClientProviders({ children }: { children: React.ReactNode }) {
     // If your batch UI / dialogs render in portals, add their roots here:
     // safeSelectors: ["#portal-root", "[data-dialog-root='true']"],
   });
+
+  // Re-fetch /me when subscription expires so Paywall component renders
+  useEffect(() => {
+    function handleExpired() {
+      client.invalidateQueries({ queryKey: ["me"] });
+    }
+    window.addEventListener("subscription:expired", handleExpired);
+    return () => window.removeEventListener("subscription:expired", handleExpired);
+  }, [client]);
 
   return <QueryClientProvider client={client}>{children}</QueryClientProvider>;
 }

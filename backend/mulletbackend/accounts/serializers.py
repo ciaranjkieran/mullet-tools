@@ -2,6 +2,7 @@
 from django.contrib.auth.models import User
 from rest_framework import serializers
 
+from billing.serializers import SubscriptionSerializer
 from .models import Profile
 
 
@@ -18,7 +19,8 @@ class ProfileSerializer(serializers.ModelSerializer):
 
 class UserSerializer(serializers.ModelSerializer):
     profile = ProfileSerializer(read_only=True)
+    subscription = SubscriptionSerializer(read_only=True)
 
     class Meta:
         model = User
-        fields = ["id", "username", "email", "profile"]
+        fields = ["id", "username", "email", "profile", "subscription"]

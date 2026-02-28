@@ -24,6 +24,7 @@ urlpatterns = [
 
     # API apps
     path("api/auth/", include("accounts.urls")),
+    path("api/billing/", include("billing.urls")),
     path("api/", include("core.urls")),
     path("api/", include("comments.urls")),
     path("api/", include("notes.urls")),

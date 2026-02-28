@@ -3,11 +3,14 @@ export const revalidate = 0;
 
 import DashboardPage from "./DashboardPage";
 import RequireAuth from "@/components/auth/RequireAuth";
+import RequireSubscription from "@/components/billing/RequireSubscription";
 
 export default function Dashboard() {
   return (
     <RequireAuth>
-      <DashboardPage />
+      <RequireSubscription>
+        <DashboardPage />
+      </RequireSubscription>
     </RequireAuth>
   );
 }

@@ -58,6 +58,16 @@ if not IS_PROD:
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 
 # ------------------------------------------------------------------------------
+# Stripe (Billing)
+# ------------------------------------------------------------------------------
+
+STRIPE_SECRET_KEY = os.environ.get("STRIPE_SECRET_KEY", "")
+STRIPE_PUBLISHABLE_KEY = os.environ.get("STRIPE_PUBLISHABLE_KEY", "")
+STRIPE_WEBHOOK_SECRET = os.environ.get("STRIPE_WEBHOOK_SECRET", "")
+STRIPE_PRICE_ID = os.environ.get("STRIPE_PRICE_ID", "")
+MULLET_FRONTEND_URL = os.environ.get("MULLET_FRONTEND_URL", "http://localhost:3000")
+
+# ------------------------------------------------------------------------------
 # Applications
 # ------------------------------------------------------------------------------
 
@@ -65,6 +75,7 @@ INSTALLED_APPS = [
     "accounts",
     "ai",
     "batch",
+    "billing",
     "timers",
     "core",
     "collaboration",
@@ -96,6 +107,7 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "billing.middleware.SubscriptionMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
