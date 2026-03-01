@@ -1,5 +1,6 @@
 import json
 import logging
+import re
 
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
@@ -111,13 +112,14 @@ class AiBuildView(APIView):
 
             raw_text = response.content[0].text
 
-            # Parse JSON from response (handle potential markdown wrapping)
+            # Extract JSON from response (handles markdown fences, preamble text, etc.)
             json_text = raw_text.strip()
-            if json_text.startswith("```"):
-                # Strip markdown code fences
-                lines = json_text.split("\n")
-                lines = [l for l in lines if not l.strip().startswith("```")]
-                json_text = "\n".join(lines)
+            # Try to extract JSON object/array from anywhere in the response
+            match = re.search(r'[\[{]', json_text)
+            if match:
+                json_text = json_text[match.start():]
+            # Strip trailing markdown fences or extra text after JSON
+            json_text = re.sub(r'```\s*$', '', json_text).rstrip()
 
             tree = json.loads(json_text)
 
