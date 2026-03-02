@@ -1,9 +1,14 @@
-// apps/web/src/shared/api/hooks/auth/useLogout.ts
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "../../axios";
 import { ensureCsrf } from "../auth/ensureCsrf";
-import { resetAllStores } from "../../../store/resetAllStores";
-import { ACTIVE_TIMER_QK } from "../timer/useActiveTimer"; // adjust path if needed
+import { handleTokenCleared } from "./tokenCallbacks";
+import { ACTIVE_TIMER_QK } from "../timer/useActiveTimer";
+
+// Injectable callback for store resets (web injects resetAllStores, mobile its own)
+let _onLogoutCleanup: (() => void) | null = null;
+export function setOnLogoutCleanup(cb: () => void) {
+  _onLogoutCleanup = cb;
+}
 
 export function useLogout() {
   const qc = useQueryClient();
@@ -12,7 +17,7 @@ export function useLogout() {
     mutationFn: async () => {
       await ensureCsrf();
 
-      // 1) Try stop timer if we *think* one is running
+      // Try stop timer if one is running
       const active = qc.getQueryData(ACTIVE_TIMER_QK);
       if (active) {
         try {
@@ -22,13 +27,16 @@ export function useLogout() {
         }
       }
 
-      // 2) Logout
       await api.post("/auth/logout/");
     },
 
     onSuccess: async () => {
+      // Cancel all in-flight queries BEFORE clearing to prevent
+      // a storm of 401 refetches from still-mounted hooks
+      await qc.cancelQueries();
       qc.clear();
-      resetAllStores();
+      await handleTokenCleared();
+      _onLogoutCleanup?.();
     },
   });
 }

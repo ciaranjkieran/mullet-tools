@@ -3,6 +3,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.throttling import AnonRateThrottle
+from rest_framework.authtoken.models import Token
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.utils.decorators import method_decorator
 from django.contrib.auth import authenticate, login, logout
@@ -41,6 +42,7 @@ class RegisterView(APIView):
         data = request.data
         email = (data.get("email") or "").strip().lower()
         password = data.get("password")
+        client_type = data.get("client_type")
 
         if not email or not password:
             return Response(
@@ -56,7 +58,7 @@ class RegisterView(APIView):
 
         username = email.split("@")[0] + "_" + uuid.uuid4().hex[:6]
 
-        # ✅ atomic: user + default modes are created together
+        token = None
         with transaction.atomic():
             user = User.objects.create_user(
                 username=username,
@@ -64,20 +66,21 @@ class RegisterView(APIView):
                 password=password,
             )
 
-            # ✅ auto-create the 5 default modes
             create_default_modes_for_user(user)
-
-            # ✅ auto-create user profile
             Profile.objects.create(user=user)
-
-            # ✅ auto-create trial subscription (30 days)
             Subscription.objects.create(user=user)
 
-            # 🔑 new session + logged in as this new user
-            request.session.flush()
-            login(request, user)
+            if client_type == "mobile":
+                token = Token.objects.create(user=user)
+            else:
+                request.session.flush()
+                login(request, user)
 
-        return Response(UserSerializer(user).data, status=status.HTTP_201_CREATED)
+        response_data = UserSerializer(user).data
+        if token:
+            response_data["token"] = token.key
+
+        return Response(response_data, status=status.HTTP_201_CREATED)
 
 
 
@@ -90,6 +93,7 @@ class LoginView(APIView):
         data = request.data
         email = (data.get("email") or "").strip().lower()
         password = data.get("password")
+        client_type = data.get("client_type")
 
         if not email or not password:
             return Response({"detail": "email and password are required."}, status=400)
@@ -103,14 +107,26 @@ class LoginView(APIView):
         if not user:
             return Response({"detail": "Invalid credentials."}, status=400)
 
-        login(request, user)
-        return Response(UserSerializer(user).data)
+        response_data = UserSerializer(user).data
+
+        if client_type == "mobile":
+            token, _ = Token.objects.get_or_create(user=user)
+            response_data["token"] = token.key
+        else:
+            login(request, user)
+
+        return Response(response_data)
     
 class LogoutView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        logout(request)
+        # Token-authenticated user (mobile): delete server-side token
+        if isinstance(request.auth, Token):
+            request.auth.delete()
+        else:
+            # Session-authenticated user (web): destroy session
+            logout(request)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 class MeView(APIView):

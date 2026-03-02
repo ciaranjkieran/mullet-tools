@@ -185,7 +185,7 @@ export default function ModeFilter({
             strategy={horizontalListSortingStrategy}
           >
             <div
-              className={`flex flex-wrap items-center gap-1.5 md:gap-2 mb-4 md:mb-5 ${
+              className={`flex flex-wrap items-center gap-1.5 md:gap-2 mb-12 md:mb-14 ${
                 isModeFocus ? "justify-start" : ""
               }`}
             >

@@ -1,18 +1,27 @@
 "use client";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import api from "../../axios";
-import type { MeResponse } from "./useMe";
+import api, { getAuthMode } from "../../axios";
+import { handleTokenReceived } from "./tokenCallbacks";
 
 export function useRegister() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (body: { email: string; password: string }) => {
-      const res = await api.post("/auth/register/", body);
+      const payload: Record<string, string> = { ...body };
+      if (getAuthMode() === "token") {
+        payload.client_type = "mobile";
+      }
+
+      const res = await api.post("/auth/register/", payload);
       return res.data;
     },
-    onSuccess: (user) => {
-      qc.setQueryData(["me"], user); // if register auto-logs-in
+    onSuccess: async (data) => {
+      if (data.token) {
+        await handleTokenReceived(data.token);
+      }
+      const { token, ...user } = data;
+      qc.setQueryData(["me"], user);
       qc.invalidateQueries({ queryKey: ["me"] });
     },
   });

@@ -1,8 +1,14 @@
 {
   "permissions": {
     "allow": [
-      "Bash(grep:*)",
-      "Bash(dir:*)"
+      "Bash(git add --all -- ':!.claude/settings.json' ':!.claude/settings.local.json' ':!PLAN.md')",
+      "Bash(git add --all)",
+      "Bash(git reset HEAD .claude/settings.json .claude/settings.local.json PLAN.md)",
+      "Bash(git commit:*)",
+      "Bash(powershell.exe -Command \"Get-Process -Name node -ErrorAction SilentlyContinue | Select-Object Id, ProcessName, StartTime | Format-Table -AutoSize\")",
+      "Bash(xxd /c/Users/ciara/Desktop/Mullet/backend/mulletbackend/requirements.txt)",
+      "Bash(python -c \":*)",
+      "Bash(git add backend/mulletbackend/requirements.txt apps/web/src/components/ai/AiBuilderModal.tsx backend/mulletbackend/ai/prompts.py backend/mulletbackend/ai/views.py)"
     ]
   }
 }

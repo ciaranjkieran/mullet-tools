@@ -13,7 +13,6 @@ import { useTemplateWorkbenchStore } from "./useTemplateWorkbenchStore";
 import { useViewStore } from "./useViewStore";
 import { useTimerStore } from "./useTimerStore";
 
-import { useTimerUIStore } from "@/lib/store/useTimerUIStore";
 import { useStatsFilterStore } from "./useStatsFilterStore";
 
 export function resetAllStores() {
@@ -32,7 +31,6 @@ export function resetAllStores() {
   // View + Timer
   useViewStore.getState().reset?.();
   useTimerStore.getState().reset?.();
-  useTimerUIStore.getState().reset?.();
 
   // Stats
   useStatsFilterStore.getState().reset?.();

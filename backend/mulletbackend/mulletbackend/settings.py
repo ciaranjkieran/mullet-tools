@@ -46,7 +46,7 @@ if IS_PROD:
 
 # Local LAN access (phone testing)
 if not IS_PROD:
-    ALLOWED_HOSTS += ["192.168.1.254"]
+    ALLOWED_HOSTS += ["192.168.1.254", "10.59.193.19"]
 
 
 
@@ -85,6 +85,7 @@ INSTALLED_APPS = [
     "templates",
 
     "rest_framework",
+    "rest_framework.authtoken",
     "corsheaders",
     "django_extensions",
 
@@ -211,8 +212,9 @@ CSRF_TRUSTED_ORIGINS = [
 ]
 
 if not IS_PROD:
-    CORS_ALLOWED_ORIGINS += ["http://192.168.1.254:3000"]
-    CSRF_TRUSTED_ORIGINS += ["http://192.168.1.254:3000"]
+    CORS_ALLOWED_ORIGINS += ["http://192.168.1.254:3000", "http://10.59.193.19:3000"]
+    CSRF_TRUSTED_ORIGINS += ["http://192.168.1.254:3000", "http://10.59.193.19:3000"]
+    CORS_ALLOW_ALL_ORIGINS = True  # Allow Expo dev requests from mobile
     
 if not IS_PROD:
     CSRF_COOKIE_SECURE = False
@@ -260,6 +262,7 @@ if IS_PROD:
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework.authentication.TokenAuthentication",
         "rest_framework.authentication.SessionAuthentication",
     ],
     "DEFAULT_PERMISSION_CLASSES": [

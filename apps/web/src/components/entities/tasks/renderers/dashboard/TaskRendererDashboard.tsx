@@ -96,11 +96,10 @@ export default function TaskRendererDashboard({
         {/* Right: avatar + checkbox */}
         <div className="flex items-center gap-2 flex-shrink-0">
           <AssigneeAvatar assignee={task.assignee} size={20} />
-          <input
-            type="checkbox"
-            className="w-4 h-4 rounded-full border border-gray-400 checked:bg-black checked:border-black cursor-pointer"
-            style={{ accentColor: modeColor }}
-            onChange={(e) => {
+          <button
+            type="button"
+            className="w-4 h-4 rounded-sm border border-gray-400 hover:border-gray-600 cursor-pointer transition flex-shrink-0"
+            onClick={(e) => {
               e.stopPropagation();
               handleCompletion();
             }}

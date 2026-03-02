@@ -1,6 +1,8 @@
 // app/ClientProviders.tsx
 "use client";
 
+import "../lib/api/initApi"; // configures shared axios for web — must run before any API calls
+
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import { useGlobalOutsideDeselect } from "../lib/hooks/useGlobalOutsideDeselect";

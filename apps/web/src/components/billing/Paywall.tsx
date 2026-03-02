@@ -17,7 +17,11 @@ export default function Paywall() {
   if (!shouldShow) return null;
 
   async function handleLogout() {
-    await logout.mutateAsync();
+    try {
+      await logout.mutateAsync();
+    } catch {
+      // Session may already be expired — still navigate to login
+    }
     router.replace("/login");
   }
 

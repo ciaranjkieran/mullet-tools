@@ -360,7 +360,7 @@ export default function DashboardPage() {
 
       {/* Main Section */}
       <section className="max-w-4xl mx-auto p-8">
-        <div className="flex justify-between items-center mb-4">
+        <div className="flex justify-between items-center mb-14">
           <PageTitle />
           <div className="flex items-center gap-2">
             {!isModeFocus && activeMode && (
@@ -394,7 +394,7 @@ export default function DashboardPage() {
 
         {/* Mobile view buttons */}
         <div
-          className="grid lg:hidden gap-x-2 gap-y-2 mt-6 mb-4"
+          className="grid lg:hidden gap-x-2 gap-y-2 mt-6 mb-12"
           style={{ gridTemplateColumns: "repeat(4, max-content)" }}
         >
           <div>

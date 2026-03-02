@@ -22,13 +22,11 @@ export default function Header() {
   async function handleLogout() {
     try {
       await logout.mutateAsync();
-      setIsOpen(false);
-
-      router.replace("/login");
-      router.refresh(); // ✅ makes nav/layout reflect new auth state immediately
     } catch {
-      // optional toast
+      // Session may already be expired — still navigate to login
     }
+    setIsOpen(false);
+    router.replace("/login");
   }
 
   return (

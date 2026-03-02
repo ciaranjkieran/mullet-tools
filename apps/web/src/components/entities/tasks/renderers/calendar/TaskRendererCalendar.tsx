@@ -146,16 +146,14 @@ export default function TaskRendererCalendar({
             onKeyDown={dragListeners?.onKeyDown as any}
             activatorRef={activatorRef}
           />
-          <input
-            type="checkbox"
+          <button
+            type="button"
+            className="w-4 h-4 rounded-sm border border-gray-400 hover:border-gray-600 cursor-pointer transition flex-shrink-0"
             onClick={(e) => {
               e.stopPropagation();
               deleteTask(liveTask.id);
             }}
-            onChange={() => {}}
-            className="w-4 h-4 rounded-full border border-gray-400 checked:bg-black checked:border-black cursor-pointer"
             aria-label={`Mark "${liveTask.title}" as complete`}
-            style={{ accentColor: modeColor }}
           />
         </div>
       </div>
