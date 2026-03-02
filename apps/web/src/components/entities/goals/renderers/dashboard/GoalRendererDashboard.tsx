@@ -72,7 +72,7 @@ export default function GoalRendererDashboard({
   return (
     <div
       className={clsx(
-        "flex items-center justify-between px-3 py-2 md:px-4 md:py-2.5 rounded-md border bg-white hover:bg-gray-50 transition",
+        "flex items-center justify-between px-3 py-2 md:px-4 md:py-2.5 rounded-md border bg-white hover:bg-gray-50 transition group",
         "border-gray-300",
         isSelected && "ring-2",
       )}
@@ -95,7 +95,7 @@ export default function GoalRendererDashboard({
             entityKind="goal"
             entityId={goal.id}
             canDrag={!!dragHandleProps}
-            className="p-1 rounded"
+            className="p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity"
             {...dragHandleProps}
           />
         )}

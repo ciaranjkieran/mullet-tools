@@ -45,7 +45,7 @@ export default function MilestoneRenderer({
 }: Props) {
   const isTitle = variant === "title";
   const baseClasses =
-    "flex items-center justify-between px-3 py-2 md:px-4 md:py-2.5 rounded-md border bg-muted";
+    "flex items-center justify-between px-3 py-2 md:px-4 md:py-2.5 rounded-md border bg-muted group";
 
   const { mutate: deleteMilestone } = useDeleteMilestone();
   const { setMilestoneToEdit, setIsMilestoneDialogOpen } = useDialogStore();
@@ -99,7 +99,7 @@ export default function MilestoneRenderer({
             entityId={milestone.id}
             // actual DnD enablement is controlled by whether dragHandleProps are passed
             canDrag={!!dragHandleProps}
-            className="p-1 rounded"
+            className="p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity"
             {...(dragHandleProps as any)}
           />
         )}

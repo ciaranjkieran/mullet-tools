@@ -51,8 +51,16 @@ export default function TaskRendererDashboard({
       }
     >
       <div className="flex justify-between items-start gap-2">
-        {/* Left: dot + text */}
+        {/* Left: handle + dot + text */}
         <div className="flex items-start gap-2 flex-1 min-w-0">
+          <EntityDragHandle
+            data-drag-handle
+            entityKind="task"
+            entityId={task.id}
+            canDrag={!task.dueDate}
+            className="p-1 rounded mt-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+            {...(dragHandleProps ?? {})}
+          />
           <span
             className="mt-1 w-2.5 h-2.5 rounded-full flex-shrink-0"
             style={{ backgroundColor: modeColor }}
@@ -85,17 +93,9 @@ export default function TaskRendererDashboard({
           </div>
         </div>
 
-        {/* Right: avatar + handle + checkbox */}
+        {/* Right: avatar + checkbox */}
         <div className="flex items-center gap-2 flex-shrink-0">
           <AssigneeAvatar assignee={task.assignee} size={20} />
-          <EntityDragHandle
-            data-drag-handle
-            entityKind="task"
-            entityId={task.id}
-            canDrag={!task.dueDate}
-            className="p-1 rounded"
-            {...(dragHandleProps ?? {})}
-          />
           <input
             type="checkbox"
             className="w-4 h-4 rounded-full border border-gray-400 checked:bg-black checked:border-black cursor-pointer"

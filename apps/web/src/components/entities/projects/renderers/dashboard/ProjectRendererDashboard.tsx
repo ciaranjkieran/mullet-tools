@@ -68,7 +68,7 @@ export default function ProjectRenderer({
   };
 
   const baseClasses =
-    "flex items-center justify-between px-3 py-2 md:px-4 md:py-2.5 rounded-md border bg-muted";
+    "flex items-center justify-between px-3 py-2 md:px-4 md:py-2.5 rounded-md border bg-muted group";
 
   return (
     <div
@@ -92,7 +92,7 @@ export default function ProjectRenderer({
             entityKind="project"
             entityId={project.id}
             canDrag={!!dragHandleProps}
-            className="p-1 rounded"
+            className="p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity"
             {...dragHandleProps}
           />
         )}
