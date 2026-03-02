@@ -456,7 +456,7 @@ export default function AiBuilderModal({ isOpen, onClose }: Props) {
   const mode = selectedMode === "All" ? null : selectedMode;
   const modeColor = mode?.color || "#6366f1";
 
-  const buildMutation = useAiBuild();
+  const { build, streamingText, isPending: buildPending, isError: buildError, abort: abortBuild } = useAiBuild();
   const commitMutation = useAiCommit();
 
   const treeRef = useRef<HTMLDivElement>(null);
@@ -482,27 +482,26 @@ export default function AiBuilderModal({ isOpen, onClose }: Props) {
     if (!prompt.trim() || !mode) return;
 
     const entities = buildEntitySnapshot(mode.id);
+    const currentPrompt = prompt.trim();
 
-    buildMutation.mutate(
-      { prompt: prompt.trim(), modeId: mode.id, history, entities },
-      {
-        onSuccess: (data) => {
-          const markedNodes = markIncluded(data.nodes ?? []);
-          setNodes(markedNodes);
-          setHistory((h) => [
-            ...h,
-            { role: "user", content: prompt.trim() },
-            { role: "assistant", content: JSON.stringify(data) },
-          ]);
-          setCommandLog((l) => [
-            ...l,
-            { prompt: prompt.trim(), summary: data.summary },
-          ]);
-          setPrompt("");
-        },
+    build(
+      { prompt: currentPrompt, modeId: mode.id, history, entities },
+      (data) => {
+        const markedNodes = markIncluded(data.nodes ?? []);
+        setNodes(markedNodes);
+        setHistory((h) => [
+          ...h,
+          { role: "user", content: currentPrompt },
+          { role: "assistant", content: JSON.stringify(data) },
+        ]);
+        setCommandLog((l) => [
+          ...l,
+          { prompt: currentPrompt, summary: data.summary },
+        ]);
+        setPrompt("");
       }
     );
-  }, [prompt, mode, history, buildMutation]);
+  }, [prompt, mode, history, build]);
 
   const handleCommit = useCallback(async () => {
     if (!mode || totalActionable === 0) return;
@@ -529,7 +528,7 @@ export default function AiBuilderModal({ isOpen, onClose }: Props) {
     );
   }, [mode, nodes, totalActionable, commitMutation, onClose]);
 
-  // Reset on open
+  // Reset on open, abort stream on close
   useEffect(() => {
     if (isOpen) {
       setNodes([]);
@@ -537,8 +536,10 @@ export default function AiBuilderModal({ isOpen, onClose }: Props) {
       setCommandLog([]);
       setPrompt("");
       setCommitSuccess(false);
+    } else {
+      abortBuild();
     }
-  }, [isOpen]);
+  }, [isOpen, abortBuild]);
 
   if (!isOpen) return null;
 
@@ -591,7 +592,7 @@ export default function AiBuilderModal({ isOpen, onClose }: Props) {
           ref={treeRef}
           className="flex-1 overflow-y-auto px-5 py-3 min-h-[200px]"
         >
-          {nodes.length === 0 && !buildMutation.isPending && (
+          {nodes.length === 0 && !buildPending && (
             <div className="flex flex-col items-center justify-center h-full text-gray-400 gap-2">
               <Sparkles className="w-8 h-8" />
               <p className="text-sm">
@@ -601,23 +602,28 @@ export default function AiBuilderModal({ isOpen, onClose }: Props) {
             </div>
           )}
 
-          {buildMutation.isPending && (
+          {buildPending && (
             <div className="flex flex-col items-center justify-center h-full text-gray-400 gap-2">
               <Loader2
                 className="w-6 h-6 animate-spin"
                 style={{ color: modeColor }}
               />
               <p className="text-sm">Generating...</p>
+              {streamingText && (
+                <pre className="mt-2 text-xs text-gray-400 max-h-32 overflow-y-auto w-full px-4 whitespace-pre-wrap break-words font-mono">
+                  {streamingText}
+                </pre>
+              )}
             </div>
           )}
 
-          {buildMutation.isError && (
+          {buildError && (
             <div className="text-center text-red-500 text-sm py-4">
               Something went wrong. Please try again.
             </div>
           )}
 
-          {!buildMutation.isPending &&
+          {!buildPending &&
             nodes.map((node) => (
               <TreeNode
                 key={node.tempId}
@@ -655,7 +661,7 @@ export default function AiBuilderModal({ isOpen, onClose }: Props) {
                 }
               }}
               placeholder="Describe what you want to build or change..."
-              disabled={!mode || buildMutation.isPending}
+              disabled={!mode || buildPending}
               className="flex-1 border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 disabled:opacity-50"
               style={
                 { "--tw-ring-color": modeColor } as React.CSSProperties
@@ -664,7 +670,7 @@ export default function AiBuilderModal({ isOpen, onClose }: Props) {
             <button
               onClick={handleBuild}
               disabled={
-                !prompt.trim() || !mode || buildMutation.isPending
+                !prompt.trim() || !mode || buildPending
               }
               className="px-3 py-2 rounded-lg text-white text-sm font-medium disabled:opacity-40 transition hover:opacity-90"
               style={{ backgroundColor: modeColor }}

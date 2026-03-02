@@ -1,10 +1,10 @@
 import json
 import logging
-import re
 
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
+from django.http import StreamingHttpResponse
 from rest_framework import permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -13,6 +13,12 @@ from collaboration.permissions import writable_mode_ids
 from core.models import Goal, Project, Milestone, Task, Mode
 from comments.models import Comment
 
+from core.services.ordering import (
+    assign_end_position_for_goal,
+    assign_end_position_for_project,
+    assign_end_position_for_milestone,
+    assign_end_position_for_task,
+)
 from .prompts import get_system_prompt
 
 logger = logging.getLogger(__name__)
@@ -99,44 +105,36 @@ class AiBuildView(APIView):
 
         messages.append({"role": "user", "content": prompt})
 
-        try:
-            import anthropic
+        import anthropic
 
-            client = anthropic.Anthropic(api_key=api_key)
-            response = client.messages.create(
-                model="claude-sonnet-4-6",
-                max_tokens=4096,
-                system=get_system_prompt(),
-                messages=messages,
-            )
+        client = anthropic.Anthropic(api_key=api_key)
 
-            raw_text = response.content[0].text
+        def event_stream():
+            try:
+                with client.messages.stream(
+                    model="claude-sonnet-4-6",
+                    max_tokens=4096,
+                    system=[{
+                        "type": "text",
+                        "text": get_system_prompt(),
+                        "cache_control": {"type": "ephemeral"},
+                    }],
+                    messages=messages,
+                ) as stream:
+                    for text in stream.text_stream:
+                        yield f"data: {json.dumps({'type': 'delta', 'text': text})}\n\n"
+                yield f"data: {json.dumps({'type': 'done'})}\n\n"
+            except Exception:
+                logger.exception("AI build streaming failed")
+                yield f"data: {json.dumps({'type': 'error', 'message': 'AI request failed. Please try again.'})}\n\n"
 
-            # Extract JSON from response (handles markdown fences, preamble text, etc.)
-            json_text = raw_text.strip()
-            # Try to extract JSON object/array from anywhere in the response
-            match = re.search(r'[\[{]', json_text)
-            if match:
-                json_text = json_text[match.start():]
-            # Strip trailing markdown fences or extra text after JSON
-            json_text = re.sub(r'```\s*$', '', json_text).rstrip()
-
-            tree = json.loads(json_text)
-
-            return Response(tree, status=status.HTTP_200_OK)
-
-        except json.JSONDecodeError:
-            logger.exception("Failed to parse AI response as JSON")
-            return Response(
-                {"error": "AI returned invalid JSON. Please try again."},
-                status=status.HTTP_502_BAD_GATEWAY,
-            )
-        except Exception:
-            logger.exception("AI build request failed")
-            return Response(
-                {"error": "AI request failed. Please try again."},
-                status=status.HTTP_502_BAD_GATEWAY,
-            )
+        response = StreamingHttpResponse(
+            event_stream(),
+            content_type="text/event-stream",
+        )
+        response["Cache-Control"] = "no-cache"
+        response["X-Accel-Buffering"] = "no"
+        return response
 
 
 class AiCommitView(APIView):
@@ -283,6 +281,20 @@ class AiCommitView(APIView):
                         )
                         if fk_field:
                             create_kwargs[fk_field] = real_parent_id
+
+                    # Assign position at end of container
+                    pos_data = {"mode_id": mode.id, **{
+                        k: create_kwargs[k]
+                        for k in ("milestone_id", "project_id", "goal_id", "parent_id")
+                        if k in create_kwargs
+                    }}
+                    assign_fn = {
+                        "goal": assign_end_position_for_goal,
+                        "project": assign_end_position_for_project,
+                        "milestone": assign_end_position_for_milestone,
+                        "task": assign_end_position_for_task,
+                    }[entity_type]
+                    create_kwargs["position"] = assign_fn(pos_data)
 
                     entity = Model.objects.create(**create_kwargs)
                     temp_id_map[temp_id] = (entity.id, entity_type)
