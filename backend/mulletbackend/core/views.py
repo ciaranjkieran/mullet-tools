@@ -409,7 +409,7 @@ class MilestoneViewSet(ModelViewSet):
             mode_ids = accessible_mode_ids(user)
         else:
             mode_ids = writable_mode_ids(user)
-        return Milestone.objects.filter(mode_id__in=mode_ids).select_related("assigned_to__profile")
+        return Milestone.objects.filter(mode_id__in=mode_ids).select_related("assigned_to__profile").order_by("position", "id")
 
     def perform_create(self, serializer):
         validate_mode_write_access(self.request.user, serializer.validated_data.get("mode"))
