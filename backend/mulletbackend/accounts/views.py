@@ -31,6 +31,7 @@ class CSRFTokenView(APIView):
 
 
 class RegisterView(APIView):
+    authentication_classes = []
     permission_classes = [AllowAny]
     throttle_classes = [AuthRateThrottle]
 
@@ -86,6 +87,7 @@ class RegisterView(APIView):
 
 
 class LoginView(APIView):
+    authentication_classes = []
     permission_classes = [AllowAny]
     throttle_classes = [AuthRateThrottle]
 
