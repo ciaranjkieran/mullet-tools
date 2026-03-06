@@ -13,6 +13,8 @@ type SelectionStore = {
   isSelected: (type: EntityKind, id: number) => boolean;
   totalCount: () => number;
   getSelectedIds: () => Record<EntityKind, number[]>;
+  countByType: () => Record<EntityKind, number>;
+  shape: () => { kinds: EntityKind[]; singleKind: EntityKind | null };
 };
 
 const emptySelection = (): Record<EntityKind, Set<number>> => ({
@@ -66,4 +68,22 @@ export const useSelectionStore = create<SelectionStore>((set, get) => ({
     project: [...get().selected.project],
     goal: [...get().selected.goal],
   }),
+
+  countByType: () => {
+    const s = get().selected;
+    return {
+      task: s.task.size,
+      milestone: s.milestone.size,
+      project: s.project.size,
+      goal: s.goal.size,
+    };
+  },
+
+  shape: () => {
+    const s = get().selected;
+    const kinds = (["task", "milestone", "project", "goal"] as EntityKind[]).filter(
+      (k) => s[k].size > 0
+    );
+    return { kinds, singleKind: kinds.length === 1 ? kinds[0] : null };
+  },
 }));

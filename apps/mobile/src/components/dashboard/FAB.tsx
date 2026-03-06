@@ -1,12 +1,15 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useCallback } from "react";
 import {
   View,
   TouchableOpacity,
-  Text,
   Pressable,
   StyleSheet,
+  Dimensions,
+  PanResponder,
+  Animated,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
+import EntityIcon from "../EntityIcon";
 import { getContrastingText } from "@shared/utils/getContrastingText";
 import { useEntityFormStore } from "../../lib/store/useEntityFormStore";
 import type { EntityFormType } from "../../lib/store/useEntityFormStore";
@@ -16,81 +19,187 @@ type Props = {
   onOpenAiBuilder?: () => void;
 };
 
-type OptionType = EntityFormType | "ai";
-
-const ENTITY_OPTIONS: {
-  type: OptionType;
-  icon: keyof typeof Feather.glyphMap;
-  label: string;
-}[] = [
-  { type: "ai", icon: "zap", label: "AI Builder" },
-  { type: "goal", icon: "target", label: "Goal" },
-  { type: "project", icon: "folder", label: "Project" },
-  { type: "milestone", icon: "flag", label: "Milestone" },
-];
+const DRAG_THRESHOLD = 8;
+const SCREEN = Dimensions.get("window");
 
 export default function FAB({ modeColor, onOpenAiBuilder }: Props) {
   const [expanded, setExpanded] = useState(false);
+  const [pos, setPos] = useState({ bottom: 24, right: 24 });
   const openCreate = useEntityFormStore((s) => s.openCreate);
   const textColor = getContrastingText(modeColor);
 
-  const handleMainPress = () => {
-    if (expanded) {
+  // Drag tracking (refs to avoid re-renders during drag)
+  const dragRef = useRef({
+    active: false,
+    startX: 0,
+    startY: 0,
+    startBottom: 0,
+    startRight: 0,
+    moved: false,
+  });
+  const lastDragEnd = useRef(0);
+  const wasDrag = () => Date.now() - lastDragEnd.current < 250;
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: (_, g) =>
+        Math.abs(g.dx) > DRAG_THRESHOLD || Math.abs(g.dy) > DRAG_THRESHOLD,
+      onPanResponderGrant: (_, g) => {
+        dragRef.current = {
+          active: true,
+          startX: g.x0,
+          startY: g.y0,
+          startBottom: pos.bottom,
+          startRight: pos.right,
+          moved: false,
+        };
+      },
+      onPanResponderMove: (_, g) => {
+        const d = dragRef.current;
+        if (
+          !d.moved &&
+          Math.abs(g.dx) < DRAG_THRESHOLD &&
+          Math.abs(g.dy) < DRAG_THRESHOLD
+        )
+          return;
+        d.moved = true;
+        const maxRight = SCREEN.width - 80;
+        const maxBottom = SCREEN.height - 200;
+        setPos({
+          right: Math.max(8, Math.min(maxRight, d.startRight - g.dx)),
+          bottom: Math.max(8, Math.min(maxBottom, d.startBottom + g.dy * -1)),
+        });
+      },
+      onPanResponderRelease: () => {
+        if (dragRef.current.moved) {
+          lastDragEnd.current = Date.now();
+        }
+        dragRef.current.active = false;
+      },
+    })
+  ).current;
+
+  const handleEntityCreatorPress = useCallback(() => {
+    if (!wasDrag()) setExpanded((p) => !p);
+  }, []);
+
+  const handleTaskPress = useCallback(() => {
+    if (!wasDrag()) {
       setExpanded(false);
-    } else {
       openCreate("task");
     }
-  };
+  }, [openCreate]);
 
-  const handleEntityPress = (type: OptionType) => {
-    if (type === "ai") {
-      onOpenAiBuilder?.();
+  const handleAiPress = useCallback(() => {
+    if (!wasDrag()) {
       setExpanded(false);
-      return;
+      onOpenAiBuilder?.();
     }
-    openCreate(type);
-    setExpanded(false);
+  }, [onOpenAiBuilder]);
+
+  const handleEntitySelect = useCallback(
+    (type: EntityFormType) => {
+      setExpanded(false);
+      openCreate(type);
+    },
+    [openCreate]
+  );
+
+  const expandedEntities: { type: EntityFormType; label: string }[] = [
+    { type: "goal", label: "Goal" },
+    { type: "project", label: "Project" },
+    { type: "milestone", label: "Milestone" },
+  ];
+
+  const btnShadow = {
+    shadowColor: "#000",
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 6,
   };
 
   return (
     <>
+      {/* Overlay to dismiss expanded menu */}
       {expanded && (
         <Pressable
           style={StyleSheet.absoluteFill}
           onPress={() => setExpanded(false)}
         />
       )}
-      <View style={styles.container}>
+
+      <View
+        style={[styles.container, { bottom: pos.bottom, right: pos.right }]}
+        {...panResponder.panHandlers}
+      >
+        {/* Expanded entity buttons — fan out above entity creator */}
         {expanded &&
-          ENTITY_OPTIONS.map((opt, i) => (
+          expandedEntities.map((ent, i) => (
             <TouchableOpacity
-              key={opt.type}
-              onPress={() => handleEntityPress(opt.type)}
+              key={ent.type}
+              onPress={() => handleEntitySelect(ent.type)}
               activeOpacity={0.7}
               style={[
-                styles.optionButton,
-                { backgroundColor: modeColor, bottom: 72 + i * 52 },
+                styles.smallButton,
+                btnShadow,
+                { backgroundColor: modeColor, marginBottom: 10 },
               ]}
             >
-              <Feather name={opt.icon} size={18} color={textColor} />
-              <Text style={[styles.optionLabel, { color: textColor }]}>
-                {opt.label}
-              </Text>
+              <EntityIcon type={ent.type} color={textColor} size={22} />
             </TouchableOpacity>
           ))}
 
+        {/* Entity Creator button */}
         <TouchableOpacity
-          onPress={handleMainPress}
-          onLongPress={() => setExpanded(!expanded)}
+          onPress={handleEntityCreatorPress}
           activeOpacity={0.8}
-          style={[styles.mainButton, { backgroundColor: modeColor }]}
+          style={[
+            styles.mainButton,
+            btnShadow,
+            {
+              backgroundColor: modeColor,
+              transform: [{ rotate: expanded ? "45deg" : "0deg" }],
+            },
+          ]}
         >
-          <Feather
-            name="plus"
-            size={28}
-            color={textColor}
-            style={expanded ? { transform: [{ rotate: "45deg" }] } : undefined}
-          />
+          {/* Composite icon: show all 3 entity icons arranged */}
+          <View style={styles.compositeIcon}>
+            <View style={styles.compositeTop}>
+              <EntityIcon type="milestone" color={textColor} size={16} />
+            </View>
+            <View style={styles.compositeBottom}>
+              <EntityIcon type="project" color={textColor} size={14} />
+              <EntityIcon type="goal" color={textColor} size={14} />
+            </View>
+          </View>
+        </TouchableOpacity>
+
+        {/* Add Task button */}
+        <TouchableOpacity
+          onPress={handleTaskPress}
+          activeOpacity={0.8}
+          style={[
+            styles.mainButton,
+            btnShadow,
+            { backgroundColor: modeColor, marginTop: 10 },
+          ]}
+        >
+          <Feather name="plus" size={28} color={textColor} />
+        </TouchableOpacity>
+
+        {/* AI Builder button */}
+        <TouchableOpacity
+          onPress={handleAiPress}
+          activeOpacity={0.8}
+          style={[
+            styles.smallButton,
+            btnShadow,
+            { backgroundColor: modeColor, marginTop: 10 },
+          ]}
+        >
+          <Feather name="zap" size={20} color={textColor} />
         </TouchableOpacity>
       </View>
     </>
@@ -100,9 +209,7 @@ export default function FAB({ modeColor, onOpenAiBuilder }: Props) {
 const styles = StyleSheet.create({
   container: {
     position: "absolute",
-    bottom: 24,
-    right: 24,
-    alignItems: "flex-end",
+    alignItems: "center",
   },
   mainButton: {
     width: 56,
@@ -110,29 +217,27 @@ const styles = StyleSheet.create({
     borderRadius: 28,
     justifyContent: "center",
     alignItems: "center",
-    elevation: 4,
-    shadowColor: "#000",
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 2 },
   },
-  optionButton: {
-    position: "absolute",
-    right: 0,
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 10,
-    paddingHorizontal: 16,
+  smallButton: {
+    width: 48,
+    height: 48,
     borderRadius: 24,
-    elevation: 3,
-    shadowColor: "#000",
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
-    shadowOffset: { width: 0, height: 1 },
+    justifyContent: "center",
+    alignItems: "center",
   },
-  optionLabel: {
-    marginLeft: 8,
-    fontSize: 14,
-    fontWeight: "600",
+  compositeIcon: {
+    width: 30,
+    height: 30,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  compositeTop: {
+    alignItems: "center",
+    marginBottom: -2,
+  },
+  compositeBottom: {
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 2,
   },
 });

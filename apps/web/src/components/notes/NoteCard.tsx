@@ -174,16 +174,15 @@ export default function NoteCard({ note, breadcrumb, modeLevel }: Props) {
           <span>{date}</span>
         </div>
 
-        {modeLevel && (
-          <>
-            <p className="italic text-gray-600">
-              Reflecting on:{" "}
-              <span className="font-medium text-black">
-                {displayTitle || "—"}
-              </span>
-            </p>
-            <p className="text-xs text-gray-500 mt-0.5">{breadcrumb}</p>
-          </>
+        {modeLevel && displayTitle && (
+          <p className="text-xs text-gray-600">
+            <span className="font-medium text-black">
+              {displayTitle}
+            </span>
+            {breadcrumb && (
+              <span className="text-gray-500"> | {breadcrumb}</span>
+            )}
+          </p>
         )}
       </div>
 

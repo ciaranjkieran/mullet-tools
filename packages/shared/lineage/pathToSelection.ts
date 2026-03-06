@@ -1,6 +1,5 @@
 // @shared/lineage/pathToSelection.ts
-import { TimerPath } from "../../../apps/web/src/lib/utils/userTimerIntentStore";
-// If you prefer not to import that file, just inline the type here.
+import type { TimerPath } from "./toTimerPath";
 
 export function pathToSelection(path: TimerPath, fallbackModeId = -1) {
   return {

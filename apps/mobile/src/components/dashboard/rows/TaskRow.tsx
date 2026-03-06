@@ -1,10 +1,10 @@
-import React from "react";
-import { View, Text, TouchableOpacity, Alert } from "react-native";
+import React, { useState, useCallback } from "react";
+import { View, Text, TouchableOpacity, Alert, Animated } from "react-native";
 import { Feather } from "@expo/vector-icons";
-import { useUpdateTask } from "@shared/api/hooks/tasks/useUpdateTask";
 import { useDeleteTask } from "@shared/api/hooks/tasks/useDeleteTask";
 import { useEntityFormStore } from "../../../lib/store/useEntityFormStore";
 import { useSelectionStore } from "../../../lib/store/useSelectionStore";
+import { cardShadow, selectedShadow, textLine } from "../../../lib/styles/platform";
 import type { Task } from "@shared/types/Task";
 import type { DashboardRow } from "../../../hooks/useBuildDashboardRows";
 import AssigneeBadge from "./AssigneeBadge";
@@ -13,16 +13,26 @@ type Props = { row: DashboardRow };
 
 function TaskRow({ row }: Props) {
   const task = row.entity as Task;
-  const updateTask = useUpdateTask();
   const deleteTask = useDeleteTask();
   const openEdit = useEntityFormStore((s) => s.openEdit);
   const selectionActive = useSelectionStore((s) => s.isActive);
   const isSelected = useSelectionStore((s) => s.isSelected("task", task.id));
   const toggleSelection = useSelectionStore((s) => s.toggle);
+  const [checked, setChecked] = useState(false);
+  const [opacity] = useState(() => new Animated.Value(1));
 
-  const handleToggle = () => {
-    updateTask.mutate({ id: task.id, isCompleted: !task.isCompleted });
-  };
+  const handleToggle = useCallback(() => {
+    if (checked) return;
+    setChecked(true);
+    Animated.timing(opacity, {
+      toValue: 0,
+      duration: 400,
+      delay: 200,
+      useNativeDriver: true,
+    }).start(() => {
+      deleteTask.mutate(task.id);
+    });
+  }, [checked, opacity, deleteTask, task.id]);
 
   const handleDelete = () => {
     Alert.alert(
@@ -48,29 +58,28 @@ function TaskRow({ row }: Props) {
   };
 
   const handleLongPress = () => {
-    if (!selectionActive) {
-      toggleSelection("task", task.id);
-    } else {
-      handleDelete();
-    }
+    toggleSelection("task", task.id);
   };
 
   const indent = row.depth * 16;
 
   return (
-    <View
+    <Animated.View
       style={{
+        opacity,
         marginLeft: indent + 12,
         marginRight: 12,
         marginBottom: 6,
-        borderWidth: 1,
+        borderWidth: isSelected ? 2 : 1,
         borderColor: isSelected ? row.modeColor : "#e5e7eb",
         borderRadius: 8,
-        backgroundColor: isSelected ? row.modeColor + "08" : "#fff",
+        overflow: "hidden" as const,
+        backgroundColor: isSelected ? "#f0f8ff" : "#fff",
         padding: 12,
         flexDirection: "row",
         alignItems: "flex-start",
         justifyContent: "space-between",
+        ...(isSelected ? selectedShadow(row.modeColor) : cardShadow("sm")),
       }}
     >
       {/* Left: colored dot + title column */}
@@ -93,7 +102,7 @@ function TaskRow({ row }: Props) {
         >
           <Text
             style={{
-              fontSize: 13,
+              ...textLine(13),
               fontWeight: "600",
               color: task.isCompleted ? "#9ca3af" : "#111",
               textDecorationLine: task.isCompleted ? "line-through" : "none",
@@ -103,7 +112,7 @@ function TaskRow({ row }: Props) {
           </Text>
 
           {task.dueDate ? (
-            <Text style={{ fontSize: 11, color: "#9ca3af", marginTop: 2 }}>
+            <Text style={{ ...textLine(11), color: "#9ca3af", marginTop: 2 }}>
               Due: {task.dueDate}
             </Text>
           ) : null}
@@ -118,13 +127,13 @@ function TaskRow({ row }: Props) {
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
           <Feather
-            name={task.isCompleted ? "check-square" : "square"}
+            name={checked ? "check-square" : "square"}
             size={20}
-            color={task.isCompleted ? "#9ca3af" : row.modeColor}
+            color={checked ? row.modeColor : row.modeColor}
           />
         </TouchableOpacity>
       </View>
-    </View>
+    </Animated.View>
   );
 }
 

@@ -6,6 +6,7 @@ import { PencilSquareIcon } from "@heroicons/react/24/outline";
 import clsx from "clsx";
 import { useDeleteProject } from "@shared/api/hooks/projects/useDeleteProject";
 import { useDialogStore } from "@/lib/dialogs/useDialogStore";
+import CompletionCheckbox from "@/components/common/CompletionCheckbox";
 import {
   parseISO,
   isBefore,
@@ -150,16 +151,11 @@ export default function ProjectRendererCalendar({
             activatorRef={activatorRef}
           />
 
-          <input
-            type="checkbox"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleCompletion();
-            }}
-            onChange={() => {}}
-            className="w-4 h-4 rounded-full border border-gray-400 checked:bg-black checked:border-black cursor-pointer"
-            aria-label={`Mark "${project.title}" as complete`}
-            style={{ accentColor: modeColor }}
+          <CompletionCheckbox
+            modeColor={modeColor}
+            label={`Mark "${project.title}" as complete`}
+            onComplete={handleCompletion}
+            shape="circle"
           />
         </div>
       </div>

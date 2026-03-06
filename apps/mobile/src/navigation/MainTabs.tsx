@@ -3,7 +3,7 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Feather } from "@expo/vector-icons";
 import { useMyInvitations } from "@shared/api/hooks/collaboration/useMyInvitations";
 import DashboardScreen from "../screens/DashboardScreen";
-import CalendarScreen from "../screens/CalendarScreen";
+import TodayScreen from "../screens/TodayScreen";
 import TimerScreen from "../screens/TimerScreen";
 import SettingsScreen from "../screens/SettingsScreen";
 
@@ -11,7 +11,7 @@ const Tab = createBottomTabNavigator();
 
 const TAB_ICONS: Record<string, keyof typeof Feather.glyphMap> = {
   Home: "home",
-  Calendar: "calendar",
+  Today: "sun",
   Timer: "clock",
   Settings: "settings",
 };
@@ -37,7 +37,7 @@ export default function MainTabs() {
       })}
     >
       <Tab.Screen name="Home" component={DashboardScreen} />
-      <Tab.Screen name="Calendar" component={CalendarScreen} />
+      <Tab.Screen name="Today" component={TodayScreen} />
       <Tab.Screen name="Timer" component={TimerScreen} />
       <Tab.Screen
         name="Settings"

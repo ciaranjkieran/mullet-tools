@@ -12,10 +12,12 @@ import {
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
+import { format, parseISO } from "date-fns";
 import { useCommentsByEntity } from "@shared/api/hooks/comments/useCommentsByEntity";
 import { usePostComment } from "@shared/api/hooks/comments/usePostComment";
 import { useDeleteComment } from "@shared/api/hooks/comments/useDeleteComment";
 import type { Comment, CommentAttachment } from "@shared/types/Comment";
+import { useModeStore } from "@shared/store/useModeStore";
 import type { EntityFormType } from "../../lib/store/useEntityFormStore";
 
 type Props = {
@@ -23,16 +25,6 @@ type Props = {
   entityId: number;
   modeId: number;
 };
-
-function formatDate(iso: string) {
-  const d = new Date(iso);
-  return d.toLocaleDateString(undefined, {
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
 
 function AttachmentView({ att }: { att: CommentAttachment }) {
   const isImage = att.mime?.startsWith("image/");
@@ -81,10 +73,15 @@ function AttachmentView({ att }: { att: CommentAttachment }) {
 function CommentCard({
   comment,
   onDelete,
+  showAuthor,
 }: {
   comment: Comment;
   onDelete: (id: number) => void;
+  showAuthor: boolean;
 }) {
+  const authorName = comment.author?.displayName || comment.author?.username || "You";
+  const dateStr = format(parseISO(comment.created_at), "PPP p");
+
   return (
     <View
       style={{
@@ -93,17 +90,38 @@ function CommentCard({
         borderBottomColor: "#f3f4f6",
       }}
     >
+      {/* Author + date + delete */}
       <View
         style={{
           flexDirection: "row",
-          justifyContent: "space-between",
           alignItems: "center",
+          marginBottom: 6,
         }}
       >
-        <Text style={{ fontSize: 12, color: "#9ca3af" }}>
-          {comment.author?.displayName ?? "You"}
-          {" \u00b7 "}
-          {formatDate(comment.created_at)}
+        {showAuthor && (
+          <>
+            <View
+              style={{
+                width: 24,
+                height: 24,
+                borderRadius: 12,
+                backgroundColor: "#e0e7ff",
+                justifyContent: "center",
+                alignItems: "center",
+                marginRight: 6,
+              }}
+            >
+              <Text style={{ fontSize: 10, fontWeight: "600", color: "#4338ca" }}>
+                {authorName.charAt(0).toUpperCase()}
+              </Text>
+            </View>
+            <Text style={{ fontSize: 14, fontWeight: "600", color: "#374151", marginRight: 6 }}>
+              {authorName}
+            </Text>
+          </>
+        )}
+        <Text style={{ fontSize: 12, color: "#9ca3af", flex: 1 }}>
+          {dateStr}
         </Text>
         <TouchableOpacity
           onPress={() =>
@@ -122,12 +140,14 @@ function CommentCard({
         </TouchableOpacity>
       </View>
 
+      {/* Body */}
       {!!comment.body && (
-        <Text style={{ fontSize: 15, color: "#111", marginTop: 4 }}>
+        <Text style={{ fontSize: 14, color: "#1f2937", lineHeight: 20 }}>
           {comment.body}
         </Text>
       )}
 
+      {/* Attachments */}
       {comment.attachments?.map((att) => (
         <AttachmentView key={att.id} att={att} />
       ))}
@@ -136,6 +156,9 @@ function CommentCard({
 }
 
 export default function CommentsTab({ entityType, entityId, modeId }: Props) {
+  const mode = useModeStore((s) => s.modes.find((m) => m.id === modeId));
+  const isCollab = (mode?.collaboratorCount ?? 0) > 0;
+
   const { data: comments = [], isLoading } = useCommentsByEntity(
     entityType,
     entityId
@@ -219,6 +242,7 @@ export default function CommentsTab({ entityType, entityId, modeId }: Props) {
           <CommentCard
             comment={item}
             onDelete={(id) => deleteComment.mutate(id)}
+            showAuthor={isCollab}
           />
         )}
         contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 8 }}

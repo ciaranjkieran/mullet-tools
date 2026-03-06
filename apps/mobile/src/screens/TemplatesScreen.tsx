@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
+import EntityIcon from "../components/EntityIcon";
 import { useNavigation } from "@react-navigation/native";
 import { useTemplates } from "@shared/api/hooks/templates/useTemplates";
 import { useDeleteTemplate } from "@shared/api/hooks/templates/useDeleteTemplate";
@@ -90,11 +91,7 @@ function TemplateCard({
       }}
     >
       <View style={{ flexDirection: "row", alignItems: "center" }}>
-        <Feather
-          name={template.type === "milestone" ? "flag" : "folder"}
-          size={16}
-          color={modeColor}
-        />
+        <EntityIcon type={template.type} size={16} color={modeColor} />
         <Text
           numberOfLines={1}
           style={{

@@ -126,6 +126,11 @@ export default function MobileViewHandler({
       <ModeCommentsView
         modes={modes}
         selectedMode={selectedMode}
+        goals={goals}
+        projects={projects}
+        milestones={milestones}
+        tasks={tasks}
+        modeColor={modeColor}
         listHeader={headerElement}
       />
     );
@@ -136,6 +141,11 @@ export default function MobileViewHandler({
       <ModeNotesView
         modes={modes}
         selectedMode={selectedMode}
+        goals={goals}
+        projects={projects}
+        milestones={milestones}
+        tasks={tasks}
+        modeColor={modeColor}
         listHeader={headerElement}
       />
     );

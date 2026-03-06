@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useCallback, useRef } from "react";
 import {
   View,
   Text,
@@ -15,17 +15,16 @@ import { usePatchNote } from "@shared/api/hooks/notes/usePatchNote";
 import { useDeleteNote } from "@shared/api/hooks/notes/useDeleteNote";
 import type { Note } from "@shared/types/Note";
 import type { EntityFormType } from "../../lib/store/useEntityFormStore";
+import RichNoteBody from "../notes/RichNoteBody";
+import FormatToolbar from "../notes/FormatToolbar";
 
 type Props = {
   entityType: EntityFormType;
   entityId: number;
   modeId: number;
   entityTitle: string;
+  isCollab?: boolean;
 };
-
-function stripHtml(html: string): string {
-  return html.replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").trim();
-}
 
 function formatDate(iso: string) {
   const d = new Date(iso);
@@ -41,63 +40,93 @@ function NoteCard({
   note,
   onEdit,
   onDelete,
+  showAuthor,
 }: {
   note: Note;
   onEdit: (note: Note) => void;
   onDelete: (id: number) => void;
+  showAuthor: boolean;
 }) {
-  const plainText = stripHtml(note.body);
+  const authorName = note.author?.displayName || "Me";
+  const dateStr = formatDate(note.created_at);
 
   return (
     <View
       style={{
-        paddingVertical: 12,
-        borderBottomWidth: 1,
-        borderBottomColor: "#f3f4f6",
+        marginBottom: 12,
+        borderWidth: 1,
+        borderColor: "#e5e7eb",
+        borderRadius: 10,
+        padding: 14,
+        backgroundColor: "#fafafa",
       }}
     >
-      <View
-        style={{
-          flexDirection: "row",
-          justifyContent: "space-between",
-          alignItems: "center",
-        }}
-      >
-        <Text style={{ fontSize: 12, color: "#9ca3af" }}>
-          {note.author?.displayName ?? "You"}
-          {" \u00b7 "}
-          {formatDate(note.created_at)}
-        </Text>
-        <View style={{ flexDirection: "row", gap: 12 }}>
-          <TouchableOpacity
-            onPress={() => onEdit(note)}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          >
-            <Feather name="edit-2" size={14} color="#6b7280" />
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() =>
-              Alert.alert("Delete Note", "Remove this note?", [
-                { text: "Cancel", style: "cancel" },
-                {
-                  text: "Delete",
-                  style: "destructive",
-                  onPress: () => onDelete(note.id),
-                },
-              ])
-            }
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          >
-            <Feather name="trash-2" size={14} color="#dc2626" />
-          </TouchableOpacity>
+      {/* Note body */}
+      <View style={{ marginBottom: 8 }}>
+        <RichNoteBody html={note.body} />
+      </View>
+
+      {/* Divider + meta */}
+      <View style={{ borderTopWidth: 1, borderTopColor: "#e5e7eb", paddingTop: 8 }}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+          {showAuthor && note.author && (
+            <>
+              <View
+                style={{
+                  width: 20,
+                  height: 20,
+                  borderRadius: 10,
+                  backgroundColor: "#e0e7ff",
+                  justifyContent: "center",
+                  alignItems: "center",
+                }}
+              >
+                <Text style={{ fontSize: 10, fontWeight: "600", color: "#4338ca" }}>
+                  {authorName.charAt(0).toUpperCase()}
+                </Text>
+              </View>
+              <Text style={{ fontSize: 12, fontWeight: "600", color: "#374151" }}>
+                {authorName}
+              </Text>
+            </>
+          )}
+          <Text style={{ fontSize: 12, color: "#9ca3af" }}>{dateStr}</Text>
         </View>
       </View>
 
-      <Text
-        style={{ fontSize: 15, color: "#111", marginTop: 6, lineHeight: 22 }}
+      {/* Actions */}
+      <View
+        style={{
+          flexDirection: "row",
+          justifyContent: "flex-end",
+          marginTop: 6,
+          gap: 12,
+        }}
       >
-        {plainText || "(empty note)"}
-      </Text>
+        <TouchableOpacity
+          onPress={() => onEdit(note)}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          style={{ padding: 4 }}
+        >
+          <Feather name="edit-2" size={14} color="#6b7280" />
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={() =>
+            Alert.alert("Delete Note", "Remove this note?", [
+              { text: "Cancel", style: "cancel" },
+              {
+                text: "Delete",
+                style: "destructive",
+                onPress: () => onDelete(note.id),
+              },
+            ])
+          }
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          style={{ padding: 4 }}
+        >
+          <Feather name="trash-2" size={14} color="#9ca3af" />
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
@@ -107,6 +136,7 @@ export default function NotesTab({
   entityId,
   modeId,
   entityTitle,
+  isCollab = false,
 }: Props) {
   const { data: notes = [], isLoading } = useFetchNotesByEntity(
     entityType,
@@ -119,6 +149,27 @@ export default function NotesTab({
   const [composerOpen, setComposerOpen] = useState(false);
   const [editingNote, setEditingNote] = useState<Note | null>(null);
   const [body, setBody] = useState("");
+  const selectionRef = useRef({ start: 0, end: 0 });
+  const inputRef = useRef<any>(null);
+
+  const wrapSelection = useCallback((tag: string) => {
+    const { start, end } = selectionRef.current;
+    const before = body.slice(0, start);
+    const selected = body.slice(start, end);
+    const after = body.slice(end);
+    const wrapped = selected
+      ? `${before}<${tag}>${selected}</${tag}>${after}`
+      : `${before}<${tag}></${tag}>${after}`;
+    setBody(wrapped);
+    const cursorPos = selected
+      ? start + tag.length + 2 + selected.length + tag.length + 3
+      : start + tag.length + 2 + tag.length + 3;
+    setTimeout(() => {
+      inputRef.current?.setNativeProps?.({
+        selection: { start: cursorPos, end: cursorPos },
+      });
+    }, 50);
+  }, [body]);
 
   const handleOpenComposer = () => {
     setEditingNote(null);
@@ -128,7 +179,7 @@ export default function NotesTab({
 
   const handleEdit = (note: Note) => {
     setEditingNote(note);
-    setBody(stripHtml(note.body));
+    setBody(note.body);
     setComposerOpen(true);
   };
 
@@ -173,9 +224,18 @@ export default function NotesTab({
             borderBottomColor: "#e5e7eb",
           }}
         >
+          <FormatToolbar
+            onBold={() => wrapSelection("b")}
+            onItalic={() => wrapSelection("i")}
+            onUnderline={() => wrapSelection("u")}
+          />
           <TextInput
+            ref={inputRef}
             value={body}
             onChangeText={setBody}
+            onSelectionChange={(e) => {
+              selectionRef.current = e.nativeEvent.selection;
+            }}
             placeholder="Write a note..."
             multiline
             autoFocus
@@ -233,9 +293,10 @@ export default function NotesTab({
             note={item}
             onEdit={handleEdit}
             onDelete={(id) => deleteNote.mutate(id)}
+            showAuthor={isCollab}
           />
         )}
-        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 8 }}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 8 }}
         ListEmptyComponent={
           <View style={{ alignItems: "center", paddingVertical: 24 }}>
             <Text style={{ color: "#9ca3af" }}>No notes yet</Text>

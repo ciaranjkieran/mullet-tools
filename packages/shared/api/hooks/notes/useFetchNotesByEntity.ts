@@ -7,7 +7,7 @@ export const useFetchNotesByEntity = (entityType: string, entityId: number) =>
     queryKey: ["notes", "entity", entityType, entityId],
     queryFn: async () => {
       const res = await api.get("/notes/", {
-        params: { entity_type: entityType, entity_id: entityId },
+        params: { content_type: entityType, object_id: entityId },
       });
       return res.data as Note[];
     },

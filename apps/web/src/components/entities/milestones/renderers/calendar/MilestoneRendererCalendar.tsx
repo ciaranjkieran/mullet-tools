@@ -7,6 +7,7 @@ import clsx from "clsx";
 
 import { useDeleteMilestone } from "@shared/api/hooks/milestones/useDeleteMilestone";
 import { useDialogStore } from "../../../../../lib/dialogs/useDialogStore";
+import CompletionCheckbox from "../../../../common/CompletionCheckbox";
 import {
   parseISO,
   isBefore,
@@ -159,16 +160,11 @@ export default function MilestoneRendererCalendar({
             activatorRef={activatorRef}
           />
 
-          <input
-            type="checkbox"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleCompletion();
-            }}
-            onChange={() => {}}
-            className="w-4 h-4 rounded-full border border-gray-400 checked:bg-black checked:border-black cursor-pointer"
-            aria-label={`Mark "${milestone.title}" as complete`}
-            style={{ accentColor: modeColor }}
+          <CompletionCheckbox
+            modeColor={modeColor}
+            label={`Mark "${milestone.title}" as complete`}
+            onComplete={handleCompletion}
+            shape="circle"
           />
         </div>
       </div>

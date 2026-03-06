@@ -45,8 +45,8 @@ export default function CalendarScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }}>
-      <View style={{ paddingHorizontal: 20, paddingTop: 8 }}>
-        <Text style={{ fontSize: 24, fontWeight: "bold" }}>Calendar</Text>
+      <View style={{ paddingHorizontal: 20, paddingTop: 12 }}>
+        <Text style={{ fontSize: 28, fontWeight: "bold" }}>Calendar</Text>
       </View>
 
       <ModeFilter

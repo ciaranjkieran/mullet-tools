@@ -5,15 +5,26 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
+  ScrollView,
+  Platform,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
+import DateTimePicker from "@react-native-community/datetimepicker";
+import { cardShadow, textLine } from "../../lib/styles/platform";
 import { useSelectionStore } from "../../lib/store/useSelectionStore";
 import { useBatchDelete } from "@shared/api/batch/hooks/useBatchDelete";
 import { useBatchComplete } from "@shared/api/batch/hooks/useBatchComplete";
+import { useBatchSchedule } from "@shared/api/batch/hooks/useBatchSchedule";
+import { useBatchChangeMode } from "@shared/api/batch/hooks/useBatchChangeMode";
+import { useModeStore } from "@shared/store/useModeStore";
+import type { Mode } from "@shared/types/Mode";
 
 type Props = {
   modeColor: string;
 };
+
+const formatDate = (d: Date) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
 export default function BatchActionBar({ modeColor }: Props) {
   const totalCount = useSelectionStore((s) => s.totalCount());
@@ -21,11 +32,95 @@ export default function BatchActionBar({ modeColor }: Props) {
   const getSelectedIds = useSelectionStore((s) => s.getSelectedIds);
   const isActive = useSelectionStore((s) => s.isActive);
 
+  const modes = useModeStore((s) => (s as any).modes as Mode[] | undefined) ?? [];
+
   const batchDelete = useBatchDelete();
   const batchComplete = useBatchComplete();
+  const batchSchedule = useBatchSchedule();
+  const batchChangeMode = useBatchChangeMode();
   const [busy, setBusy] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
   if (!isActive) return null;
+
+  const runAction = async (fn: () => Promise<unknown>) => {
+    setBusy(true);
+    try {
+      await fn();
+      clearAll();
+    } catch {
+      Alert.alert("Error", "Something went wrong.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleSchedule = () => {
+    Alert.alert("Schedule", `Set date for ${totalCount} item${totalCount > 1 ? "s" : ""}`, [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Today",
+        onPress: () =>
+          runAction(() =>
+            batchSchedule.mutateAsync({
+              selected: getSelectedIds(),
+              dueDate: formatDate(new Date()),
+              dueTime: undefined,
+            })
+          ),
+      },
+      {
+        text: "Pick Date",
+        onPress: () => setShowDatePicker(true),
+      },
+      {
+        text: "Clear Date",
+        style: "destructive",
+        onPress: () =>
+          runAction(() =>
+            batchSchedule.mutateAsync({
+              selected: getSelectedIds(),
+              dueDate: null,
+              dueTime: null,
+            })
+          ),
+      },
+    ]);
+  };
+
+  const handleDatePicked = (event: any, date?: Date) => {
+    setShowDatePicker(Platform.OS === "ios");
+    if (date) {
+      runAction(() =>
+        batchSchedule.mutateAsync({
+          selected: getSelectedIds(),
+          dueDate: formatDate(date),
+          dueTime: undefined,
+        })
+      );
+    }
+  };
+
+  const handleMove = () => {
+    if (modes.length === 0) return;
+
+    const buttons = modes.map((mode: Mode) => ({
+      text: mode.name,
+      onPress: () =>
+        runAction(() =>
+          batchChangeMode.mutateAsync({
+            selected: getSelectedIds(),
+            modeId: mode.id,
+          })
+        ),
+    }));
+
+    Alert.alert(
+      "Move to Mode",
+      `Move ${totalCount} item${totalCount > 1 ? "s" : ""} to:`,
+      [{ text: "Cancel", style: "cancel" }, ...buttons]
+    );
+  };
 
   const handleComplete = () => {
     Alert.alert(
@@ -35,17 +130,8 @@ export default function BatchActionBar({ modeColor }: Props) {
         { text: "Cancel", style: "cancel" },
         {
           text: "Complete",
-          onPress: async () => {
-            setBusy(true);
-            try {
-              await batchComplete.mutateAsync({ selected: getSelectedIds() });
-              clearAll();
-            } catch {
-              Alert.alert("Error", "Failed to complete items.");
-            } finally {
-              setBusy(false);
-            }
-          },
+          onPress: () =>
+            runAction(() => batchComplete.mutateAsync({ selected: getSelectedIds() })),
         },
       ]
     );
@@ -60,21 +146,37 @@ export default function BatchActionBar({ modeColor }: Props) {
         {
           text: "Delete",
           style: "destructive",
-          onPress: async () => {
-            setBusy(true);
-            try {
-              await batchDelete.mutateAsync({ selected: getSelectedIds() });
-              clearAll();
-            } catch {
-              Alert.alert("Error", "Failed to delete items.");
-            } finally {
-              setBusy(false);
-            }
-          },
+          onPress: () =>
+            runAction(() => batchDelete.mutateAsync({ selected: getSelectedIds() })),
         },
       ]
     );
   };
+
+  const actionBtn = (
+    icon: React.ComponentProps<typeof Feather>["name"],
+    label: string,
+    bg: string,
+    fg: string,
+    onPress: () => void
+  ) => (
+    <TouchableOpacity
+      onPress={onPress}
+      disabled={busy}
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        borderRadius: 8,
+        backgroundColor: bg,
+        gap: 5,
+      }}
+    >
+      <Feather name={icon} size={15} color={fg} />
+      <Text style={{ ...textLine(13), fontWeight: "600", color: fg }}>{label}</Text>
+    </TouchableOpacity>
+  );
 
   return (
     <View
@@ -83,76 +185,58 @@ export default function BatchActionBar({ modeColor }: Props) {
         bottom: 0,
         left: 0,
         right: 0,
-        flexDirection: "row",
-        alignItems: "center",
         backgroundColor: "#fff",
         borderTopWidth: 1,
         borderTopColor: "#e5e7eb",
-        paddingHorizontal: 16,
-        paddingVertical: 12,
-        elevation: 8,
-        shadowColor: "#000",
-        shadowOpacity: 0.1,
-        shadowRadius: 8,
-        shadowOffset: { width: 0, height: -2 },
+        paddingVertical: 10,
+        ...cardShadow("lg"),
       }}
     >
-      {/* Close selection */}
-      <TouchableOpacity
-        onPress={clearAll}
-        style={{ marginRight: 12 }}
-        disabled={busy}
+      {/* Top row: close + count */}
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          paddingHorizontal: 16,
+          marginBottom: 8,
+        }}
       >
-        <Feather name="x" size={22} color="#6b7280" />
-      </TouchableOpacity>
+        <TouchableOpacity
+          onPress={clearAll}
+          style={{ marginRight: 12 }}
+          disabled={busy}
+        >
+          <Feather name="x" size={22} color="#6b7280" />
+        </TouchableOpacity>
 
-      {/* Count */}
-      <Text style={{ flex: 1, fontSize: 15, fontWeight: "600", color: "#111" }}>
-        {totalCount} selected
-      </Text>
+        <Text style={{ flex: 1, ...textLine(15), fontWeight: "600", color: "#111" }}>
+          {totalCount} selected
+        </Text>
 
-      {busy ? (
-        <ActivityIndicator size="small" color={modeColor} />
-      ) : (
-        <View style={{ flexDirection: "row", gap: 12 }}>
-          {/* Complete */}
-          <TouchableOpacity
-            onPress={handleComplete}
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              paddingHorizontal: 14,
-              paddingVertical: 8,
-              borderRadius: 8,
-              backgroundColor: "#dcfce7",
-              gap: 6,
-            }}
-          >
-            <Feather name="check" size={16} color="#166534" />
-            <Text style={{ fontSize: 14, fontWeight: "600", color: "#166534" }}>
-              Done
-            </Text>
-          </TouchableOpacity>
+        {busy && <ActivityIndicator size="small" color={modeColor} />}
+      </View>
 
-          {/* Delete */}
-          <TouchableOpacity
-            onPress={handleDelete}
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              paddingHorizontal: 14,
-              paddingVertical: 8,
-              borderRadius: 8,
-              backgroundColor: "#fee2e2",
-              gap: 6,
-            }}
-          >
-            <Feather name="trash-2" size={16} color="#dc2626" />
-            <Text style={{ fontSize: 14, fontWeight: "600", color: "#dc2626" }}>
-              Delete
-            </Text>
-          </TouchableOpacity>
-        </View>
+      {/* Action buttons row */}
+      {!busy && (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ paddingHorizontal: 16, gap: 8 }}
+        >
+          {actionBtn("calendar", "Schedule", "#dbeafe", "#1d4ed8", handleSchedule)}
+          {actionBtn("arrow-right", "Move", "#e0e7ff", "#4338ca", handleMove)}
+          {actionBtn("check", "Done", "#dcfce7", "#166534", handleComplete)}
+          {actionBtn("trash-2", "Delete", "#fee2e2", "#dc2626", handleDelete)}
+        </ScrollView>
+      )}
+
+      {showDatePicker && (
+        <DateTimePicker
+          value={new Date()}
+          mode="date"
+          display="default"
+          onChange={handleDatePicked}
+        />
       )}
     </View>
   );

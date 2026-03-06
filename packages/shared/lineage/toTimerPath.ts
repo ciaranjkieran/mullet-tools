@@ -1,6 +1,13 @@
 // @shared/lineage/toTimerPath.ts
-import { TimerPath } from "../../../apps/web/src/lib/utils/userTimerIntentStore";
 import type { Mode } from "../types/Mode";
+
+export type TimerPath = {
+  modeId?: number | null;
+  goalId?: number | null;
+  projectId?: number | null;
+  milestoneId?: number | null;
+  taskId?: number | null;
+};
 import type { Goal } from "../types/Goal";
 import type { Project } from "../types/Project";
 import type { Milestone } from "../types/Milestone";

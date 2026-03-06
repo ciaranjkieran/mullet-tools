@@ -1,4 +1,4 @@
-import React, { useState, useRef, useMemo } from "react";
+import React, { useState, useRef, useMemo, useEffect } from "react";
 import {
   View,
   Text,
@@ -10,8 +10,12 @@ import {
   Platform,
   ActivityIndicator,
   Alert,
+  Animated,
+  Easing,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
+import EntityIcon from "../EntityIcon";
 import { useAiBuild } from "@shared/api/hooks/ai/useAiBuild";
 import { useAiCommit } from "@shared/api/hooks/ai/useAiCommit";
 import { useGoalStore } from "@shared/store/useGoalStore";
@@ -20,6 +24,7 @@ import { useMilestoneStore } from "@shared/store/useMilestoneStore";
 import { useTaskStore } from "@shared/store/useTaskStore";
 import type {
   BuilderNode,
+  BuilderNodeType,
   ExistingEntity,
   AiCommitResponse,
 } from "@shared/types/AiBuilder";
@@ -32,12 +37,6 @@ type Props = {
   modeColor: string;
 };
 
-const NODE_ICONS: Record<string, keyof typeof Feather.glyphMap> = {
-  goal: "target",
-  project: "folder",
-  milestone: "flag",
-  task: "circle",
-};
 
 const OP_COLORS: Record<string, { bg: string; text: string; label: string }> = {
   create: { bg: "#dcfce7", text: "#166534", label: "NEW" },
@@ -45,6 +44,120 @@ const OP_COLORS: Record<string, { bg: string; text: string; label: string }> = {
   delete: { bg: "#fee2e2", text: "#991b1b", label: "DEL" },
   noop: { bg: "#f3f4f6", text: "#6b7280", label: "" },
 };
+
+const BUILD_PHASES = [
+  "Understanding your request...",
+  "Analyzing mode structure...",
+  "Structuring changes...",
+  "Finalizing plan...",
+];
+
+const ENTITY_CYCLE: BuilderNodeType[] = ["goal", "project", "milestone", "task"];
+
+function BuildingIndicator({ modeColor }: { modeColor: string }) {
+  const [phase, setPhase] = useState(0);
+  const spinAnim = useRef(new Animated.Value(0)).current;
+  const fadeAnim = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    // Rotate the entity icons
+    Animated.loop(
+      Animated.timing(spinAnim, {
+        toValue: 1,
+        duration: 2400,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      })
+    ).start();
+
+    // Cycle through phases
+    const interval = setInterval(() => {
+      Animated.sequence([
+        Animated.timing(fadeAnim, {
+          toValue: 0,
+          duration: 150,
+          useNativeDriver: true,
+        }),
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 150,
+          useNativeDriver: true,
+        }),
+      ]).start();
+      setPhase((p) => (p + 1) % BUILD_PHASES.length);
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const entityIndex = spinAnim.interpolate({
+    inputRange: [0, 0.25, 0.5, 0.75, 1],
+    outputRange: [0, 1, 2, 3, 0],
+  });
+
+  return (
+    <View
+      style={{
+        padding: 16,
+        borderRadius: 12,
+        backgroundColor: modeColor + "08",
+        borderWidth: 1,
+        borderColor: modeColor + "20",
+        alignItems: "center",
+        gap: 12,
+        marginTop: 4,
+      }}
+    >
+      {/* Animated entity icons row */}
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+        {ENTITY_CYCLE.map((type, i) => (
+          <Animated.View
+            key={type}
+            style={{
+              opacity: spinAnim.interpolate({
+                inputRange: [
+                  Math.max(0, i / 4 - 0.1),
+                  i / 4,
+                  Math.min(1, i / 4 + 0.15),
+                  Math.min(1, i / 4 + 0.25),
+                ],
+                outputRange: [0.3, 1, 1, 0.3],
+                extrapolate: "clamp",
+              }),
+              transform: [
+                {
+                  scale: spinAnim.interpolate({
+                    inputRange: [
+                      Math.max(0, i / 4 - 0.05),
+                      i / 4,
+                      Math.min(1, i / 4 + 0.1),
+                    ],
+                    outputRange: [0.8, 1.2, 0.8],
+                    extrapolate: "clamp",
+                  }),
+                },
+              ],
+            }}
+          >
+            <EntityIcon type={type} size={20} color={modeColor} />
+          </Animated.View>
+        ))}
+      </View>
+
+      {/* Phase text */}
+      <Animated.Text
+        style={{
+          fontSize: 14,
+          color: "#6b7280",
+          fontWeight: "500",
+          opacity: fadeAnim,
+        }}
+      >
+        {BUILD_PHASES[phase]}
+      </Animated.Text>
+    </View>
+  );
+}
 
 function NodeRow({
   node,
@@ -100,12 +213,9 @@ function NodeRow({
         </TouchableOpacity>
 
         {/* Type icon */}
-        <Feather
-          name={NODE_ICONS[node.type]}
-          size={14}
-          color={modeColor}
-          style={{ marginRight: 6 }}
-        />
+        <View style={{ marginRight: 6 }}>
+          <EntityIcon type={node.type} size={14} color={modeColor} />
+        </View>
 
         {/* Title */}
         <Text
@@ -172,8 +282,21 @@ export default function AiBuilderModal({
   );
   const scrollRef = useRef<ScrollView>(null);
 
-  const buildMutation = useAiBuild();
+  const insets = useSafeAreaInsets();
+  const inputRef = useRef<TextInput>(null);
+
+  const { build, isPending: isBuildPending, isError: isBuildError, abort } = useAiBuild();
   const commitMutation = useAiCommit();
+
+  // Show error in command log when build fails
+  useEffect(() => {
+    if (isBuildError) {
+      setCommandLog((prev) => [
+        ...prev,
+        { role: "assistant", text: "Error: Failed to get response. Try again." },
+      ]);
+    }
+  }, [isBuildError]);
 
   const goals = useGoalStore((s) => s.goals);
   const projects = useProjectStore((s) => s.projects);
@@ -224,41 +347,39 @@ export default function AiBuilderModal({
     return out;
   };
 
-  const handleSend = async () => {
+  const handleSend = () => {
     const text = prompt.trim();
     if (!text) return;
     setPrompt("");
 
     setCommandLog((prev) => [...prev, { role: "user", text }]);
 
-    try {
-      const entities = buildEntitySnapshot();
-      const result = await buildMutation.mutateAsync({
-        prompt: text,
-        modeId,
-        history,
-        entities,
-      });
+    const entities = buildEntitySnapshot();
+    build(
+      { prompt: text, modeId, history, entities },
+      (result) => {
+        setNodes(result.nodes);
+        setHistory((prev) => [
+          ...prev,
+          { role: "user", content: text },
+          { role: "assistant", content: result.summary },
+        ]);
+        setCommandLog((prev) => [
+          ...prev,
+          { role: "assistant", text: result.summary },
+        ]);
+        setCommitResult(null);
 
-      setNodes(result.nodes);
-      setHistory((prev) => [
-        ...prev,
-        { role: "user", content: text },
-        { role: "assistant", content: result.summary },
-      ]);
-      setCommandLog((prev) => [
-        ...prev,
-        { role: "assistant", text: result.summary },
-      ]);
-      setCommitResult(null);
-    } catch {
-      setCommandLog((prev) => [
-        ...prev,
-        { role: "assistant", text: "Error: Failed to get response. Try again." },
-      ]);
-    }
+        setTimeout(() => {
+          scrollRef.current?.scrollToEnd({ animated: true });
+          inputRef.current?.focus();
+        }, 100);
+      }
+    );
 
-    setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
+    setTimeout(() => {
+      scrollRef.current?.scrollToEnd({ animated: true });
+    }, 100);
   };
 
   const toggleNode = (tempId: string) => {
@@ -325,6 +446,7 @@ export default function AiBuilderModal({
   };
 
   const handleClose = () => {
+    abort();
     setPrompt("");
     setNodes([]);
     setHistory([]);
@@ -340,12 +462,12 @@ export default function AiBuilderModal({
     <Modal
       visible={visible}
       animationType="slide"
-      presentationStyle="pageSheet"
+      presentationStyle="fullScreen"
       onRequestClose={handleClose}
     >
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={{ flex: 1, backgroundColor: "#fff" }}
+        style={{ flex: 1, backgroundColor: "#fff", paddingTop: insets.top }}
       >
         {/* Header */}
         <View
@@ -379,6 +501,11 @@ export default function AiBuilderModal({
           ref={scrollRef}
           style={{ flex: 1 }}
           contentContainerStyle={{ padding: 16, paddingBottom: 20 }}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="interactive"
+          onContentSizeChange={() =>
+            scrollRef.current?.scrollToEnd({ animated: true })
+          }
         >
           {/* Command log */}
           {commandLog.map((entry, i) => (
@@ -405,19 +532,7 @@ export default function AiBuilderModal({
             </View>
           ))}
 
-          {buildMutation.isPending && (
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                padding: 10,
-                gap: 8,
-              }}
-            >
-              <ActivityIndicator size="small" color={modeColor} />
-              <Text style={{ color: "#6b7280", fontSize: 14 }}>Thinking...</Text>
-            </View>
-          )}
+          {isBuildPending && <BuildingIndicator modeColor={modeColor} />}
 
           {/* Node tree */}
           {nodes.length > 0 && (
@@ -524,7 +639,8 @@ export default function AiBuilderModal({
             flexDirection: "row",
             alignItems: "flex-end",
             paddingHorizontal: 16,
-            paddingVertical: 10,
+            paddingTop: 10,
+            paddingBottom: Math.max(insets.bottom, 10),
             borderTopWidth: 1,
             borderTopColor: "#e5e7eb",
             backgroundColor: "#fff",
@@ -532,32 +648,39 @@ export default function AiBuilderModal({
           }}
         >
           <TextInput
+            ref={inputRef}
             value={prompt}
             onChangeText={setPrompt}
             placeholder="Describe what to build..."
             placeholderTextColor="#9ca3af"
             multiline
+            blurOnSubmit={false}
+            autoCorrect
+            textAlignVertical="top"
             style={{
               flex: 1,
-              maxHeight: 100,
-              fontSize: 15,
+              minHeight: 44,
+              maxHeight: 120,
+              fontSize: 16,
               color: "#111",
               borderWidth: 1,
               borderColor: "#d1d5db",
-              borderRadius: 10,
-              padding: 10,
-              backgroundColor: "#fff",
+              borderRadius: 12,
+              paddingHorizontal: 14,
+              paddingTop: 12,
+              paddingBottom: 12,
+              backgroundColor: "#f9fafb",
             }}
           />
           <TouchableOpacity
             onPress={handleSend}
-            disabled={!prompt.trim() || buildMutation.isPending}
+            disabled={!prompt.trim() || isBuildPending}
             style={{
-              width: 40,
-              height: 40,
-              borderRadius: 20,
+              width: 44,
+              height: 44,
+              borderRadius: 22,
               backgroundColor:
-                prompt.trim() && !buildMutation.isPending
+                prompt.trim() && !isBuildPending
                   ? modeColor
                   : "#e5e7eb",
               justifyContent: "center",

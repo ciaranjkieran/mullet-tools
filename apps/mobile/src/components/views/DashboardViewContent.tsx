@@ -1,5 +1,5 @@
-import React, { ReactElement } from "react";
-import { View, Text, FlatList, RefreshControl } from "react-native";
+import React, { ReactElement, useCallback } from "react";
+import { View, Text, FlatList, RefreshControl, Pressable } from "react-native";
 import EntityRow from "../dashboard/EntityRow";
 import FAB from "../dashboard/FAB";
 import BatchActionBar from "../batch/BatchActionBar";
@@ -41,6 +41,11 @@ export default function DashboardViewContent({
 }: Props) {
   const collapsed = useCollapseStore((s) => s.collapsed);
   const selectionActive = useSelectionStore((s) => s.isActive);
+  const clearAll = useSelectionStore((s) => s.clearAll);
+
+  const handleEmptyPress = useCallback(() => {
+    if (selectionActive) clearAll();
+  }, [selectionActive, clearAll]);
 
   const rows = useBuildDashboardRows(
     modes,
@@ -66,6 +71,11 @@ export default function DashboardViewContent({
           paddingBottom: selectionActive ? 140 : 100,
           flexGrow: 1,
         }}
+        ListFooterComponent={
+          selectionActive ? (
+            <Pressable onPress={handleEmptyPress} style={{ height: 200 }} />
+          ) : undefined
+        }
         ListEmptyComponent={
           <View
             style={{
@@ -75,15 +85,17 @@ export default function DashboardViewContent({
               paddingTop: 80,
             }}
           >
-            <Text style={{ color: "#9ca3af", fontSize: 16 }}>
-              {selectedMode === "All"
-                ? "No entities yet. Create some to get started."
-                : "Nothing here yet. Tap + to add something."}
-            </Text>
+            <Pressable onPress={handleEmptyPress} style={{ flex: 1 }}>
+              <Text style={{ color: "#9ca3af", fontSize: 16 }}>
+                {selectedMode === "All"
+                  ? "No entities yet. Create some to get started."
+                  : "Nothing here yet. Tap + to add something."}
+              </Text>
+            </Pressable>
           </View>
         }
       />
-      {selectedMode !== "All" && !selectionActive && (
+      {!selectionActive && (
         <FAB modeColor={modeColor} onOpenAiBuilder={onOpenAiBuilder} />
       )}
       {selectionActive && <BatchActionBar modeColor={modeColor} />}

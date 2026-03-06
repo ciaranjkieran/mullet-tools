@@ -1,6 +1,10 @@
 import React from "react";
 import { View, Text, TouchableOpacity, Alert } from "react-native";
 import { Feather } from "@expo/vector-icons";
+import { useGoalStore } from "@shared/store/useGoalStore";
+import { useProjectStore } from "@shared/store/useProjectStore";
+import { useMilestoneStore } from "@shared/store/useMilestoneStore";
+import { useTaskStore } from "@shared/store/useTaskStore";
 import type { TimeEntryDTO } from "@shared/types/Timer";
 import type { Mode } from "@shared/types/Mode";
 
@@ -28,8 +32,30 @@ function formatTime(isoDate: string) {
   return `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
 }
 
-function getEntityLabel(entry: TimeEntryDTO, modes: Mode[]): string {
-  const mode = modes.find((m) => m.id === entry.path.modeId);
+function useEntityLabel(entry: TimeEntryDTO, modes: Mode[]): string {
+  const { path } = entry;
+  const tasks = useTaskStore((s) => s.tasks);
+  const milestones = useMilestoneStore((s) => s.milestones);
+  const projects = useProjectStore((s) => s.projects);
+  const goals = useGoalStore((s) => s.goals);
+
+  if (path.taskId) {
+    const t = tasks.find((x) => x.id === path.taskId);
+    if (t) return t.title;
+  }
+  if (path.milestoneId) {
+    const m = milestones.find((x) => x.id === path.milestoneId);
+    if (m) return m.title;
+  }
+  if (path.projectId) {
+    const p = projects.find((x) => x.id === path.projectId);
+    if (p) return p.title;
+  }
+  if (path.goalId) {
+    const g = goals.find((x) => x.id === path.goalId);
+    if (g) return g.title;
+  }
+  const mode = modes.find((m) => m.id === path.modeId);
   return mode?.title ?? "Unknown";
 }
 
@@ -46,6 +72,7 @@ function TimeEntryRow({
 }) {
   const mode = modes.find((m) => m.id === entry.path.modeId);
   const modeColor = mode?.color ?? "#6b7280";
+  const entityLabel = useEntityLabel(entry, modes);
 
   const handleDelete = () => {
     Alert.alert("Delete Entry", "Remove this time entry?", [
@@ -80,7 +107,7 @@ function TimeEntryRow({
 
       <View style={{ flex: 1 }}>
         <Text style={{ fontSize: 14, fontWeight: "500", color: "#111" }}>
-          {getEntityLabel(entry, modes)}
+          {entityLabel}
         </Text>
         <Text style={{ fontSize: 12, color: "#9ca3af", marginTop: 2 }}>
           {formatTime(entry.startedAt)} - {formatTime(entry.endedAt)}

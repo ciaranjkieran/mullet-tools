@@ -11,9 +11,10 @@ interface EntityFormStore {
   entityType: EntityFormType;
   editEntity: Goal | Project | Milestone | Task | null;
   defaultModeId: number | null;
+  initialTab: string | null;
 
   openCreate: (type: EntityFormType) => void;
-  openEdit: (type: EntityFormType, entity: Goal | Project | Milestone | Task) => void;
+  openEdit: (type: EntityFormType, entity: Goal | Project | Milestone | Task, opts?: { tab?: string }) => void;
   close: () => void;
   reset: () => void;
 }
@@ -23,15 +24,16 @@ export const useEntityFormStore = create<EntityFormStore>((set) => ({
   entityType: "task",
   editEntity: null,
   defaultModeId: null,
+  initialTab: null,
 
   openCreate: (type) =>
-    set({ visible: true, entityType: type, editEntity: null }),
+    set({ visible: true, entityType: type, editEntity: null, initialTab: null }),
 
-  openEdit: (type, entity) =>
-    set({ visible: true, entityType: type, editEntity: entity }),
+  openEdit: (type, entity, opts) =>
+    set({ visible: true, entityType: type, editEntity: entity, initialTab: opts?.tab ?? null }),
 
-  close: () => set({ visible: false, editEntity: null }),
+  close: () => set({ visible: false, editEntity: null, initialTab: null }),
 
   reset: () =>
-    set({ visible: false, entityType: "task", editEntity: null, defaultModeId: null }),
+    set({ visible: false, entityType: "task", editEntity: null, defaultModeId: null, initialTab: null }),
 }));

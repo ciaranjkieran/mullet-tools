@@ -6,6 +6,7 @@ import { useDeleteGoal } from "@shared/api/hooks/goals/useDeleteGoal";
 import { useCollapseStore } from "../../../lib/store/useCollapseStore";
 import { useEntityFormStore } from "../../../lib/store/useEntityFormStore";
 import { useSelectionStore } from "../../../lib/store/useSelectionStore";
+import { cardShadow, selectedShadow, textLine } from "../../../lib/styles/platform";
 import type { Goal } from "@shared/types/Goal";
 import type { DashboardRow } from "../../../hooks/useBuildDashboardRows";
 import AssigneeBadge from "./AssigneeBadge";
@@ -54,11 +55,7 @@ function GoalRow({ row }: Props) {
   };
 
   const handleLongPress = () => {
-    if (!selectionActive) {
-      toggleSelection("goal", goal.id);
-    } else {
-      handleDelete();
-    }
+    toggleSelection("goal", goal.id);
   };
 
   const indent = row.depth * 16;
@@ -69,14 +66,16 @@ function GoalRow({ row }: Props) {
         marginLeft: indent + 12,
         marginRight: 12,
         marginBottom: 6,
-        borderWidth: 1,
+        borderWidth: isSelected ? 2 : 1,
         borderColor: isSelected ? row.modeColor : "#e5e7eb",
         borderRadius: 8,
-        backgroundColor: isSelected ? row.modeColor + "08" : "#fff",
+        overflow: "hidden" as const,
+        backgroundColor: isSelected ? "#f0f8ff" : "#fff",
         padding: 12,
         flexDirection: "row",
         alignItems: "flex-start",
         justifyContent: "space-between",
+        ...(isSelected ? selectedShadow(row.modeColor) : cardShadow("sm")),
       }}
     >
       {/* Left: icon + title column */}
@@ -117,7 +116,7 @@ function GoalRow({ row }: Props) {
         >
           <Text
             style={{
-              fontSize: 16,
+              ...textLine(16),
               fontWeight: "700",
               color: goal.isCompleted ? "#9ca3af" : "#111",
               textDecorationLine: goal.isCompleted ? "line-through" : "none",
@@ -129,14 +128,14 @@ function GoalRow({ row }: Props) {
           {goal.description && !collapsed ? (
             <Text
               numberOfLines={2}
-              style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}
+              style={{ ...textLine(12), color: "#6b7280", marginTop: 2 }}
             >
               {goal.description}
             </Text>
           ) : null}
 
           {goal.dueDate ? (
-            <Text style={{ fontSize: 11, color: "#9ca3af", marginTop: 2 }}>
+            <Text style={{ ...textLine(11), color: "#9ca3af", marginTop: 2 }}>
               Due: {goal.dueDate}
             </Text>
           ) : null}

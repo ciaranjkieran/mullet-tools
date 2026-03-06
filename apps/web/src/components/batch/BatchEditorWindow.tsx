@@ -19,7 +19,7 @@ import { getContrastingText } from "@shared/utils/getContrastingText";
 import EditorEntityInputs from "@/components/inputs/editor/EditorEntityInputs";
 
 import { EntityKind, ParentType } from "@shared/api/batch/types/types";
-import { computeParentOptions } from "./parentingUtils";
+import { computeParentOptions } from "@shared/batch/parentingUtils";
 
 import { Goal } from "@shared/types/Goal";
 import { Milestone } from "@shared/types/Milestone";

@@ -1,11 +1,18 @@
-import React from "react";
-import { View, Text, ScrollView, TouchableOpacity } from "react-native";
-import { Feather } from "@expo/vector-icons";
+import React, { useMemo, useCallback } from "react";
+import { View } from "react-native";
+import EntityIcon from "../EntityIcon";
 import type { Mode } from "@shared/types/Mode";
 import type { Goal } from "@shared/types/Goal";
 import type { Project } from "@shared/types/Project";
 import type { Milestone } from "@shared/types/Milestone";
 import type { Task } from "@shared/types/Task";
+import {
+  filterEditorOptions,
+  reconcileAfterChange,
+  type EditorSelection,
+  type EditorDatasets,
+} from "@shared/lineage/editorFilter";
+import DropdownPicker from "../dashboard/DropdownPicker";
 
 type Props = {
   modes: Mode[];
@@ -25,77 +32,6 @@ type Props = {
   setTaskId: (id: number | null) => void;
   disabled: boolean;
 };
-
-function ChipRow({
-  label,
-  icon,
-  items,
-  selectedId,
-  onSelect,
-  modeColor,
-  disabled,
-}: {
-  label: string;
-  icon: keyof typeof Feather.glyphMap;
-  items: { id: number; title: string }[];
-  selectedId: number | null;
-  onSelect: (id: number | null) => void;
-  modeColor: string;
-  disabled: boolean;
-}) {
-  if (items.length === 0) return null;
-
-  return (
-    <View style={{ marginBottom: 12 }}>
-      <Text
-        style={{
-          fontSize: 12,
-          fontWeight: "600",
-          color: "#6b7280",
-          marginBottom: 6,
-          textTransform: "uppercase",
-          letterSpacing: 0.5,
-        }}
-      >
-        {label}
-      </Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-        <View style={{ flexDirection: "row", gap: 8 }}>
-          {items.map((item) => {
-            const isActive = selectedId === item.id;
-            return (
-              <TouchableOpacity
-                key={item.id}
-                onPress={() => onSelect(isActive ? null : item.id)}
-                disabled={disabled}
-                style={{
-                  paddingHorizontal: 14,
-                  paddingVertical: 8,
-                  borderRadius: 20,
-                  backgroundColor: isActive ? modeColor : "#f3f4f6",
-                  borderWidth: 1,
-                  borderColor: isActive ? modeColor : "#e5e7eb",
-                  opacity: disabled ? 0.5 : 1,
-                }}
-              >
-                <Text
-                  numberOfLines={1}
-                  style={{
-                    fontSize: 14,
-                    color: isActive ? "#fff" : "#374151",
-                    fontWeight: isActive ? "600" : "400",
-                  }}
-                >
-                  {item.title}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-      </ScrollView>
-    </View>
-  );
-}
 
 export default function EntityPicker({
   modes,
@@ -118,99 +54,157 @@ export default function EntityPicker({
   const modeColor =
     modes.find((m) => m.id === modeId)?.color ?? "#6b7280";
 
-  // Filter entities by selected mode
-  const modeGoals = modeId
-    ? goals.filter((g) => g.modeId === modeId)
-    : [];
-  const modeProjects = modeId
-    ? projects.filter((p) => p.modeId === modeId)
-    : [];
-  const modeMilestones = modeId
-    ? milestones.filter((m) => m.modeId === modeId)
-    : [];
-  const modeTasks = modeId
-    ? tasks.filter((t) => t.modeId === modeId)
-    : [];
+  // Pre-filter entities by mode for the datasets
+  const modeGoals = useMemo(
+    () => (modeId ? goals.filter((g) => g.modeId === modeId) : []),
+    [goals, modeId]
+  );
+  const modeProjects = useMemo(
+    () => (modeId ? projects.filter((p) => p.modeId === modeId) : []),
+    [projects, modeId]
+  );
+  const modeMilestones = useMemo(
+    () => (modeId ? milestones.filter((m) => m.modeId === modeId) : []),
+    [milestones, modeId]
+  );
+  const modeTasks = useMemo(
+    () => (modeId ? tasks.filter((t) => t.modeId === modeId) : []),
+    [tasks, modeId]
+  );
 
-  // Cascading clear: when parent changes, clear children
-  const handleModeChange = (id: number | null) => {
-    setModeId(id);
-    setGoalId(null);
-    setProjectId(null);
-    setMilestoneId(null);
-    setTaskId(null);
-  };
+  // Build editor selection & datasets for shared filtering logic
+  const sel = useMemo<EditorSelection>(
+    () => ({
+      modeId: modeId ?? 0,
+      goalId: goalId ?? null,
+      projectId: projectId ?? null,
+      milestoneId: milestoneId ?? null,
+    }),
+    [modeId, goalId, projectId, milestoneId]
+  );
 
-  const handleGoalChange = (id: number | null) => {
-    setGoalId(id);
-    setProjectId(null);
-    setMilestoneId(null);
-    setTaskId(null);
-  };
+  const datasets = useMemo<EditorDatasets>(
+    () => ({
+      modes,
+      goals: modeGoals,
+      projects: modeProjects,
+      milestones: modeMilestones,
+    }),
+    [modes, modeGoals, modeProjects, modeMilestones]
+  );
 
-  const handleProjectChange = (id: number | null) => {
-    setProjectId(id);
-    setMilestoneId(null);
-    setTaskId(null);
-  };
+  // Hierarchical filtering via shared editorFilter
+  const filtered = useMemo(
+    () => filterEditorOptions(sel, datasets),
+    [sel, datasets]
+  );
 
-  const handleMilestoneChange = (id: number | null) => {
-    setMilestoneId(id);
-    setTaskId(null);
-  };
+  // Task filtering: by most specific selected parent
+  const filteredTasks = useMemo(() => {
+    if (milestoneId) return modeTasks.filter((t) => t.milestoneId === milestoneId);
+    if (projectId) return modeTasks.filter((t) => t.projectId === projectId);
+    if (goalId) return modeTasks.filter((t) => t.goalId === goalId);
+    return modeTasks;
+  }, [modeTasks, milestoneId, projectId, goalId]);
+
+  // Reconcile helper: apply a change and propagate to parent setters
+  const applyChange = useCallback(
+    (patch: Partial<EditorSelection>) => {
+      const next = reconcileAfterChange(sel, patch, datasets);
+      setGoalId(next.goalId ?? null);
+      setProjectId(next.projectId ?? null);
+      setMilestoneId(next.milestoneId ?? null);
+      setTaskId(null);
+    },
+    [sel, datasets, setGoalId, setProjectId, setMilestoneId, setTaskId]
+  );
+
+  const handleModeChange = useCallback(
+    (id: number | null) => {
+      setModeId(id);
+      setGoalId(null);
+      setProjectId(null);
+      setMilestoneId(null);
+      setTaskId(null);
+    },
+    [setModeId, setGoalId, setProjectId, setMilestoneId, setTaskId]
+  );
+
+  const handleGoalChange = useCallback(
+    (id: number | null) => {
+      applyChange({ goalId: id, projectId: null, milestoneId: null });
+    },
+    [applyChange]
+  );
+
+  const handleProjectChange = useCallback(
+    (id: number | null) => {
+      applyChange({ projectId: id, milestoneId: null });
+    },
+    [applyChange]
+  );
+
+  const handleMilestoneChange = useCallback(
+    (id: number | null) => {
+      applyChange({ milestoneId: id });
+    },
+    [applyChange]
+  );
+
+  const handleTaskChange = useCallback(
+    (id: number | null) => {
+      setTaskId(id);
+    },
+    [setTaskId]
+  );
 
   return (
     <View style={{ marginBottom: 8 }}>
-      <ChipRow
+      <DropdownPicker
         label="Mode"
         icon="layers"
-        items={modes}
+        options={modes}
         selectedId={modeId}
-        onSelect={handleModeChange}
+        onChange={handleModeChange}
         modeColor={modeColor}
-        disabled={disabled}
       />
 
       {modeId && (
         <>
-          <ChipRow
+          <DropdownPicker
             label="Goal"
-            icon="target"
-            items={modeGoals}
+            iconElement={<EntityIcon type="goal" color={modeColor} size={14} />}
+            options={filtered.goals}
             selectedId={goalId}
-            onSelect={handleGoalChange}
+            onChange={handleGoalChange}
             modeColor={modeColor}
-            disabled={disabled}
           />
 
-          <ChipRow
+          <DropdownPicker
             label="Project"
-            icon="folder"
-            items={modeProjects}
+            iconElement={<EntityIcon type="project" color={modeColor} size={14} />}
+            options={filtered.projects}
             selectedId={projectId}
-            onSelect={handleProjectChange}
+            onChange={handleProjectChange}
             modeColor={modeColor}
-            disabled={disabled}
           />
 
-          <ChipRow
+          <DropdownPicker
             label="Milestone"
-            icon="flag"
-            items={modeMilestones}
+            iconElement={<EntityIcon type="milestone" color={modeColor} size={14} />}
+            options={filtered.milestones}
             selectedId={milestoneId}
-            onSelect={handleMilestoneChange}
+            onChange={handleMilestoneChange}
             modeColor={modeColor}
-            disabled={disabled}
           />
 
-          <ChipRow
+          <DropdownPicker
             label="Task"
-            icon="check-circle"
-            items={modeTasks}
+            iconElement={<EntityIcon type="task" color={modeColor} size={14} />}
+            options={filteredTasks}
             selectedId={taskId}
-            onSelect={setTaskId}
+            onChange={handleTaskChange}
             modeColor={modeColor}
-            disabled={disabled}
           />
         </>
       )}

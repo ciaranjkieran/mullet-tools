@@ -51,6 +51,8 @@ export function useShiftClickSelect(
   // Prevent browser text-selection on shift+mousedown (fires before click)
   const onMouseDownCapture = useCallback(
     (e: React.MouseEvent) => {
+      // Never interfere with drag handle interactions
+      if ((e.target as HTMLElement).closest?.("[data-drag-handle]")) return;
       if (e.shiftKey || e.metaKey || e.ctrlKey) {
         e.preventDefault();
       }
@@ -60,6 +62,9 @@ export function useShiftClickSelect(
 
   const onClickCapture = useCallback(
     (e: React.MouseEvent) => {
+      // Never interfere with drag handle interactions
+      if ((e.target as HTMLElement).closest?.("[data-drag-handle]")) return;
+
       const isShift = e.shiftKey;
       const isMeta = e.metaKey || e.ctrlKey;
 

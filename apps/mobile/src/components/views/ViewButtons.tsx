@@ -27,11 +27,17 @@ const GRID_WIDTH = COLS * CIRCLE + (COLS - 1) * GAP;
 
 type Props = {
   modeColor: string;
+  onViewPress?: (viewType: ViewType) => void;
 };
 
-export default function ViewButtons({ modeColor }: Props) {
+export default function ViewButtons({ modeColor, onViewPress }: Props) {
   const viewType = useViewStore((s) => s.viewType);
   const setViewType = useViewStore((s) => s.setViewType);
+
+  const handlePress = (vt: ViewType) => {
+    setViewType(vt);
+    onViewPress?.(vt);
+  };
 
   return (
     <View style={styles.container}>
@@ -40,7 +46,7 @@ export default function ViewButtons({ modeColor }: Props) {
         return (
           <TouchableOpacity
             key={def.viewType}
-            onPress={() => setViewType(def.viewType)}
+            onPress={() => handlePress(def.viewType)}
             activeOpacity={0.7}
             style={[
               styles.button,

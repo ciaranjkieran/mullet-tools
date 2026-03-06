@@ -8,6 +8,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
+import EntityIcon from "../components/EntityIcon";
 import { useNavigation } from "@react-navigation/native";
 import { useGoalStore } from "@shared/store/useGoalStore";
 import { useProjectStore } from "@shared/store/useProjectStore";
@@ -33,12 +34,6 @@ type SearchResult = {
   entity: any;
 };
 
-const ICONS: Record<string, keyof typeof Feather.glyphMap> = {
-  goal: "target",
-  project: "folder",
-  milestone: "flag",
-  task: "circle",
-};
 
 export default function SearchScreen() {
   const navigation = useNavigation();
@@ -176,11 +171,11 @@ export default function SearchScreen() {
         onPress={() => handleToggleComplete(item)}
         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
       >
-        <Feather
-          name={item.isCompleted ? "check-circle" : ICONS[item.type]}
-          size={18}
-          color={item.isCompleted ? "#9ca3af" : item.modeColor}
-        />
+        {item.isCompleted ? (
+          <Feather name="check-circle" size={18} color="#9ca3af" />
+        ) : (
+          <EntityIcon type={item.type} size={18} color={item.modeColor} />
+        )}
       </TouchableOpacity>
 
       <View

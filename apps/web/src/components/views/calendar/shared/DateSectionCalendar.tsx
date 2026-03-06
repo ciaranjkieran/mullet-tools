@@ -7,11 +7,12 @@ import { Task } from "@shared/types/Task";
 import { Project } from "@shared/types/Project";
 import { Goal } from "@shared/types/Goal";
 import EntityBlockByDate from "./containers/EntityBlockByDate";
+import { useState } from "react";
 import { isBefore, parseISO, startOfToday } from "date-fns";
 import AddTaskInline from "../../../entities/tasks/windows/AddTaskInline";
 import { Maps } from "@shared/types/Maps";
 import { DateDroppable } from "../../../dnd/calendar/DateDroppable";
-import { LocateFixed, X } from "lucide-react";
+import { ArrowUpDown, Clock, LocateFixed, X } from "lucide-react";
 import { useMediaQuery } from "@/lib/hooks/useMediaQuery";
 
 type Props = {
@@ -45,6 +46,7 @@ export default function DateSectionCalendar({
   selectedMode,
   maps,
 }: Props) {
+  const [sortByTime, setSortByTime] = useState(false);
   const today = startOfToday();
   const isPastDue = dateStr === "past-due";
   const isDesktop = useMediaQuery("(min-width: 768px)");
@@ -94,19 +96,36 @@ export default function DateSectionCalendar({
             </h3>
           )}
 
-          {isToday && setIsTodayFocus && (
-            <button
-              onClick={() => setIsTodayFocus((prev) => !prev)}
-              aria-label={isTodayFocus ? "Exit Focus Mode" : "Enter Focus Mode"}
-              className="text-green-700 hover:text-green-800 transition ml-2 p-1 rounded-sm focus:outline-none focus:ring-2 focus:ring-green-300 cursor-pointer"
-            >
-              {isTodayFocus ? (
-                <X className="h-5 w-5" />
-              ) : (
-                <LocateFixed className="h-6 w-6" />
-              )}
-            </button>
-          )}
+          <div className="flex items-center gap-1">
+            {!isPastDue && (
+              <button
+                onClick={() => setSortByTime((prev) => !prev)}
+                aria-label={sortByTime ? "Sort by mode" : "Sort by time"}
+                className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium transition cursor-pointer ${
+                  sortByTime
+                    ? "bg-blue-100 text-blue-700 border border-blue-300"
+                    : "text-gray-400 hover:text-gray-600 hover:bg-gray-100 border border-transparent"
+                }`}
+              >
+                <ArrowUpDown className="h-3.5 w-3.5" />
+                <Clock className="h-3.5 w-3.5" />
+              </button>
+            )}
+
+            {isToday && setIsTodayFocus && (
+              <button
+                onClick={() => setIsTodayFocus((prev) => !prev)}
+                aria-label={isTodayFocus ? "Exit Focus Mode" : "Enter Focus Mode"}
+                className="text-green-700 hover:text-green-800 transition ml-1 p-1 rounded-sm focus:outline-none focus:ring-2 focus:ring-green-300 cursor-pointer"
+              >
+                {isTodayFocus ? (
+                  <X className="h-5 w-5" />
+                ) : (
+                  <LocateFixed className="h-6 w-6" />
+                )}
+              </button>
+            )}
+          </div>
         </div>
 
         <EntityBlockByDate
@@ -120,6 +139,7 @@ export default function DateSectionCalendar({
           goals={goals}
           selectedMode={selectedMode}
           maps={maps}
+          sortByTime={sortByTime}
         />
 
         {!hasEntities && !isPastDue && (

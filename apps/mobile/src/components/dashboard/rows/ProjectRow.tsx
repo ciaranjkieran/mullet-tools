@@ -1,11 +1,12 @@
 import React from "react";
 import { View, Text, TouchableOpacity, Alert } from "react-native";
-import { Feather } from "@expo/vector-icons";
+import { Feather, MaterialIcons } from "@expo/vector-icons";
 import { useUpdateProject } from "@shared/api/hooks/projects/useUpdateProject";
 import { useDeleteProject } from "@shared/api/hooks/projects/useDeleteProject";
 import { useCollapseStore } from "../../../lib/store/useCollapseStore";
 import { useEntityFormStore } from "../../../lib/store/useEntityFormStore";
 import { useSelectionStore } from "../../../lib/store/useSelectionStore";
+import { cardShadow, selectedShadow, textLine } from "../../../lib/styles/platform";
 import type { Project } from "@shared/types/Project";
 import type { DashboardRow } from "../../../hooks/useBuildDashboardRows";
 import AssigneeBadge from "./AssigneeBadge";
@@ -54,11 +55,7 @@ function ProjectRow({ row }: Props) {
   };
 
   const handleLongPress = () => {
-    if (!selectionActive) {
-      toggleSelection("project", project.id);
-    } else {
-      handleDelete();
-    }
+    toggleSelection("project", project.id);
   };
 
   const indent = row.depth * 16;
@@ -69,14 +66,16 @@ function ProjectRow({ row }: Props) {
         marginLeft: indent + 12,
         marginRight: 12,
         marginBottom: 6,
-        borderWidth: 1,
+        borderWidth: isSelected ? 2 : 1,
         borderColor: isSelected ? row.modeColor : "#e5e7eb",
         borderRadius: 8,
-        backgroundColor: isSelected ? row.modeColor + "08" : "#f9fafb",
+        overflow: "hidden" as const,
+        backgroundColor: isSelected ? "#f0f8ff" : "#fff",
         padding: 12,
         flexDirection: "row",
         alignItems: "flex-start",
         justifyContent: "space-between",
+        ...(isSelected ? selectedShadow(row.modeColor) : cardShadow("sm")),
       }}
     >
       {/* Left: icon + title column */}
@@ -91,11 +90,11 @@ function ProjectRow({ row }: Props) {
             alignItems: "center",
           }}
         >
-          <Feather
-            name="folder"
-            size={20}
-            color={row.modeColor}
-          />
+          {collapsed ? (
+            <MaterialIcons name="folder" size={20} color={row.modeColor} />
+          ) : (
+            <Feather name="folder" size={20} color={row.modeColor} />
+          )}
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -106,7 +105,7 @@ function ProjectRow({ row }: Props) {
         >
           <Text
             style={{
-              fontSize: 15,
+              ...textLine(15),
               fontWeight: "600",
               color: project.isCompleted ? "#9ca3af" : "#111",
               textDecorationLine: project.isCompleted ? "line-through" : "none",
@@ -116,7 +115,7 @@ function ProjectRow({ row }: Props) {
           </Text>
 
           {project.dueDate ? (
-            <Text style={{ fontSize: 11, color: "#9ca3af", marginTop: 2 }}>
+            <Text style={{ ...textLine(11), color: "#9ca3af", marginTop: 2 }}>
               Due: {project.dueDate}
             </Text>
           ) : null}

@@ -15,14 +15,16 @@ export default function ModeFilter({ modes, selectedMode, setSelectedMode, onLon
   const [isModeFocus, setIsModeFocus] = React.useState(false);
 
   const modesToShow =
-    selectedMode === "All" || !isModeFocus
+    !isModeFocus
       ? modes
-      : modes.filter((m) => m.id === selectedMode.id);
+      : selectedMode === "All"
+        ? []
+        : modes.filter((m) => m.id === selectedMode.id);
 
   return (
     <View style={{ paddingTop: 4, paddingBottom: 12, paddingHorizontal: 20 }}>
       <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
-          {!isModeFocus && (
+          {(!isModeFocus || selectedMode === "All") && (
             <TouchableOpacity
               onPress={() => setSelectedMode("All")}
               style={{
@@ -104,22 +106,21 @@ export default function ModeFilter({ modes, selectedMode, setSelectedMode, onLon
             );
           })}
 
-          {selectedMode !== "All" && (
-            <TouchableOpacity
-              onPress={() => setIsModeFocus((prev) => !prev)}
-              style={{
-                marginLeft: 4,
-                padding: 6,
-                borderRadius: 4,
-              }}
-            >
-              {isModeFocus ? (
-                <Feather name="x" size={20} color="#047857" />
-              ) : (
-                <Feather name="crosshair" size={20} color="#047857" />
-              )}
-            </TouchableOpacity>
-          )}
+          <TouchableOpacity
+            onPress={() => setIsModeFocus((prev) => !prev)}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            style={{
+              marginLeft: 4,
+              padding: 10,
+              borderRadius: 4,
+            }}
+          >
+            {isModeFocus ? (
+              <Feather name="x" size={20} color="#047857" />
+            ) : (
+              <Feather name="crosshair" size={20} color="#047857" />
+            )}
+          </TouchableOpacity>
         </View>
     </View>
   );

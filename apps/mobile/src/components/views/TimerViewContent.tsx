@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useCallback, type ReactElement } from "react";
+import React, { useState, useEffect, useCallback, useRef, type ReactElement } from "react";
 import { ScrollView, View, RefreshControl, AppState } from "react-native";
 import { useQueryClient } from "@tanstack/react-query";
+import { useTimerLaunchStore } from "../../lib/store/useTimerLaunchStore";
 import { useModes } from "@shared/api/hooks/modes/useModes";
 import { useGoals } from "@shared/api/hooks/goals/useGoals";
 import { useProjects } from "@shared/api/hooks/projects/useProjects";
@@ -74,6 +75,21 @@ export default function TimerViewContent({ listHeader }: Props) {
       setModeId(modes[0].id);
     }
   }, [modes, modeId]);
+
+  // Consume launch intent from entity windows
+  const intentConsumed = useRef(false);
+  useEffect(() => {
+    if (intentConsumed.current) return;
+    const intent = useTimerLaunchStore.getState().consumeLaunchIntent();
+    if (intent) {
+      intentConsumed.current = true;
+      setModeId(intent.modeId);
+      setGoalId(intent.goalId);
+      setProjectId(intent.projectId);
+      setMilestoneId(intent.milestoneId);
+      setTaskId(intent.taskId);
+    }
+  }, []);
 
   // Sync selection from active timer when one exists
   useEffect(() => {
@@ -160,7 +176,7 @@ export default function TimerViewContent({ listHeader }: Props) {
 
   return (
     <ScrollView
-      contentContainerStyle={{ padding: 20, paddingTop: 8 }}
+      contentContainerStyle={{ paddingTop: 8 }}
       keyboardShouldPersistTaps="handled"
       refreshControl={
         <RefreshControl
@@ -170,67 +186,69 @@ export default function TimerViewContent({ listHeader }: Props) {
       }
     >
       {listHeader}
-      {/* Stopwatch / Timer toggle */}
-      <TimerModeToggle
-        clockType={clockType}
-        setClockType={setClockType}
-        disabled={isRunning}
-      />
-
-      {/* Clock display + Start/Stop */}
-      <TimerClock
-        active={activeTimer ?? null}
-        clockType={clockType}
-        nowMs={nowMs}
-        durationSec={durationSec}
-        modeColor={modeColor}
-        onStart={handleStart}
-        onStop={handleStop}
-        starting={startTimer.isPending}
-        stopping={stopTimer.isPending}
-      />
-
-      {/* Duration picker (countdown mode only) */}
-      {clockType === "timer" && !isRunning && (
-        <DurationPicker
-          minutes={cdMin}
-          seconds={cdSec}
-          onChangeMinutes={setCdMin}
-          onChangeSeconds={setCdSec}
+      <View style={{ paddingHorizontal: 20 }}>
+        {/* Stopwatch / Timer toggle */}
+        <TimerModeToggle
+          clockType={clockType}
+          setClockType={setClockType}
           disabled={isRunning}
         />
-      )}
 
-      {/* Entity selection */}
-      <EntityPicker
-        modes={modes}
-        goals={goals}
-        projects={projects}
-        milestones={milestones}
-        tasks={tasks}
-        modeId={modeId}
-        goalId={goalId}
-        projectId={projectId}
-        milestoneId={milestoneId}
-        taskId={taskId}
-        setModeId={setModeId}
-        setGoalId={setGoalId}
-        setProjectId={setProjectId}
-        setMilestoneId={setMilestoneId}
-        setTaskId={setTaskId}
-        disabled={isRunning}
-      />
+        {/* Clock display + Start/Stop */}
+        <TimerClock
+          active={activeTimer ?? null}
+          clockType={clockType}
+          nowMs={nowMs}
+          durationSec={durationSec}
+          modeColor={modeColor}
+          onStart={handleStart}
+          onStop={handleStop}
+          starting={startTimer.isPending}
+          stopping={stopTimer.isPending}
+        />
 
-      {/* Today's entries */}
-      <TimeEntryList
-        entries={entries}
-        modes={modes}
-        onResume={handleResume}
-        onDelete={handleDeleteEntry}
-      />
+        {/* Duration picker (countdown mode only) */}
+        {clockType === "timer" && !isRunning && (
+          <DurationPicker
+            minutes={cdMin}
+            seconds={cdSec}
+            onChangeMinutes={setCdMin}
+            onChangeSeconds={setCdSec}
+            disabled={isRunning}
+          />
+        )}
 
-      {/* Bottom spacer for scroll */}
-      <View style={{ height: 40 }} />
+        {/* Entity selection */}
+        <EntityPicker
+          modes={modes}
+          goals={goals}
+          projects={projects}
+          milestones={milestones}
+          tasks={tasks}
+          modeId={modeId}
+          goalId={goalId}
+          projectId={projectId}
+          milestoneId={milestoneId}
+          taskId={taskId}
+          setModeId={setModeId}
+          setGoalId={setGoalId}
+          setProjectId={setProjectId}
+          setMilestoneId={setMilestoneId}
+          setTaskId={setTaskId}
+          disabled={isRunning}
+        />
+
+        {/* Today's entries */}
+        <TimeEntryList
+          entries={entries}
+          modes={modes}
+          onResume={handleResume}
+          onDelete={handleDeleteEntry}
+        />
+
+        {/* Bottom spacer for scroll */}
+        <View style={{ height: 40 }} />
+      </View>
     </ScrollView>
   );
 }

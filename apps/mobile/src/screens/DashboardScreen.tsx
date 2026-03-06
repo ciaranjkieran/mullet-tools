@@ -78,12 +78,13 @@ export default function DashboardScreen() {
     tasksQ.refetch();
   }, [modesQ, goalsQ, projectsQ, milestonesQ, tasksQ]);
 
+  const firstMode = modes[0];
   const modeColor =
-    selectedMode === "All" ? "#000" : (selectedMode as Mode).color;
+    selectedMode === "All" ? (firstMode?.color ?? "#000") : (selectedMode as Mode).color;
   const activeModeId =
-    selectedMode === "All" ? modes[0]?.id ?? 0 : (selectedMode as Mode).id;
+    selectedMode === "All" ? (firstMode?.id ?? 0) : (selectedMode as Mode).id;
   const activeModeTitle =
-    selectedMode === "All" ? "" : (selectedMode as Mode).title;
+    selectedMode === "All" ? (firstMode?.title ?? "") : (selectedMode as Mode).title;
 
   const pageTitle = VIEW_TITLES[viewType] ?? "Home";
 
@@ -174,15 +175,13 @@ export default function DashboardScreen() {
         />
       )}
 
-      {selectedMode !== "All" && (
-        <AiBuilderModal
-          visible={aiBuilderOpen}
-          onClose={() => setAiBuilderOpen(false)}
-          modeId={activeModeId}
-          modeTitle={activeModeTitle}
-          modeColor={modeColor}
-        />
-      )}
+      <AiBuilderModal
+        visible={aiBuilderOpen}
+        onClose={() => setAiBuilderOpen(false)}
+        modeId={activeModeId}
+        modeTitle={activeModeTitle}
+        modeColor={modeColor}
+      />
     </SafeAreaView>
   );
 }

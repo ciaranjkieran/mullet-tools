@@ -6,6 +6,7 @@ import { Mode } from "@shared/types/Mode";
 import { PencilSquareIcon } from "@heroicons/react/24/outline";
 import { useDeleteTask } from "@shared/api/hooks/tasks/useDeleteTask";
 import { useDialogStore } from "@/lib/dialogs/useDialogStore";
+import CompletionCheckbox from "@/components/common/CompletionCheckbox";
 import clsx from "clsx";
 import {
   parseISO,
@@ -146,14 +147,11 @@ export default function TaskRendererCalendar({
             onKeyDown={dragListeners?.onKeyDown as any}
             activatorRef={activatorRef}
           />
-          <button
-            type="button"
-            className="w-4 h-4 rounded-sm border border-gray-400 hover:border-gray-600 cursor-pointer transition flex-shrink-0"
-            onClick={(e) => {
-              e.stopPropagation();
-              deleteTask(liveTask.id);
-            }}
-            aria-label={`Mark "${liveTask.title}" as complete`}
+          <CompletionCheckbox
+            modeColor={modeColor}
+            label={`Mark "${liveTask.title}" as complete`}
+            onComplete={() => deleteTask(liveTask.id)}
+            shape="square"
           />
         </div>
       </div>

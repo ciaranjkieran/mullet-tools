@@ -10,6 +10,7 @@ import { Maps } from "@shared/types/Maps";
 
 import ModeSectionCalendar from "./ModeSectionCalendar";
 import TodayModeSectionCalendar from "../../week/today/containers/TodayModeSectionCalendar";
+import TimeSortedEntityList from "./TimeSortedEntityList";
 import { isBefore, parseISO, startOfToday } from "date-fns";
 
 type Props = {
@@ -23,6 +24,7 @@ type Props = {
   goals: Goal[];
   showModeTitle: boolean;
   maps: Maps;
+  sortByTime?: boolean;
 };
 
 export default function EntityBlockByDate({
@@ -36,6 +38,7 @@ export default function EntityBlockByDate({
   projects,
   goals,
   maps,
+  sortByTime = false,
 }: Props) {
   const today = startOfToday();
   const isPastDue = dateStr === "past-due";
@@ -74,6 +77,34 @@ export default function EntityBlockByDate({
     selectedMode === "All"
       ? modes.filter((m) => modeIdsToInclude.has(m.id))
       : modes.filter((m) => m.id === (selectedMode as Mode).id);
+
+  // Time-sorted view: flat list across all modes sorted by time
+  if (sortByTime) {
+    const allTasks = modesToRender.flatMap((mode) =>
+      filteredTasks.filter((t) => t.modeId === mode.id)
+    );
+    const allMilestones = modesToRender.flatMap((mode) =>
+      filteredMilestones.filter((m) => m.modeId === mode.id)
+    );
+    const allProjects = modesToRender.flatMap((mode) =>
+      filteredProjects.filter((p) => p.modeId === mode.id)
+    );
+    const allGoals = modesToRender.flatMap((mode) =>
+      filteredGoals.filter((g) => g.modeId === mode.id)
+    );
+
+    return (
+      <TimeSortedEntityList
+        tasks={allTasks}
+        milestones={allMilestones}
+        projects={allProjects}
+        goals={allGoals}
+        modes={modes}
+        showModeTitle={showModeTitle}
+        maps={maps}
+      />
+    );
+  }
 
   const ModeComponent = isToday
     ? TodayModeSectionCalendar

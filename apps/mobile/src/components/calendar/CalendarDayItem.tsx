@@ -1,59 +1,20 @@
-import React from "react";
-import { View, Text, TouchableOpacity } from "react-native";
+import React, { useState, useCallback, useMemo } from "react";
+import { View, Text, TouchableOpacity, Animated } from "react-native";
 import { Feather } from "@expo/vector-icons";
+import EntityIcon from "../EntityIcon";
+import { differenceInCalendarDays, parseISO, startOfDay } from "date-fns";
 import { useUpdateGoal } from "@shared/api/hooks/goals/useUpdateGoal";
 import { useUpdateProject } from "@shared/api/hooks/projects/useUpdateProject";
 import { useUpdateMilestone } from "@shared/api/hooks/milestones/useUpdateMilestone";
-import { useUpdateTask } from "@shared/api/hooks/tasks/useUpdateTask";
+import { useDeleteTask } from "@shared/api/hooks/tasks/useDeleteTask";
 import { useGoalStore } from "@shared/store/useGoalStore";
 import { useProjectStore } from "@shared/store/useProjectStore";
 import { useMilestoneStore } from "@shared/store/useMilestoneStore";
 import { useTaskStore } from "@shared/store/useTaskStore";
+import { useSelectionStore } from "../../lib/store/useSelectionStore";
+import { cardShadow, selectedShadow, textLine } from "../../lib/styles/platform";
+import type { CalendarEntity } from "../views/CalendarViewContent";
 import type { EntityFormType } from "../../lib/store/useEntityFormStore";
-
-type CalendarEntity = {
-  id: number;
-  type: "goal" | "project" | "milestone" | "task";
-  title: string;
-  dueDate: string;
-  isCompleted: boolean;
-  modeId: number;
-  modeColor: string;
-};
-
-const FEATHER_ICONS: Record<string, keyof typeof Feather.glyphMap> = {
-  goal: "target",
-  project: "folder",
-};
-
-function EntityIcon({ type, color }: { type: string; color: string }) {
-  if (type === "task") {
-    return (
-      <View style={{ width: 18, height: 18, justifyContent: "center", alignItems: "center" }}>
-        <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: color }} />
-      </View>
-    );
-  }
-  if (type === "milestone") {
-    return (
-      <View style={{ width: 18, height: 18, justifyContent: "center", alignItems: "center" }}>
-        <View
-          style={{
-            width: 0,
-            height: 0,
-            borderLeftWidth: 7,
-            borderRightWidth: 7,
-            borderTopWidth: 12,
-            borderLeftColor: "transparent",
-            borderRightColor: "transparent",
-            borderTopColor: color,
-          }}
-        />
-      </View>
-    );
-  }
-  return <Feather name={FEATHER_ICONS[type] ?? "circle"} size={18} color={color} />;
-}
 
 type Props = {
   entity: CalendarEntity;
@@ -66,33 +27,62 @@ export default function CalendarDayItem({ entity, formStore }: Props) {
   const updateGoal = useUpdateGoal();
   const updateProject = useUpdateProject();
   const updateMilestone = useUpdateMilestone();
-  const updateTask = useUpdateTask();
+  const deleteTask = useDeleteTask();
 
-  // We need to fetch the full entity for editing
   const goals = useGoalStore((s) => s.goals);
   const projects = useProjectStore((s) => s.projects);
   const milestones = useMilestoneStore((s) => s.milestones);
   const tasks = useTaskStore((s) => s.tasks);
 
-  const handleToggleComplete = () => {
-    const payload = { id: entity.id, isCompleted: !entity.isCompleted };
-    switch (entity.type) {
-      case "goal":
-        updateGoal.mutate(payload);
-        break;
-      case "project":
-        updateProject.mutate(payload);
-        break;
-      case "milestone":
-        updateMilestone.mutate(payload);
-        break;
-      case "task":
-        updateTask.mutate(payload);
-        break;
+  const selectionActive = useSelectionStore((s) => s.isActive);
+  const isSelected = useSelectionStore((s) => s.isSelected(entity.type, entity.id));
+  const toggleSelection = useSelectionStore((s) => s.toggle);
+
+  const [checked, setChecked] = useState(false);
+  const [opacity] = useState(() => new Animated.Value(1));
+
+  const handleCheck = useCallback(() => {
+    if (checked) return;
+    setChecked(true);
+
+    if (entity.type === "task") {
+      Animated.timing(opacity, {
+        toValue: 0,
+        duration: 400,
+        delay: 200,
+        useNativeDriver: true,
+      }).start(() => {
+        deleteTask.mutate(entity.id);
+      });
+    } else {
+      const payload = { id: entity.id, isCompleted: true };
+      Animated.timing(opacity, {
+        toValue: 0,
+        duration: 400,
+        delay: 200,
+        useNativeDriver: true,
+      }).start(() => {
+        switch (entity.type) {
+          case "goal":
+            updateGoal.mutate(payload);
+            break;
+          case "project":
+            updateProject.mutate(payload);
+            break;
+          case "milestone":
+            updateMilestone.mutate(payload);
+            break;
+        }
+      });
     }
-  };
+  }, [checked, entity, opacity, deleteTask, updateGoal, updateProject, updateMilestone]);
 
   const handleTap = () => {
+    if (checked) return;
+    if (selectionActive) {
+      toggleSelection(entity.type, entity.id);
+      return;
+    }
     let fullEntity;
     switch (entity.type) {
       case "goal":
@@ -113,64 +103,111 @@ export default function CalendarDayItem({ entity, formStore }: Props) {
     }
   };
 
+  const handleLongPress = () => {
+    toggleSelection(entity.type, entity.id);
+  };
+
+  const timeLabel = entity.dueTime ? entity.dueTime.slice(0, 5) : null;
+
+  const overdueLabel = useMemo(() => {
+    const today = startOfDay(new Date());
+    const due = parseISO(entity.dueDate);
+    if (due < today) {
+      const days = differenceInCalendarDays(today, due);
+      return `${days} day${days > 1 ? "s" : ""} ago`;
+    }
+    return null;
+  }, [entity.dueDate]);
+
   return (
-    <TouchableOpacity
-      onPress={handleTap}
-      activeOpacity={0.6}
-      style={{
-        flexDirection: "row",
-        alignItems: "flex-start",
-        paddingVertical: 10,
-        paddingHorizontal: 20,
-        borderBottomWidth: 1,
-        borderBottomColor: "#f3f4f6",
-      }}
-    >
+    <Animated.View style={{ opacity }}>
       <TouchableOpacity
-        onPress={handleToggleComplete}
-        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-        style={{ marginTop: 2 }}
+        onPress={handleTap}
+        onLongPress={handleLongPress}
+        activeOpacity={0.7}
+        style={{
+          marginHorizontal: 12,
+          marginVertical: 4,
+          borderWidth: isSelected ? 2 : 1,
+          borderColor: isSelected ? entity.modeColor : "#e5e7eb",
+          borderRadius: 8,
+          borderLeftWidth: isSelected ? 2 : 3,
+          borderLeftColor: entity.modeColor,
+          backgroundColor: isSelected ? "#f0f8ff" : "#fff",
+          overflow: "hidden",
+          flexDirection: "row",
+          alignItems: "center",
+          padding: 12,
+          ...(isSelected ? selectedShadow(entity.modeColor) : cardShadow("sm")),
+        }}
       >
-        {entity.isCompleted ? (
-          <Feather name="check-circle" size={18} color="#9ca3af" />
-        ) : (
-          <EntityIcon type={entity.type} color={entity.modeColor} />
-        )}
+        {/* Left: entity icon */}
+        <EntityIcon type={entity.type} color={entity.modeColor} />
+
+        {/* Center: title + meta */}
+        <View style={{ flex: 1, marginLeft: 10 }}>
+          <Text
+            style={{
+              ...textLine(15),
+              fontWeight: "600",
+              color: "#111",
+            }}
+            numberOfLines={2}
+          >
+            {entity.title}
+          </Text>
+          <View style={{ flexDirection: "row", alignItems: "center", marginTop: 2, gap: 6 }}>
+            {timeLabel && (
+              <Text style={{ ...textLine(12), color: "#6b7280" }}>{timeLabel}</Text>
+            )}
+            {overdueLabel && (
+              <>
+                {timeLabel && <Text style={{ ...textLine(12), color: "#d1d5db" }}>·</Text>}
+                <Text style={{ ...textLine(12), color: "#dc2626", fontWeight: "600" }}>
+                  {overdueLabel}
+                </Text>
+              </>
+            )}
+          </View>
+          {entity.parentTitle ? (
+            <Text
+              style={{ ...textLine(12), color: "#374151", fontWeight: "500", marginTop: 2 }}
+              numberOfLines={1}
+            >
+              {entity.parentTitle}
+            </Text>
+          ) : null}
+          {entity.modeTitle ? (
+            <Text
+              style={{ ...textLine(12), fontWeight: "500", marginTop: 1, color: entity.modeColor }}
+              numberOfLines={1}
+            >
+              {entity.modeTitle}
+            </Text>
+          ) : null}
+        </View>
+
+        {/* Right: checkbox */}
+        <TouchableOpacity
+          onPress={handleCheck}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          style={{ marginLeft: 8 }}
+        >
+          {checked ? (
+            <Feather name="check-square" size={20} color={entity.modeColor} />
+          ) : (
+            <View
+              style={{
+                width: 20,
+                height: 20,
+                borderWidth: 1.5,
+                borderColor: "#d1d5db",
+                borderRadius: 4,
+              }}
+            />
+          )}
+        </TouchableOpacity>
       </TouchableOpacity>
-
-      <View
-        style={{
-          width: 3,
-          height: 20,
-          borderRadius: 1.5,
-          backgroundColor: entity.modeColor,
-          marginLeft: 10,
-          marginRight: 10,
-        }}
-      />
-
-      <Text
-        style={{
-          flex: 1,
-          fontSize: 15,
-          color: entity.isCompleted ? "#9ca3af" : "#111",
-          textDecorationLine: entity.isCompleted ? "line-through" : "none",
-        }}
-      >
-        {entity.title}
-      </Text>
-
-      <Text
-        style={{
-          fontSize: 11,
-          color: "#9ca3af",
-          textTransform: "uppercase",
-          marginLeft: 8,
-          marginTop: 3,
-        }}
-      >
-        {entity.type}
-      </Text>
-    </TouchableOpacity>
+    </Animated.View>
   );
 }

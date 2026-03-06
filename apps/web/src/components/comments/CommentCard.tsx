@@ -27,7 +27,7 @@ export default function CommentCard({ comment }: Props) {
   const hasAttachments = comment.attachments.length > 0;
 
   return (
-    <div className="bg-gray-100 rounded-lg p-3 text-sm text-gray-900 relative group mb-2">
+    <div className="bg-white border border-gray-200 rounded-lg p-3 text-sm text-gray-900 relative group mb-2">
       <div className="whitespace-pre-wrap break-words">
         <Linkify
           options={{

@@ -1,13 +1,8 @@
 // @shared/ui/timer/useTimerIntentStore.ts
 import { create } from "zustand";
+import type { TimerPath } from "@shared/lineage/toTimerPath";
 
-export type TimerPath = {
-  modeId?: number | null;
-  goalId?: number | null;
-  projectId?: number | null;
-  milestoneId?: number | null;
-  taskId?: number | null;
-};
+export type { TimerPath };
 
 type State = {
   pendingPath: TimerPath | null;
