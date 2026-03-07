@@ -17,6 +17,7 @@ import { useSelectionStore } from "../../../../../lib/store/useSelectionStore";
 import { useShiftClickSelect } from "../../../../../lib/hooks/useShiftClickSelect";
 import EntityDragHandle from "../../../../common/EntityDragHandle";
 import AssigneeAvatar from "../../../../common/AssigneeAvatar";
+import CompletionCheckbox from "../../../../common/CompletionCheckbox";
 import { useEntityUIStore } from "@/lib/store/useEntityUIStore";
 
 type Props = {
@@ -175,13 +176,11 @@ export default function GoalRendererDashboard({
       {isCollapsed === true ? (
         <div className="flex items-center gap-2">
           <AssigneeAvatar assignee={goal.assignee} size={20} />
-          <input
-            type="checkbox"
-            className="w-4 h-4 rounded-full border border-gray-400 checked:bg-black checked:border-black cursor-pointer"
-            style={{ accentColor: modeColor }}
-            aria-label={`Delete goal "${goal.title}"`}
-            onClick={(e) => e.stopPropagation()}
-            onChange={handleCompletion}
+          <CompletionCheckbox
+            modeColor={modeColor}
+            label={`Mark "${goal.title}" as complete`}
+            onComplete={handleCompletion}
+            shape="circle"
           />
         </div>
       ) : (

@@ -14,6 +14,48 @@ from .models import ActiveTimer, TimeEntry
 log = logging.getLogger("timer")
 
 
+def _walk_project_for_goal(project):
+    """Walk up the project parent chain to find the first goal."""
+    visited = set()
+    cur = project
+    while cur:
+        if cur.goal_id is not None:
+            return cur.goal
+        if cur.parent_id is None or cur.parent_id in visited:
+            break
+        visited.add(cur.parent_id)
+        cur = cur.parent
+    return None
+
+
+def _walk_milestone_for_project(milestone):
+    """Walk up the milestone parent chain to find the first project."""
+    visited = set()
+    cur = milestone
+    while cur:
+        if cur.project_id is not None:
+            return cur.project
+        if cur.parent_id is None or cur.parent_id in visited:
+            break
+        visited.add(cur.parent_id)
+        cur = cur.parent
+    return None
+
+
+def _walk_milestone_for_goal(milestone):
+    """Walk up the milestone parent chain to find the first goal."""
+    visited = set()
+    cur = milestone
+    while cur:
+        if cur.goal_id is not None:
+            return cur.goal
+        if cur.parent_id is None or cur.parent_id in visited:
+            break
+        visited.add(cur.parent_id)
+        cur = cur.parent
+    return None
+
+
 def resolve_path(*, task=None, milestone=None, project=None, goal=None, mode=None) -> Dict[str, Optional[object]]:
     # deepest wins: task > milestone > project > goal > mode
     if task:
@@ -23,15 +65,27 @@ def resolve_path(*, task=None, milestone=None, project=None, goal=None, mode=Non
         mode = task.mode or mode
 
     if milestone and not task:
-        project = milestone.project or project
+        project = milestone.project or _walk_milestone_for_project(milestone) or project
         goal = milestone.goal or goal
         mode = milestone.mode or mode
 
     if project and not (task or milestone):
-        goal = project.goal or goal
+        goal = project.goal or _walk_project_for_goal(project) or goal
         mode = project.mode or mode
 
-    if goal and not (task or milestone or project):
+    # Walk parent chains for any remaining gaps
+    if project and not goal:
+        goal = _walk_project_for_goal(project)
+
+    if milestone and not project:
+        project = _walk_milestone_for_project(milestone)
+        if project and not goal:
+            goal = _walk_project_for_goal(project)
+
+    if milestone and not goal:
+        goal = _walk_milestone_for_goal(milestone)
+
+    if goal and not mode:
         mode = goal.mode or mode
 
     return dict(mode=mode, goal=goal, project=project, milestone=milestone, task=task)

@@ -12,6 +12,7 @@ import { useSelectionStore } from "../../../../../lib/store/useSelectionStore";
 import { useShiftClickSelect } from "../../../../../lib/hooks/useShiftClickSelect";
 import EntityDragHandle from "../../../../common/EntityDragHandle";
 import AssigneeAvatar from "../../../../common/AssigneeAvatar";
+import CompletionCheckbox from "../../../../common/CompletionCheckbox";
 
 type Props = {
   task: Task;
@@ -96,14 +97,11 @@ export default function TaskRendererDashboard({
         {/* Right: avatar + checkbox */}
         <div className="flex items-center gap-2 flex-shrink-0">
           <AssigneeAvatar assignee={task.assignee} size={20} />
-          <button
-            type="button"
-            className="w-4 h-4 rounded-sm border border-gray-400 hover:border-gray-600 cursor-pointer transition flex-shrink-0"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleCompletion();
-            }}
-            aria-label={`Mark "${task.title}" as complete`}
+          <CompletionCheckbox
+            modeColor={modeColor}
+            label={`Mark "${task.title}" as complete`}
+            onComplete={handleCompletion}
+            shape="square"
           />
         </div>
       </div>

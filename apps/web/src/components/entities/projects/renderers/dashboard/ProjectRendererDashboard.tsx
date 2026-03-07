@@ -14,6 +14,7 @@ import { useSelectionStore } from "../../../../../lib/store/useSelectionStore";
 import { useShiftClickSelect } from "../../../../../lib/hooks/useShiftClickSelect";
 import EntityDragHandle from "../../../../common/EntityDragHandle";
 import AssigneeAvatar from "../../../../common/AssigneeAvatar";
+import CompletionCheckbox from "../../../../common/CompletionCheckbox";
 import { useEntityUIStore } from "@/lib/store/useEntityUIStore";
 
 interface Props {
@@ -155,13 +156,11 @@ export default function ProjectRenderer({
       {isCollapsed === true ? (
         <div className="flex items-center gap-2">
           <AssigneeAvatar assignee={project.assignee} size={20} />
-          <input
-            type="checkbox"
-            className="w-4 h-4 rounded-full border border-gray-400 checked:bg-black checked:border-black cursor-pointer"
-            style={{ accentColor: modeColor }}
-            aria-label={`Mark "${project.title}" as complete`}
-            onClick={(e) => e.stopPropagation()}
-            onChange={handleCompletion}
+          <CompletionCheckbox
+            modeColor={modeColor}
+            label={`Mark "${project.title}" as complete`}
+            onComplete={handleCompletion}
+            shape="circle"
           />
         </div>
       ) : (
