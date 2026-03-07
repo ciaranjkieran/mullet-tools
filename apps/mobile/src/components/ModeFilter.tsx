@@ -22,15 +22,15 @@ export default function ModeFilter({ modes, selectedMode, setSelectedMode, onLon
         : modes.filter((m) => m.id === selectedMode.id);
 
   return (
-    <View style={{ paddingTop: 4, paddingBottom: 12, paddingHorizontal: 20 }}>
-      <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
+    <View style={{ paddingTop: 4, paddingBottom: 8, paddingHorizontal: 20 }}>
+      <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 6 }}>
           {(!isModeFocus || selectedMode === "All") && (
             <TouchableOpacity
               onPress={() => setSelectedMode("All")}
               style={{
-                paddingHorizontal: 12,
-                paddingVertical: 6,
-                borderRadius: 20,
+                paddingHorizontal: 10,
+                paddingVertical: 4,
+                borderRadius: 16,
                 backgroundColor: selectedMode === "All" ? "#000" : "#f3f4f6",
                 borderWidth: 1,
                 borderColor: selectedMode === "All" ? "#000" : "#d1d5db",
@@ -40,6 +40,7 @@ export default function ModeFilter({ modes, selectedMode, setSelectedMode, onLon
                 style={{
                   color: selectedMode === "All" ? "#fff" : "#111",
                   fontWeight: "500",
+                  fontSize: 13,
                 }}
               >
                 All
@@ -60,9 +61,9 @@ export default function ModeFilter({ modes, selectedMode, setSelectedMode, onLon
                 style={{
                   flexDirection: "row",
                   alignItems: "center",
-                  paddingHorizontal: 12,
-                  paddingVertical: 6,
-                  borderRadius: 20,
+                  paddingHorizontal: 10,
+                  paddingVertical: 4,
+                  borderRadius: 16,
                   backgroundColor: isActive ? mode.color : "#f3f4f6",
                   borderWidth: 1,
                   borderColor: isActive ? mode.color : "#d1d5db",
@@ -73,6 +74,7 @@ export default function ModeFilter({ modes, selectedMode, setSelectedMode, onLon
                   style={{
                     color: isActive ? getContrastingText(mode.color) : "#111",
                     fontWeight: "500",
+                    fontSize: 13,
                   }}
                 >
                   {mode.title}

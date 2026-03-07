@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from "react";
-import { View, Text, ActivityIndicator, TouchableOpacity } from "react-native";
+import { View, ActivityIndicator, TouchableOpacity } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useModes } from "@shared/api/hooks/modes/useModes";
@@ -13,7 +13,6 @@ import { useProjectStore } from "@shared/store/useProjectStore";
 import { useMilestoneStore } from "@shared/store/useMilestoneStore";
 import { useTaskStore } from "@shared/store/useTaskStore";
 import { useViewStore } from "@shared/store/useViewStore";
-import ViewButtons from "../components/views/ViewButtons";
 import MobileViewHandler from "../components/views/MobileViewHandler";
 import EntityFormModal from "../components/dashboard/EntityFormModal";
 import AiBuilderModal from "../components/ai/AiBuilderModal";
@@ -103,42 +102,29 @@ export default function DashboardScreen() {
     );
   }
 
+  const headerRight = selectedMode !== "All" ? (
+    <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+      <TouchableOpacity
+        onPress={() => setCollabMode(selectedMode as Mode)}
+        style={{
+          padding: 6,
+          borderRadius: 20,
+          borderWidth: 1.5,
+          borderColor: modeColor,
+          backgroundColor: modeColor + "18",
+        }}
+      >
+        <Feather name="users" size={16} color={modeColor} />
+      </TouchableOpacity>
+    </View>
+  ) : undefined;
+
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }} edges={["top", "left", "right"]}>
       <OfflineBanner />
       <TrialBanner />
 
-      {/* Header */}
-      <View
-        style={{
-          paddingHorizontal: 20,
-          paddingTop: 16,
-          paddingBottom: 8,
-          flexDirection: "row",
-          alignItems: "center",
-          justifyContent: "space-between",
-        }}
-      >
-        <Text style={{ fontSize: 34, fontWeight: "bold", color: "#111" }}>{pageTitle}</Text>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-          {selectedMode !== "All" && (
-            <TouchableOpacity
-              onPress={() => setCollabMode(selectedMode as Mode)}
-              style={{
-                padding: 6,
-                borderRadius: 20,
-                borderWidth: 1.5,
-                borderColor: modeColor,
-                backgroundColor: modeColor + "18",
-              }}
-            >
-              <Feather name="users" size={16} color={modeColor} />
-            </TouchableOpacity>
-          )}
-        </View>
-      </View>
-
-      {/* View Content — ViewButtons + ModeFilter scroll with content */}
+      {/* View Content — title, ViewButtons + ModeFilter all scroll with content */}
       <View style={{ flex: 1 }}>
         <MobileViewHandler
           modes={modes}
@@ -152,6 +138,8 @@ export default function DashboardScreen() {
           modeColor={modeColor}
           onOpenAiBuilder={() => setAiBuilderOpen(true)}
           onLongPressMode={(mode) => setCollabMode(mode)}
+          pageTitle={pageTitle}
+          headerRight={headerRight}
         />
       </View>
 

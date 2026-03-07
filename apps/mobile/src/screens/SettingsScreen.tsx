@@ -58,7 +58,7 @@ export default function SettingsScreen() {
   ];
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }} edges={["top", "left", "right"]}>
       <View style={{ paddingHorizontal: 20, paddingTop: 16 }}>
         <Text style={{ fontSize: 24, fontWeight: "bold" }}>Settings</Text>
       </View>

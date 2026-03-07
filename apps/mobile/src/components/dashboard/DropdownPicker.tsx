@@ -33,7 +33,11 @@ export default function DropdownPicker({
 }: Props) {
   const [open, setOpen] = useState(false);
 
-  const selected = options.find((o) => o.id === selectedId);
+  const sorted = [...options].sort((a, b) =>
+    a.title.localeCompare(b.title, undefined, { numeric: true, sensitivity: "base" })
+  );
+
+  const selected = sorted.find((o) => o.id === selectedId);
 
   const pick = (id: number | null) => {
     onChange(id);
@@ -121,7 +125,7 @@ export default function DropdownPicker({
 
             {/* Options */}
             <FlatList
-              data={[{ id: null as number | null, title: "None" }, ...options]}
+              data={[{ id: null as number | null, title: "None" }, ...sorted]}
               keyExtractor={(item) => String(item.id ?? "none")}
               renderItem={({ item }) => {
                 const isActive = item.id === selectedId;

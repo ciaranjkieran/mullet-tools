@@ -293,7 +293,7 @@ export default function TodayScreen() {
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }} edges={["top", "left", "right"]}>
       <SectionList
         sections={sections}
         keyExtractor={(item) => `${item.type}-${item.id}`}
@@ -309,14 +309,6 @@ export default function TodayScreen() {
               <Text style={{ fontSize: 34, fontWeight: "bold", color: "#111" }}>Today</Text>
             </View>
             <ViewButtons modeColor={modeColor} onViewPress={() => navigation.navigate("Home")} />
-            <View
-              style={{
-                height: 1,
-                backgroundColor: "#e5e7eb",
-                marginHorizontal: 20,
-                marginBottom: 8,
-              }}
-            />
             <ModeFilter
               modes={modes}
               selectedMode={selectedMode}

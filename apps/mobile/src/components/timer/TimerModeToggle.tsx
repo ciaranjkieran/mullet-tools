@@ -7,13 +7,18 @@ type Props = {
   clockType: Kind;
   setClockType: (kind: Kind) => void;
   disabled: boolean;
+  modeColor: string;
 };
 
 export default function TimerModeToggle({
   clockType,
   setClockType,
   disabled,
+  modeColor,
 }: Props) {
+  const isStopwatch = clockType === "stopwatch";
+  const isTimer = clockType === "timer";
+
   return (
     <View
       style={{
@@ -34,14 +39,13 @@ export default function TimerModeToggle({
           justifyContent: "center",
           paddingVertical: 10,
           borderRadius: 8,
-          backgroundColor:
-            clockType === "stopwatch" ? "#fff" : "transparent",
+          backgroundColor: isStopwatch ? modeColor + "40" : "transparent",
           gap: 6,
           opacity: disabled ? 0.5 : 1,
         }}
       >
-        <Feather name="watch" size={16} color="#374151" />
-        <Text style={{ fontWeight: "600", color: "#374151" }}>Stopwatch</Text>
+        <Feather name="watch" size={16} color={isStopwatch ? "#000" : "#374151"} />
+        <Text style={{ fontWeight: "700", color: isStopwatch ? "#000" : "#374151" }}>Stopwatch</Text>
       </TouchableOpacity>
 
       <TouchableOpacity
@@ -54,14 +58,13 @@ export default function TimerModeToggle({
           justifyContent: "center",
           paddingVertical: 10,
           borderRadius: 8,
-          backgroundColor:
-            clockType === "timer" ? "#fff" : "transparent",
+          backgroundColor: isTimer ? modeColor + "40" : "transparent",
           gap: 6,
           opacity: disabled ? 0.5 : 1,
         }}
       >
-        <Feather name="clock" size={16} color="#374151" />
-        <Text style={{ fontWeight: "600", color: "#374151" }}>Timer</Text>
+        <Feather name="clock" size={16} color={isTimer ? "#000" : "#374151"} />
+        <Text style={{ fontWeight: "700", color: isTimer ? "#000" : "#374151" }}>Timer</Text>
       </TouchableOpacity>
     </View>
   );

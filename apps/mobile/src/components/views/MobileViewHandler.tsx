@@ -31,6 +31,8 @@ type Props = {
   modeColor: string;
   onOpenAiBuilder: () => void;
   onLongPressMode?: (mode: Mode) => void;
+  pageTitle: string;
+  headerRight?: React.ReactNode;
 };
 
 /**
@@ -44,24 +46,33 @@ function HomeHeader({
   selectedMode,
   setSelectedMode,
   onLongPressMode,
+  pageTitle,
+  headerRight,
 }: {
   modeColor: string;
   modes: Mode[];
   selectedMode: Mode | "All";
   setSelectedMode: (mode: Mode | "All") => void;
   onLongPressMode?: (mode: Mode) => void;
+  pageTitle: string;
+  headerRight?: React.ReactNode;
 }) {
   return (
     <View>
-      <ViewButtons modeColor={modeColor} />
       <View
         style={{
-          height: 1,
-          backgroundColor: "#e5e7eb",
-          marginHorizontal: 20,
-          marginBottom: 8,
+          paddingHorizontal: 20,
+          paddingTop: 16,
+          paddingBottom: 8,
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "space-between",
         }}
-      />
+      >
+        <Text style={{ fontSize: 34, fontWeight: "bold", color: "#111" }}>{pageTitle}</Text>
+        {headerRight}
+      </View>
+      <ViewButtons modeColor={modeColor} />
       <ModeFilter
         modes={modes}
         selectedMode={selectedMode}
@@ -84,6 +95,8 @@ export default function MobileViewHandler({
   modeColor,
   onOpenAiBuilder,
   onLongPressMode,
+  pageTitle,
+  headerRight,
 }: Props) {
   const viewType = useViewStore((s) => s.viewType);
   const setSelectedMode = useModeStore((s) => s.setSelectedMode);
@@ -96,6 +109,8 @@ export default function MobileViewHandler({
       selectedMode={selectedMode}
       setSelectedMode={setSelectedMode}
       onLongPressMode={onLongPressMode}
+      pageTitle={pageTitle}
+      headerRight={headerRight}
     />
   );
 

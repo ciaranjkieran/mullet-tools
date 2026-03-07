@@ -33,7 +33,7 @@ export default function MainTabs() {
         ),
         tabBarActiveTintColor: "#000",
         tabBarInactiveTintColor: "#9ca3af",
-        tabBarStyle: { borderTopColor: "#e5e7eb" },
+        tabBarStyle: { borderTopWidth: 0, elevation: 0 },
       })}
     >
       <Tab.Screen name="Home" component={DashboardScreen} />

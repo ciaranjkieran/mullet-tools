@@ -21,6 +21,12 @@ import { useProjectStore } from "@shared/store/useProjectStore";
 import { useMilestoneStore } from "@shared/store/useMilestoneStore";
 import { useTaskStore } from "@shared/store/useTaskStore";
 import type { Kind, TimeEntryDTO, StartTimerPayload } from "@shared/types/Timer";
+import {
+  makeProjectMaps,
+  makeMilestoneMaps,
+  projectEffectiveLineage,
+  milestoneEffectiveLineage,
+} from "@shared/lineage/effective";
 
 import { useTimerTick } from "../../hooks/useTimerTick";
 import TimerClock from "../timer/TimerClock";
@@ -91,19 +97,36 @@ export default function TimerViewContent({ listHeader }: Props) {
     }
   }, []);
 
-  // Sync selection from active timer when one exists
+  // Sync selection from active timer when one exists, resolving lineage
   useEffect(() => {
-    if (activeTimer) {
-      setClockType(activeTimer.kind);
-      if (activeTimer.path.modeId) setModeId(activeTimer.path.modeId);
-      if (activeTimer.path.goalId) setGoalId(activeTimer.path.goalId);
-      if (activeTimer.path.projectId)
-        setProjectId(activeTimer.path.projectId);
-      if (activeTimer.path.milestoneId)
-        setMilestoneId(activeTimer.path.milestoneId);
-      if (activeTimer.path.taskId) setTaskId(activeTimer.path.taskId);
+    if (!activeTimer) return;
+    setClockType(activeTimer.kind);
+
+    const p = activeTimer.path;
+    if (p.modeId) setModeId(p.modeId);
+    if (p.taskId) setTaskId(p.taskId);
+
+    // Resolve lineage for missing parent IDs
+    let resolvedGoalId = p.goalId ?? null;
+    let resolvedProjectId = p.projectId ?? null;
+    const resolvedMilestoneId = p.milestoneId ?? null;
+
+    if (resolvedMilestoneId != null) {
+      const msMaps = makeMilestoneMaps(milestones);
+      const projMaps = makeProjectMaps(projects);
+      const eff = milestoneEffectiveLineage(resolvedMilestoneId, msMaps.byId, projMaps.byId);
+      if (resolvedProjectId == null && eff.projectId != null) resolvedProjectId = eff.projectId;
+      if (resolvedGoalId == null && eff.goalId != null) resolvedGoalId = eff.goalId;
+    } else if (resolvedProjectId != null) {
+      const projMaps = makeProjectMaps(projects);
+      const eff = projectEffectiveLineage(resolvedProjectId, projMaps.byId);
+      if (resolvedGoalId == null && eff.goalId != null) resolvedGoalId = eff.goalId;
     }
-  }, [activeTimer]);
+
+    setMilestoneId(resolvedMilestoneId);
+    setProjectId(resolvedProjectId);
+    setGoalId(resolvedGoalId);
+  }, [activeTimer, projects, milestones]);
 
   // Re-sync active timer on app foreground
   useEffect(() => {
@@ -192,6 +215,7 @@ export default function TimerViewContent({ listHeader }: Props) {
           clockType={clockType}
           setClockType={setClockType}
           disabled={isRunning}
+          modeColor={modeColor}
         />
 
         {/* Clock display + Start/Stop */}
