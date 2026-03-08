@@ -147,7 +147,7 @@ export default function FAB({ modeColor, onOpenAiBuilder }: Props) {
                 { backgroundColor: modeColor, marginBottom: 10 },
               ]}
             >
-              <EntityIcon type={ent.type} color={textColor} size={22} />
+              <EntityIcon type={ent.type} color={textColor} size={20} />
             </TouchableOpacity>
           ))}
 
@@ -156,7 +156,7 @@ export default function FAB({ modeColor, onOpenAiBuilder }: Props) {
           onPress={handleEntityCreatorPress}
           activeOpacity={0.8}
           style={[
-            styles.mainButton,
+            styles.smallButton,
             btnShadow,
             {
               backgroundColor: modeColor,
@@ -167,11 +167,11 @@ export default function FAB({ modeColor, onOpenAiBuilder }: Props) {
           {/* Composite icon: show all 3 entity icons arranged */}
           <View style={styles.compositeIcon}>
             <View style={styles.compositeTop}>
-              <EntityIcon type="milestone" color={textColor} size={16} />
+              <EntityIcon type="milestone" color={textColor} size={14} />
             </View>
             <View style={styles.compositeBottom}>
-              <EntityIcon type="project" color={textColor} size={14} />
-              <EntityIcon type="goal" color={textColor} size={14} />
+              <EntityIcon type="project" color={textColor} size={12} />
+              <EntityIcon type="goal" color={textColor} size={12} />
             </View>
           </View>
         </TouchableOpacity>
@@ -181,12 +181,12 @@ export default function FAB({ modeColor, onOpenAiBuilder }: Props) {
           onPress={handleTaskPress}
           activeOpacity={0.8}
           style={[
-            styles.mainButton,
+            styles.smallButton,
             btnShadow,
             { backgroundColor: modeColor, marginTop: 10 },
           ]}
         >
-          <Feather name="plus" size={28} color={textColor} />
+          <Feather name="plus" size={24} color={textColor} />
         </TouchableOpacity>
 
         {/* AI Builder button */}
@@ -211,13 +211,6 @@ const styles = StyleSheet.create({
     position: "absolute",
     alignItems: "center",
   },
-  mainButton: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    justifyContent: "center",
-    alignItems: "center",
-  },
   smallButton: {
     width: 48,
     height: 48,
@@ -226,8 +219,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   compositeIcon: {
-    width: 30,
-    height: 30,
+    width: 26,
+    height: 26,
     alignItems: "center",
     justifyContent: "center",
   },

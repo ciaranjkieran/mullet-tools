@@ -353,39 +353,42 @@ export default function CalendarViewContent({ listHeader }: Props) {
       style={{
         flexDirection: "row",
         alignItems: "center",
-        justifyContent: "space-between",
+        justifyContent: "flex-end",
         paddingHorizontal: 20,
         paddingVertical: 12,
         borderBottomWidth: 1,
         borderBottomColor: "#e5e7eb",
+        gap: 12,
       }}
     >
-      <TouchableOpacity
-        onPress={() => setWeekOffset((w) => w - 1)}
-        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-      >
-        <Feather name="chevron-left" size={22} color="#374151" />
-      </TouchableOpacity>
-      <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-        <Text style={{ ...textLine(16), fontWeight: "600", color: "#374151" }}>
-          {weekLabel}
-        </Text>
-        {weekOffset !== 0 && (
-          <TouchableOpacity onPress={() => setWeekOffset(0)}>
-            <Text
-              style={{ color: "#2563eb", fontWeight: "600", fontSize: 13 }}
-            >
-              Today
-            </Text>
+      <Text style={{ ...textLine(16), fontWeight: "600", color: "#374151" }}>
+        {weekLabel}
+      </Text>
+      {weekOffset !== 0 && (
+        <TouchableOpacity onPress={() => setWeekOffset(0)}>
+          <Text
+            style={{ color: "#2563eb", fontWeight: "600", fontSize: 13 }}
+          >
+            Today
+          </Text>
+        </TouchableOpacity>
+      )}
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+        {weekOffset > 0 && (
+          <TouchableOpacity
+            onPress={() => setWeekOffset((w) => w - 1)}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Feather name="chevron-left" size={22} color="#374151" />
           </TouchableOpacity>
         )}
+        <TouchableOpacity
+          onPress={() => setWeekOffset((w) => w + 1)}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        >
+          <Feather name="chevron-right" size={22} color="#374151" />
+        </TouchableOpacity>
       </View>
-      <TouchableOpacity
-        onPress={() => setWeekOffset((w) => w + 1)}
-        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-      >
-        <Feather name="chevron-right" size={22} color="#374151" />
-      </TouchableOpacity>
     </View>
   );
 
@@ -405,12 +408,11 @@ export default function CalendarViewContent({ listHeader }: Props) {
                 alignItems: "center",
                 justifyContent: "space-between",
                 paddingHorizontal: 20,
-                paddingTop: 18,
-                paddingBottom: 10,
+                paddingVertical: 14,
                 backgroundColor: section.isPastDue
                   ? "#fef2f2"
                   : section.isToday
-                    ? "#f0fdf4"
+                    ? modeColor + "15"
                     : "#fff",
                 borderBottomWidth: 1,
                 borderBottomColor: "#e5e7eb",
@@ -423,14 +425,16 @@ export default function CalendarViewContent({ listHeader }: Props) {
                     fontWeight: "700",
                     color: section.isPastDue
                       ? "#dc2626"
-                      : section.isToday
-                        ? "#059669"
-                        : "#111",
+                      : "#1f2937",
                   }}
                 >
                   {section.title}
-                  {section.isToday && " (Today)"}
                 </Text>
+                {section.isToday && (
+                  <Text style={{ ...textLine(14), fontWeight: "700", color: "#059669" }}>
+                    Today
+                  </Text>
+                )}
                 {count > 0 && (
                   <Text style={{ ...textLine(13), color: "#9ca3af" }}>
                     {count} {count === 1 ? "item" : "items"}

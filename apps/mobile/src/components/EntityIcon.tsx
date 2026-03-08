@@ -47,7 +47,37 @@ export default function EntityIcon({ type, color, size = 20 }: Props) {
   }
 
   if (type === "project") {
-    return <Feather name="folder" size={Math.round(size * 0.9)} color={color} />;
+    const s = Math.round(size * 0.9);
+    const tabW = Math.round(s * 0.42);
+    const tabH = Math.round(s * 0.22);
+    const bodyH = Math.round(s * 0.6);
+    const r = Math.round(s * 0.12);
+    return (
+      <View style={{ width: size, height: size, justifyContent: "center", alignItems: "center" }}>
+        {/* Tab */}
+        <View
+          style={{
+            width: tabW,
+            height: tabH,
+            backgroundColor: color,
+            borderTopLeftRadius: r,
+            borderTopRightRadius: r,
+            alignSelf: "flex-start",
+            marginLeft: Math.round(s * 0.05),
+          }}
+        />
+        {/* Body */}
+        <View
+          style={{
+            width: s,
+            height: bodyH,
+            backgroundColor: color,
+            borderRadius: r,
+            marginTop: -1,
+          }}
+        />
+      </View>
+    );
   }
 
   // goal (default)

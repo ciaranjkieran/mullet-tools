@@ -325,9 +325,8 @@ export default function TodayScreen() {
                 alignItems: "center",
                 justifyContent: "space-between",
                 paddingHorizontal: 20,
-                paddingTop: 18,
-                paddingBottom: 10,
-                backgroundColor: section.isPastDue ? "#fef2f2" : "#f0fdf4",
+                paddingVertical: 14,
+                backgroundColor: section.isPastDue ? "#fef2f2" : modeColor + "15",
                 borderBottomWidth: 1,
                 borderBottomColor: "#e5e7eb",
               }}
@@ -337,11 +336,16 @@ export default function TodayScreen() {
                   style={{
                     ...textLine(16),
                     fontWeight: "700",
-                    color: section.isPastDue ? "#dc2626" : "#059669",
+                    color: section.isPastDue ? "#dc2626" : "#1f2937",
                   }}
                 >
-                  {section.isPastDue ? "Past Due" : `${todayLabel} (Today)`}
+                  {section.isPastDue ? "Past Due" : todayLabel}
                 </Text>
+                {!section.isPastDue && (
+                  <Text style={{ ...textLine(14), fontWeight: "700", color: "#059669" }}>
+                    Today
+                  </Text>
+                )}
                 {count > 0 && (
                   <Text style={{ ...textLine(13), color: "#9ca3af" }}>
                     {count} {count === 1 ? "item" : "items"}
