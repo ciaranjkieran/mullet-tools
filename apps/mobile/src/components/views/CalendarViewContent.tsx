@@ -581,7 +581,7 @@ export default function CalendarViewContent({ listHeader }: Props) {
           <CalendarDayItem entity={item} formStore={formStore} />
         )}
         contentContainerStyle={{ paddingBottom: selectionActive ? 140 : 80 }}
-        stickySectionHeadersEnabled
+        stickySectionHeadersEnabled={false}
       />
 
       {!selectionActive && (

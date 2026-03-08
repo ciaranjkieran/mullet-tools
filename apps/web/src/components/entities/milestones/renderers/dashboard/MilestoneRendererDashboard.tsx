@@ -166,7 +166,7 @@ export default function MilestoneRenderer({
             modeColor={modeColor}
             label={`Mark "${milestone.title}" as complete`}
             onComplete={handleCompletion}
-            shape="circle"
+            shape="square"
           />
         </div>
       ) : (

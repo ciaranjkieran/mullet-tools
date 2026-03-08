@@ -465,7 +465,7 @@ export default function TodayScreen() {
           <CalendarDayItem entity={item} formStore={formStore} />
         )}
         contentContainerStyle={{ paddingBottom: selectionActive ? 140 : 80 }}
-        stickySectionHeadersEnabled
+        stickySectionHeadersEnabled={false}
       />
 
       {!selectionActive && (

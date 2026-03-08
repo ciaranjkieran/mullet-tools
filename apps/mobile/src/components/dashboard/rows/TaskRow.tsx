@@ -77,20 +77,19 @@ function TaskRow({ row }: Props) {
         backgroundColor: isSelected ? "#f0f8ff" : "#fff",
         padding: 12,
         flexDirection: "row",
-        alignItems: "flex-start",
+        alignItems: "center",
         justifyContent: "space-between",
         ...(isSelected ? selectedShadow(row.modeColor) : cardShadow("sm")),
       }}
     >
       {/* Left: colored dot + title column */}
-      <View style={{ flexDirection: "row", alignItems: "flex-start", flex: 1, minWidth: 0, gap: 10 }}>
+      <View style={{ flexDirection: "row", alignItems: "center", flex: 1, minWidth: 0, gap: 10 }}>
         <View
           style={{
             width: 10,
             height: 10,
             borderRadius: 5,
             backgroundColor: row.modeColor,
-            marginTop: 4,
           }}
         />
 

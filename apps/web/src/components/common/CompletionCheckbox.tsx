@@ -39,7 +39,7 @@ export default function CompletionCheckbox({
         width: 18,
         height: 18,
         borderRadius,
-        border: checked ? `2px solid ${modeColor}` : "2px solid #9ca3af",
+        border: checked ? `1.5px solid ${modeColor}` : "1.5px solid #6b7280",
         backgroundColor: checked ? modeColor : "transparent",
       }}
       onClick={(e) => {

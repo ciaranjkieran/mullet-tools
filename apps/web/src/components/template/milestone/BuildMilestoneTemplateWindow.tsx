@@ -155,6 +155,10 @@ export default function BuildMilestoneTemplateWindow({
                 onChange={(e) =>
                   setMilestone({ ...milestone, title: e.target.value })
                 }
+                onFocus={(e) => {
+                  const el = e.currentTarget;
+                  requestAnimationFrame(() => el.setSelectionRange(el.value.length, el.value.length));
+                }}
                 placeholder="Milestone title"
                 className="w-full text-2xl font-bold tracking-tight placeholder-gray-400 focus:outline-none border-none bg-transparent"
               />

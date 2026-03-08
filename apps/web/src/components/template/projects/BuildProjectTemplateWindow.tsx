@@ -121,6 +121,10 @@ export default function BuildProjectTemplateWindow({
                 onChange={(e) =>
                   setProject({ ...project, title: e.target.value })
                 }
+                onFocus={(e) => {
+                  const el = e.currentTarget;
+                  requestAnimationFrame(() => el.setSelectionRange(el.value.length, el.value.length));
+                }}
                 placeholder="Project title"
                 className="w-full text-2xl font-bold tracking-tight placeholder-gray-400 focus:outline-none border-none bg-transparent"
               />

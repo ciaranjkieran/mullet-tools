@@ -17,7 +17,8 @@
       "bundleIdentifier": "com.mullet.app",
       "infoPlist": {
         "NSCameraUsageDescription": "Mullet needs camera access to take photos for attachments.",
-        "NSPhotoLibraryUsageDescription": "Mullet needs photo library access to attach images."
+        "NSPhotoLibraryUsageDescription": "Mullet needs photo library access to attach images.",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
@@ -37,7 +38,7 @@
     ],
     "extra": {
       "eas": {
-        "projectId": ""
+        "projectId": "95a76fa8-5d2c-4e60-bdff-762d9544e286"
       }
     }
   }

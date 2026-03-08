@@ -556,7 +556,7 @@ export default function DashboardPage() {
             />
 
             {/* Desktop: full stack */}
-            <div className="fixed z-50 bottom-10 right-12 hidden lg:flex flex-col items-center gap-4">
+            <div className="fixed z-[70] bottom-10 right-12 hidden lg:flex flex-col items-center gap-4">
               <AddGoalButton
                 onClick={() => {
                   setGoalToEdit(null);

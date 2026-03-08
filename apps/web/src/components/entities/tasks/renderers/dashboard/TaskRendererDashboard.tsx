@@ -51,19 +51,19 @@ export default function TaskRendererDashboard({
           : undefined
       }
     >
-      <div className="flex justify-between items-start gap-2">
+      <div className="flex justify-between items-center gap-2">
         {/* Left: handle + dot + text */}
-        <div className="flex items-start gap-2 flex-1 min-w-0">
+        <div className="flex items-center gap-2 flex-1 min-w-0">
           <EntityDragHandle
             data-drag-handle
             entityKind="task"
             entityId={task.id}
             canDrag={!task.dueDate}
-            className="p-1 rounded mt-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+            className="p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity"
             {...(dragHandleProps ?? {})}
           />
           <span
-            className="mt-1 w-2.5 h-2.5 rounded-full flex-shrink-0"
+            className="w-2.5 h-2.5 rounded-full flex-shrink-0"
             style={{ backgroundColor: modeColor }}
           />
           {/* text column */}

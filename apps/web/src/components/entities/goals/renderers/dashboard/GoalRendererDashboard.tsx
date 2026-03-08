@@ -180,7 +180,7 @@ export default function GoalRendererDashboard({
             modeColor={modeColor}
             label={`Mark "${goal.title}" as complete`}
             onComplete={handleCompletion}
-            shape="circle"
+            shape="square"
           />
         </div>
       ) : (

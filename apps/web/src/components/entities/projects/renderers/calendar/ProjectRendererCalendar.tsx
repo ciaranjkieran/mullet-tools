@@ -155,7 +155,7 @@ export default function ProjectRendererCalendar({
             modeColor={modeColor}
             label={`Mark "${project.title}" as complete`}
             onComplete={handleCompletion}
-            shape="circle"
+            shape="square"
           />
         </div>
       </div>

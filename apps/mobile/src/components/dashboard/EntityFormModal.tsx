@@ -11,6 +11,7 @@ import {
   Alert,
   ActivityIndicator,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { Feather } from "@expo/vector-icons";
 import EntityIcon from "../EntityIcon";
@@ -568,9 +569,10 @@ export default function EntityFormModal({
       presentationStyle="pageSheet"
       onRequestClose={onClose}
     >
+      <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }} edges={["top"]}>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={{ flex: 1, backgroundColor: "#fff" }}
+        style={{ flex: 1 }}
       >
         {/* Header */}
         <View
@@ -949,6 +951,7 @@ export default function EntityFormModal({
         </ScrollView>
         )}
       </KeyboardAvoidingView>
+      </SafeAreaView>
     </Modal>
   );
 }
