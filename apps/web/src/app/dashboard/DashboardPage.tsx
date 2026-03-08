@@ -31,7 +31,7 @@ import { useViewerStore } from "@/components/boards/viewer/store/useViewerStore"
 import { useDialogStore } from "@/lib/dialogs/useDialogStore";
 import { useHomeFocusStore } from "@/lib/store/useNavFocusStore";
 
-import { useViewStore } from "@shared/store/useViewStore";
+import { useViewStore, type ViewType } from "@shared/store/useViewStore";
 import { useModeStore } from "@shared/store/useModeStore";
 import { useTaskStore } from "@shared/store/useTaskStore";
 import { useMilestoneStore } from "@shared/store/useMilestoneStore";
