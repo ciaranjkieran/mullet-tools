@@ -13,9 +13,15 @@ import EntityIcon from "../components/EntityIcon";
 import { useNavigation } from "@react-navigation/native";
 import { useTemplates } from "@shared/api/hooks/templates/useTemplates";
 import { useDeleteTemplate } from "@shared/api/hooks/templates/useDeleteTemplate";
-import useApplyTemplate from "@shared/api/hooks/templates/useApplyTemplate";
 import { useModeStore } from "@shared/store/useModeStore";
-import type { Template, TemplateMilestoneData, TemplateProjectData } from "@shared/types/Template";
+import BuildTemplateModal from "../components/template/BuildTemplateModal";
+import EditTemplateModal from "../components/template/EditTemplateModal";
+import UseTemplateModal from "../components/template/UseTemplateModal";
+import type {
+  Template,
+  TemplateMilestoneData,
+  TemplateProjectData,
+} from "@shared/types/Template";
 
 type TabType = "milestone" | "project";
 
@@ -30,7 +36,7 @@ function MilestonePreview({ data }: { data: TemplateMilestoneData }) {
     <View style={{ marginTop: 6 }}>
       {items.map((item, i) => (
         <Text key={i} style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>
-          · {item}
+          · {item || "(untitled)"}
         </Text>
       ))}
       {hidden > 0 && (
@@ -55,7 +61,7 @@ function ProjectPreview({ data }: { data: TemplateProjectData }) {
     <View style={{ marginTop: 6 }}>
       {items.map((item, i) => (
         <Text key={i} style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>
-          · {item}
+          · {item || "(untitled)"}
         </Text>
       ))}
       {hidden > 0 && (
@@ -71,14 +77,14 @@ function TemplateCard({
   template,
   modeColor,
   onUse,
+  onEdit,
   onDelete,
-  isApplying,
 }: {
   template: Template;
   modeColor: string;
   onUse: () => void;
+  onEdit: () => void;
   onDelete: () => void;
-  isApplying: boolean;
 }) {
   return (
     <View
@@ -121,7 +127,6 @@ function TemplateCard({
       >
         <TouchableOpacity
           onPress={onUse}
-          disabled={isApplying}
           style={{
             flex: 1,
             paddingVertical: 8,
@@ -130,13 +135,20 @@ function TemplateCard({
             alignItems: "center",
           }}
         >
-          {isApplying ? (
-            <ActivityIndicator size="small" color="#fff" />
-          ) : (
-            <Text style={{ color: "#fff", fontWeight: "600", fontSize: 14 }}>
-              Use
-            </Text>
-          )}
+          <Text style={{ color: "#fff", fontWeight: "600", fontSize: 14 }}>
+            Use
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={onEdit}
+          style={{
+            paddingVertical: 8,
+            paddingHorizontal: 14,
+            borderRadius: 8,
+            backgroundColor: "#f3f4f6",
+          }}
+        >
+          <Feather name="edit-2" size={16} color="#6b7280" />
         </TouchableOpacity>
         <TouchableOpacity
           onPress={onDelete}
@@ -158,12 +170,13 @@ export default function TemplatesScreen() {
   const navigation = useNavigation();
   const { data: templates = [], isLoading } = useTemplates();
   const deleteTemplate = useDeleteTemplate();
-  const { applyTemplate } = useApplyTemplate();
   const modes = useModeStore((s) => s.modes);
   const selectedMode = useModeStore((s) => s.selectedMode);
 
   const [activeTab, setActiveTab] = useState<TabType>("milestone");
-  const [applyingId, setApplyingId] = useState<number | null>(null);
+  const [buildModalOpen, setBuildModalOpen] = useState(false);
+  const [editingTemplate, setEditingTemplate] = useState<Template | null>(null);
+  const [usingTemplate, setUsingTemplate] = useState<Template | null>(null);
 
   const modeMap = useMemo(() => {
     const map = new Map<number, { color: string; title: string }>();
@@ -179,16 +192,8 @@ export default function TemplatesScreen() {
     return list;
   }, [templates, activeTab, selectedMode]);
 
-  const handleUse = async (template: Template) => {
-    setApplyingId(template.id);
-    try {
-      await applyTemplate(template);
-      Alert.alert("Success", `Template "${template.title}" applied!`);
-    } catch {
-      Alert.alert("Error", "Failed to apply template.");
-    } finally {
-      setApplyingId(null);
-    }
+  const handleUse = (template: Template) => {
+    setUsingTemplate(template);
   };
 
   const handleDelete = (template: Template) => {
@@ -224,6 +229,12 @@ export default function TemplatesScreen() {
         <Text style={{ flex: 1, fontSize: 20, fontWeight: "bold" }}>
           Templates
         </Text>
+        <TouchableOpacity
+          onPress={() => setBuildModalOpen(true)}
+          style={{ padding: 4 }}
+        >
+          <Feather name="plus" size={22} color="#111" />
+        </TouchableOpacity>
       </View>
 
       {/* Tab bar */}
@@ -281,9 +292,14 @@ export default function TemplatesScreen() {
           <Text style={{ color: "#9ca3af", fontSize: 16, marginTop: 12 }}>
             No {activeTab} templates
           </Text>
-          <Text style={{ color: "#d1d5db", fontSize: 13, marginTop: 4 }}>
-            Create templates from the web app
-          </Text>
+          <TouchableOpacity
+            onPress={() => setBuildModalOpen(true)}
+            style={{ marginTop: 16 }}
+          >
+            <Text style={{ color: "#3b82f6", fontSize: 14, fontWeight: "600" }}>
+              Create one
+            </Text>
+          </TouchableOpacity>
         </View>
       ) : (
         <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
@@ -295,13 +311,40 @@ export default function TemplatesScreen() {
                 template={tpl}
                 modeColor={mode?.color ?? "#000"}
                 onUse={() => handleUse(tpl)}
+                onEdit={() => setEditingTemplate(tpl)}
                 onDelete={() => handleDelete(tpl)}
-                isApplying={applyingId === tpl.id}
               />
             );
           })}
         </ScrollView>
       )}
+
+      {/* Build Modal */}
+      <BuildTemplateModal
+        visible={buildModalOpen}
+        onClose={() => setBuildModalOpen(false)}
+        modes={modes}
+        initialType={activeTab}
+        prefillModeId={
+          selectedMode !== "All" ? selectedMode.id : undefined
+        }
+      />
+
+      {/* Edit Modal */}
+      <EditTemplateModal
+        visible={editingTemplate !== null}
+        onClose={() => setEditingTemplate(null)}
+        template={editingTemplate}
+        modes={modes}
+      />
+
+      {/* Use Modal */}
+      <UseTemplateModal
+        visible={usingTemplate !== null}
+        onClose={() => setUsingTemplate(null)}
+        template={usingTemplate}
+        modes={modes}
+      />
     </SafeAreaView>
   );
 }

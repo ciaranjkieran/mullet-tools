@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import ModeInput from "@/components/timer/inputs/TimerModeSelect";
 import type { Mode } from "@shared/types/Mode";
@@ -39,6 +39,7 @@ export default function EditMilestoneTemplateWindow({
   modes,
 }: Props) {
   const patchTemplate = usePatchTemplate();
+  const contentRef = useRef<HTMLDivElement>(null);
 
   const [node, setNode] = useState<TemplateMilestoneData>(() =>
     buildNode(template)
@@ -98,7 +99,15 @@ export default function EditMilestoneTemplateWindow({
     <Dialog.Root open={isOpen} onOpenChange={onOpenChange}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 bg-black/40 z-40" />
-        <Dialog.Content className="fixed z-50 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[95vw] max-w-lg bg-white rounded-xl shadow-lg p-8 max-h-[90vh] overflow-y-auto">
+        <Dialog.Content
+          ref={contentRef}
+          tabIndex={-1}
+          onOpenAutoFocus={(e) => {
+            e.preventDefault();
+            contentRef.current?.focus();
+          }}
+          className="fixed z-50 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[95vw] max-w-3xl bg-white rounded-xl shadow-lg p-8 max-h-[90vh] overflow-y-auto"
+        >
           {/* Header */}
           <div className="flex items-start gap-3 mb-6">
             <div

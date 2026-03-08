@@ -27,6 +27,7 @@ export function useStopTimer() {
     },
 
     onSuccess: (entry) => {
+      // Optimistically insert the new entry into the cache
       qc.setQueryData<TimeEntryDTO[] | undefined>(TIME_ENTRIES_QK(), (prev) => {
         const list = prev ?? [];
         const withoutDup = list.filter((e) => e.id !== entry.id);
@@ -34,17 +35,14 @@ export function useStopTimer() {
           e.endedAt ? Date.parse(e.endedAt) : Date.parse(e.startedAt);
         return [entry, ...withoutDup].sort((a, b) => ts(b) - ts(a));
       });
+
+      // Also invalidate immediately so any subscribed query refetches
+      qc.invalidateQueries({ queryKey: ["timer", "entries"] });
     },
 
     onSettled: async () => {
-      qc.invalidateQueries({
-        queryKey: ACTIVE_TIMER_QK,
-        refetchType: "active",
-      });
-      qc.invalidateQueries({
-        queryKey: ["timer", "entries"],
-        refetchType: "active",
-      });
+      qc.invalidateQueries({ queryKey: ACTIVE_TIMER_QK });
+      qc.invalidateQueries({ queryKey: ["timer", "entries"] });
     },
   });
 }

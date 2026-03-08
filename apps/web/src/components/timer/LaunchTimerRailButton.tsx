@@ -122,6 +122,7 @@ export default function LaunchTimerRailButton(props: Props) {
       }
     }
 
+    // Set store immediately so the timer view renders
     setViewType("timer");
 
     queueMicrotask(() => {
@@ -139,6 +140,14 @@ export default function LaunchTimerRailButton(props: Props) {
     });
 
     onAfterLaunch?.();
+
+    // Defer URL update past modal teardown so it doesn't get reverted
+    setTimeout(() => {
+      const params = new URLSearchParams(window.location.search);
+      params.set("view", "timer");
+      window.history.replaceState(window.history.state, "", `/dashboard?${params.toString()}`);
+      console.log("[LaunchTimer] deferred URL update:", window.location.search);
+    }, 0);
   };
 
   const dynamicLabel =

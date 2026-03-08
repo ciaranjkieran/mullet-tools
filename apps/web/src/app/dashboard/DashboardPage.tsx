@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { CalendarIcon, HomeIcon, Users, Sparkles } from "lucide-react";
 
@@ -95,11 +95,6 @@ export default function DashboardPage() {
 
   // Keep store in sync with URL
   useEffect(() => {
-    // Back-compat: if your store uses "dashboard" for home, you can either:
-    // 1) switch the store to "home", or
-    // 2) keep mapping here.
-    // This sets the store to "home" (preferred). If your store doesn't allow it yet,
-    // change this to: setViewType(urlView === "home" ? "dashboard" : urlView)
     try {
       setViewType(urlView as any);
     } catch {
@@ -108,18 +103,36 @@ export default function DashboardPage() {
   }, [urlView, setViewType]);
 
   // One navigation function: store + URL
-  const goView = (view: View) => {
-    // update store immediately (nice UX)
-    try {
-      setViewType(view as any);
-    } catch {
-      setViewType((view === "home" ? "dashboard" : view) as any);
-    }
+  const goView = useCallback(
+    (view: View | ViewType) => {
+      const mapped: View =
+        view === "dashboard" ? "home" : (view as View);
 
-    const params = new URLSearchParams(searchParams.toString());
-    params.set("view", view);
-    router.replace(`/dashboard?${params.toString()}`);
-  };
+      console.log("[DashboardPage goView] called with:", view, "→ mapped:", mapped);
+      console.log("[DashboardPage goView] current URL:", window.location.search);
+
+      try {
+        setViewType(mapped as any);
+      } catch {
+        setViewType((mapped === "home" ? "dashboard" : mapped) as any);
+      }
+
+      const params = new URLSearchParams(window.location.search);
+      params.set("view", mapped);
+      const nextUrl = `/dashboard?${params.toString()}`;
+      console.log("[DashboardPage goView] replaceState →", nextUrl);
+      window.history.replaceState(window.history.state, "", nextUrl);
+    },
+    [searchParams, router, setViewType]
+  );
+
+  // Register goView on the store so external components (e.g. LaunchTimerRailButton) can navigate
+  const setGoView = useViewStore((s) => s.setGoView);
+  useEffect(() => {
+    console.log("[DashboardPage] registering goView on store");
+    setGoView(goView as (view: ViewType) => void);
+    return () => setGoView(null);
+  }, [goView, setGoView]);
 
   const viewerOpen = useViewerStore((s) => s.isOpen);
 
