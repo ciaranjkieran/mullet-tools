@@ -2,9 +2,11 @@
 from django.db import transaction
 from core.models import Project, Milestone, Task
 from core.services.ordering import (
+    POSITION_STEP,
     assign_end_position_for_project,
     assign_end_position_for_milestone,
-    assign_end_position_for_task,
+    scope_qs_for_task,
+    next_position,
 )
 
 
@@ -22,6 +24,34 @@ def apply_template_data(user, template_type, data, mode_id):
         raise ValueError(f"Unsupported template type: {template_type}")
 
 
+def _bulk_create_tasks(user, task_titles, mode_id, project=None, milestone=None):
+    """Create all tasks in one bulk_create call with sequential positions."""
+    titles = [t.strip() for t in task_titles if t and t.strip()]
+    if not titles:
+        return
+
+    # One DB query for starting position
+    scope_data = {"mode_id": mode_id}
+    if milestone:
+        scope_data["milestone_id"] = milestone.id
+    elif project:
+        scope_data["project_id"] = project.id
+    base_pos = next_position(scope_qs_for_task(scope_data))
+
+    tasks = [
+        Task(
+            title=title,
+            user=user,
+            mode_id=mode_id,
+            project=project,
+            milestone=milestone,
+            position=base_pos + i * POSITION_STEP,
+        )
+        for i, title in enumerate(titles)
+    ]
+    Task.objects.bulk_create(tasks)
+
+
 def _create_project_recursive(user, data, mode_id, parent_id=None):
     pos_data = {"mode_id": mode_id, "parent_id": parent_id}
     position = assign_end_position_for_project(pos_data)
@@ -35,30 +65,14 @@ def _create_project_recursive(user, data, mode_id, parent_id=None):
         position=position,
     )
 
-    # Tasks
-    for task_title in data.get("tasks", []):
-        if not task_title or not task_title.strip():
-            continue
-        task_pos = assign_end_position_for_task({
-            "mode_id": mode_id,
-            "project_id": project.id,
-        })
-        Task.objects.create(
-            title=task_title.strip(),
-            user=user,
-            mode_id=mode_id,
-            project=project,
-            position=task_pos,
-        )
+    _bulk_create_tasks(user, data.get("tasks", []), mode_id, project=project)
 
-    # Sub-milestones under this project
     for ms_data in data.get("subMilestones", []):
         _create_milestone_recursive(
             user, ms_data, mode_id,
             parent_type="project", parent_id=project.id,
         )
 
-    # Sub-projects
     for sp_data in data.get("subProjects", []):
         _create_project_recursive(user, sp_data, mode_id, parent_id=project.id)
 
@@ -85,23 +99,8 @@ def _create_milestone_recursive(user, data, mode_id, parent_type=None, parent_id
         position=position,
     )
 
-    # Tasks
-    for task_title in data.get("tasks", []):
-        if not task_title or not task_title.strip():
-            continue
-        task_pos = assign_end_position_for_task({
-            "mode_id": mode_id,
-            "milestone_id": milestone.id,
-        })
-        Task.objects.create(
-            title=task_title.strip(),
-            user=user,
-            mode_id=mode_id,
-            milestone=milestone,
-            position=task_pos,
-        )
+    _bulk_create_tasks(user, data.get("tasks", []), mode_id, milestone=milestone)
 
-    # Sub-milestones
     for sub_data in data.get("subMilestones", []):
         _create_milestone_recursive(
             user, sub_data, mode_id,
