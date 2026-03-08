@@ -32,6 +32,12 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
+    "updates": {
+      "url": "https://u.expo.dev/95a76fa8-5d2c-4e60-bdff-762d9544e286"
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
     "plugins": [
       "expo-secure-store",
       "@react-native-community/datetimepicker"
