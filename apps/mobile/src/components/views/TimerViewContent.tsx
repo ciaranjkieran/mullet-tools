@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef, type ReactElement } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef, type ReactElement } from "react";
 import { ScrollView, View, RefreshControl, AppState } from "react-native";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTimerLaunchStore } from "../../lib/store/useTimerLaunchStore";
@@ -13,6 +13,7 @@ import {
 } from "@shared/api/hooks/timer/useActiveTimer";
 import { useStartTimer } from "@shared/api/hooks/timer/useStartTimer";
 import { useStopTimer } from "@shared/api/hooks/timer/useStopTimer";
+import { useCompleteNextTimer } from "@shared/api/hooks/timer/useCompleteNextTimer";
 import { useTimeEntries } from "@shared/api/hooks/timer/useTimeEntries";
 import { useDeleteTimeEntry } from "@shared/api/hooks/timer/useDeleteTimeEntry";
 import { useModeStore } from "@shared/store/useModeStore";
@@ -54,10 +55,12 @@ export default function TimerViewContent({ listHeader }: Props) {
     useTimeEntries();
   const startTimer = useStartTimer();
   const stopTimer = useStopTimer();
+  const completeNext = useCompleteNextTimer();
   const deleteEntry = useDeleteTimeEntry();
 
   // Store reads
   const modes = useModeStore((s) => s.modes);
+  const selectedMode = useModeStore((s) => s.selectedMode);
   const goals = useGoalStore((s) => s.goals);
   const projects = useProjectStore((s) => s.projects);
   const milestones = useMilestoneStore((s) => s.milestones);
@@ -75,12 +78,18 @@ export default function TimerViewContent({ listHeader }: Props) {
   const [milestoneId, setMilestoneId] = useState<number | null>(null);
   const [taskId, setTaskId] = useState<number | null>(null);
 
-  // Auto-select first mode if none selected
+  // Sync with app-wide mode filter (only when idle)
   useEffect(() => {
-    if (!modeId && modes.length > 0) {
-      setModeId(modes[0].id);
+    if (activeTimer) return; // don't change mode while a session is running
+    if (selectedMode === "All") {
+      // When "All" is selected, default to first mode
+      if (!modeId && modes.length > 0) {
+        setModeId(modes[0].id);
+      }
+    } else if (modeId !== selectedMode.id) {
+      setModeId(selectedMode.id);
     }
-  }, [modes, modeId]);
+  }, [selectedMode, modes, modeId, activeTimer]);
 
   // Consume launch intent from entity windows
   const intentConsumed = useRef(false);
@@ -142,6 +151,23 @@ export default function TimerViewContent({ listHeader }: Props) {
   const isRunning = !!activeTimer;
   const nowMs = useTimerTick(isRunning);
 
+  // Auto-stop countdown timer when it reaches zero
+  const didAutoStopRef = useRef(false);
+  useEffect(() => {
+    if (!activeTimer || activeTimer.kind !== "timer") {
+      didAutoStopRef.current = false;
+      return;
+    }
+    const endsAt = activeTimer.endsAt;
+    if (typeof endsAt === "string" && endsAt.length > 0) {
+      const remainingSec = Math.ceil(Date.parse(endsAt) / 1000 - Date.now() / 1000);
+      if (remainingSec <= 0 && !didAutoStopRef.current) {
+        didAutoStopRef.current = true;
+        stopTimer.mutate();
+      }
+    }
+  }, [activeTimer, nowMs, stopTimer]);
+
   // Computed
   const durationSec = cdMin * 60 + cdSec;
   const modeColor =
@@ -177,6 +203,22 @@ export default function TimerViewContent({ listHeader }: Props) {
   const handleStop = useCallback(() => {
     stopTimer.mutate();
   }, [stopTimer]);
+
+  // Determine the deepest entity being timed (for complete button)
+  const activeEntity = useMemo(() => {
+    if (!activeTimer) return null;
+    const p = activeTimer.path;
+    if (p.taskId) return { entityType: "task" as const, entityId: p.taskId };
+    if (p.milestoneId) return { entityType: "milestone" as const, entityId: p.milestoneId };
+    if (p.projectId) return { entityType: "project" as const, entityId: p.projectId };
+    if (p.goalId) return { entityType: "goal" as const, entityId: p.goalId };
+    return null; // only mode — no complete button
+  }, [activeTimer]);
+
+  const handleComplete = useCallback(() => {
+    if (!activeEntity) return;
+    completeNext.mutate(activeEntity);
+  }, [activeEntity, completeNext]);
 
   const handleResume = useCallback(
     (entry: TimeEntryDTO) => {
@@ -227,8 +269,11 @@ export default function TimerViewContent({ listHeader }: Props) {
           modeColor={modeColor}
           onStart={handleStart}
           onStop={handleStop}
+          onComplete={handleComplete}
           starting={startTimer.isPending}
           stopping={stopTimer.isPending}
+          completing={completeNext.isPending}
+          hasEntity={activeEntity !== null}
         />
 
         {/* Duration picker (countdown mode only) */}
@@ -262,12 +307,15 @@ export default function TimerViewContent({ listHeader }: Props) {
           disabled={isRunning}
         />
 
+        <View style={{ height: 24 }} />
+
         {/* Today's entries */}
         <TimeEntryList
           entries={entries}
           modes={modes}
           onResume={handleResume}
           onDelete={handleDeleteEntry}
+          filterModeId={modeId}
         />
 
         {/* Bottom spacer for scroll */}

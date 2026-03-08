@@ -217,6 +217,7 @@ export default function EditTemplateModal({
                   options={modes.map((m) => ({ id: m.id, title: m.title }))}
                   selectedId={modeId}
                   onChange={(id) => { if (id !== null) setModeId(id); }}
+                  preserveOrder
                 />
               </View>
             )}

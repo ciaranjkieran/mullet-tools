@@ -311,6 +311,7 @@ export default function EntityPicker({
         icon="layers"
         options={modes}
         selectedId={modeId}
+        preserveOrder
         onChange={handleModeChange}
         modeColor={modeColor}
       />

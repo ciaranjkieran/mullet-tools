@@ -13,6 +13,7 @@ type Props = {
   modes: Mode[];
   onResume: (entry: TimeEntryDTO) => void;
   onDelete: (entryId: number) => void;
+  filterModeId?: number | null;
 };
 
 function pad2(n: number) {
@@ -151,8 +152,18 @@ export default function TimeEntryList({
   modes,
   onResume,
   onDelete,
+  filterModeId,
 }: Props) {
-  if (entries.length === 0) {
+  const filtered = (filterModeId != null
+    ? entries.filter((e) => e.path.modeId === filterModeId)
+    : entries
+  ).slice().sort((a, b) => {
+    const ta = a.endedAt ? Date.parse(a.endedAt) : Date.parse(a.startedAt);
+    const tb = b.endedAt ? Date.parse(b.endedAt) : Date.parse(b.startedAt);
+    return tb - ta;
+  });
+
+  if (filtered.length === 0) {
     return (
       <View style={{ alignItems: "center", paddingVertical: 24 }}>
         <Text style={{ color: "#9ca3af", fontSize: 14 }}>
@@ -176,7 +187,7 @@ export default function TimeEntryList({
       >
         Today
       </Text>
-      {entries.map((entry) => (
+      {filtered.map((entry) => (
         <TimeEntryRow
           key={entry.id}
           entry={entry}

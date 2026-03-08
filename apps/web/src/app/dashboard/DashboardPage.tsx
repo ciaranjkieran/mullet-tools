@@ -236,8 +236,9 @@ export default function DashboardPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [focusTarget, modes.length]);
 
-  // Helper for "active" styling based on URL (more reliable than store during transitions)
-  const activeView = urlView;
+  // Derive active view from Zustand store (goView updates both store + URL via replaceState,
+  // but useSearchParams doesn't react to replaceState, so urlView can go stale).
+  const activeView: View = viewType === "dashboard" ? "home" : (viewType as View);
 
   return (
     <div className="min-h-screen">

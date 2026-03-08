@@ -521,13 +521,20 @@ export function useTimerController({
   // Countdown local state
   const { cdMin, setCdMin, cdSec, setCdSec, durationSec } = useTimerCountdown();
 
-  // sync selection modeId with external page filter
+  // sync selection modeId with external page filter (only when idle)
   useEffect(() => {
-    if (selectedMode === "All") return;
+    if (active) return; // don't change mode while a session is running
+    if (selectedMode === "All") {
+      // When "All" is selected, default to first mode if none set
+      if (modeId == null && modes.length > 0) {
+        setModeId(modes[0].id);
+      }
+      return;
+    }
     if (modeId === selectedMode.id) return;
     setModeId(selectedMode.id);
     // setModeId already clears descendants
-  }, [selectedMode, modeId, setModeId]);
+  }, [selectedMode, modeId, modes, setModeId, active]);
 
   // When leaving "All", ask the outer filter to adopt our dropdown-selected mode once
   const hasAdoptedRef = useRef(false);

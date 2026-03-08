@@ -12,8 +12,12 @@ type Props = {
   modeColor: string;
   onStart: () => void;
   onStop: () => void;
+  onComplete?: () => void;
   starting: boolean;
   stopping: boolean;
+  completing?: boolean;
+  /** True when active session is timing an entity (not just a mode) */
+  hasEntity?: boolean;
 };
 
 function pad2(n: number) {
@@ -37,8 +41,11 @@ export default function TimerClock({
   modeColor,
   onStart,
   onStop,
+  onComplete,
   starting,
   stopping,
+  completing = false,
+  hasEntity = false,
 }: Props) {
   let displaySec = 0;
   let running = false;
@@ -78,8 +85,10 @@ export default function TimerClock({
         : "set duration";
 
   const textColor = getContrastingText(modeColor);
-  const busy = starting || stopping;
+  const busy = starting || stopping || completing;
   const canStart = clockType === "stopwatch" || durationSec > 0;
+
+  const showComplete = running && hasEntity && !!onComplete;
 
   return (
     <View
@@ -108,27 +117,63 @@ export default function TimerClock({
 
       <View style={{ flexDirection: "row", marginTop: 20, gap: 12 }}>
         {running ? (
-          <TouchableOpacity
-            onPress={onStop}
-            disabled={busy}
-            style={{
-              backgroundColor: "#991B1B",
-              paddingVertical: 12,
-              paddingHorizontal: 32,
-              borderRadius: 10,
-              opacity: busy ? 0.5 : 1,
-            }}
-          >
-            {stopping ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text
-                style={{ color: "#fff", fontWeight: "600", fontSize: 16 }}
+          <>
+            <TouchableOpacity
+              onPress={onStop}
+              disabled={busy}
+              style={{
+                backgroundColor: "#991B1B",
+                paddingVertical: 12,
+                paddingHorizontal: 32,
+                borderRadius: 10,
+                opacity: busy ? 0.5 : 1,
+              }}
+            >
+              {stopping ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text
+                  style={{ color: "#fff", fontWeight: "600", fontSize: 16 }}
+                >
+                  Stop
+                </Text>
+              )}
+            </TouchableOpacity>
+
+            {showComplete && (
+              <TouchableOpacity
+                onPress={onComplete}
+                disabled={busy}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  backgroundColor: "#14532D",
+                  paddingVertical: 12,
+                  paddingHorizontal: 20,
+                  borderRadius: 10,
+                  gap: 6,
+                  opacity: busy ? 0.5 : 1,
+                }}
               >
-                Stop
-              </Text>
+                {completing ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <>
+                    <Text
+                      style={{
+                        color: "#fff",
+                        fontWeight: "600",
+                        fontSize: 16,
+                      }}
+                    >
+                      Complete
+                    </Text>
+                    <Feather name="check" size={18} color="#fff" />
+                  </>
+                )}
+              </TouchableOpacity>
             )}
-          </TouchableOpacity>
+          </>
         ) : (
           <TouchableOpacity
             onPress={onStart}

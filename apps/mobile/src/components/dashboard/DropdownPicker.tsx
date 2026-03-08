@@ -20,6 +20,8 @@ type Props = {
   icon?: React.ComponentProps<typeof Feather>["name"];
   iconElement?: React.ReactNode;
   modeColor?: string;
+  /** When true, options are rendered in the order provided (no alphabetical sort). */
+  preserveOrder?: boolean;
 };
 
 export default function DropdownPicker({
@@ -30,12 +32,15 @@ export default function DropdownPicker({
   icon,
   iconElement,
   modeColor,
+  preserveOrder,
 }: Props) {
   const [open, setOpen] = useState(false);
 
-  const sorted = [...options].sort((a, b) =>
-    a.title.localeCompare(b.title, undefined, { numeric: true, sensitivity: "base" })
-  );
+  const sorted = preserveOrder
+    ? options
+    : [...options].sort((a, b) =>
+        a.title.localeCompare(b.title, undefined, { numeric: true, sensitivity: "base" })
+      );
 
   const selected = sorted.find((o) => o.id === selectedId);
 
