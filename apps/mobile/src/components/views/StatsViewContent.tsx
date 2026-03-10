@@ -1,8 +1,9 @@
-import React, { useState, useMemo, type ReactElement } from "react";
-import { View, Text, ScrollView, ActivityIndicator } from "react-native";
+import React, { useState, useMemo, useCallback, type ReactElement } from "react";
+import { View, Text, ScrollView, ActivityIndicator, RefreshControl } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { format, startOfWeek, endOfWeek } from "date-fns";
-import { useStatsTree } from "@shared/api/hooks/stats/useStatsTree";
+import { useQueries, useQueryClient } from "@tanstack/react-query";
+import api from "@shared/api/axios";
 import DateRangePicker from "../stats/DateRangePicker";
 import StatsNodeCard from "../stats/StatsNodeCard";
 import type { Mode } from "@shared/types/Mode";
@@ -170,51 +171,33 @@ function ModeStatsCard({ tree, mode }: { tree: StatsTree; mode: Mode }) {
   );
 }
 
-function SingleModeStats({
-  modeId,
-  mode,
-  from,
-  to,
-}: {
-  modeId: number;
-  mode: Mode;
-  from: string;
-  to: string;
-}) {
-  const args = useMemo(
-    () => ({
-      modeId,
-      ...(from && to ? { from, to } : {}),
-    }),
-    [modeId, from, to],
-  );
-
-  const { data: tree, isLoading } = useStatsTree(args);
-
-  if (isLoading) {
-    return (
-      <View style={{ padding: 20, alignItems: "center" }}>
-        <ActivityIndicator />
-      </View>
-    );
-  }
-
-  if (!tree || tree.seconds === 0) return null;
-
-  return <ModeStatsCard tree={tree} mode={mode} />;
-}
-
 type Props = {
   modes: Mode[];
   selectedMode: Mode | "All";
   listHeader?: ReactElement;
 };
 
+/** Resolve "allTime" to a wide date range since the backend requires from/to */
+function resolveFromTo(
+  preset: Preset,
+  from: string,
+  to: string,
+): { from: string; to: string } {
+  if (preset === "allTime" || !from || !to) {
+    return {
+      from: "2020-01-01",
+      to: format(new Date(), "yyyy-MM-dd"),
+    };
+  }
+  return { from, to };
+}
+
 export default function StatsViewContent({
   modes,
   selectedMode,
   listHeader,
 }: Props) {
+  const queryClient = useQueryClient();
   const now = new Date();
   const [preset, setPreset] = useState<Preset>("thisWeek");
   const [from, setFrom] = useState(
@@ -223,6 +206,7 @@ export default function StatsViewContent({
   const [to, setTo] = useState(
     format(endOfWeek(now, { weekStartsOn: 1 }), "yyyy-MM-dd"),
   );
+  const [refreshing, setRefreshing] = useState(false);
 
   const handlePreset = (p: Preset, f: string, t: string) => {
     setPreset(p);
@@ -235,37 +219,92 @@ export default function StatsViewContent({
     return modes.filter((m) => m.id === (selectedMode as Mode).id);
   }, [modes, selectedMode]);
 
+  const { from: resolvedFrom, to: resolvedTo } = resolveFromTo(preset, from, to);
+
+  // Fetch all mode trees in parallel (matches web's useAllModesStatsTrees pattern)
+  const queries = useQueries({
+    queries: modesToShow.map((mode) => ({
+      queryKey: ["statsTree", { modeId: mode.id, from: resolvedFrom, to: resolvedTo }],
+      queryFn: async () => {
+        const params: Record<string, number | string> = {
+          modeId: mode.id,
+          from: resolvedFrom,
+          to: resolvedTo,
+        };
+        const res = await api.get<StatsTree>("/stats/tree", { params });
+        return res.data;
+      },
+      enabled: !!mode.id,
+      retry: 1,
+      staleTime: 0,
+    })),
+  });
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await queryClient.invalidateQueries({ queryKey: ["statsTree"] });
+    setRefreshing(false);
+  }, [queryClient]);
+
+  const isLoading = queries.some((q) => q.isLoading || q.isFetching) && !refreshing;
+  const isError = queries.some((q) => q.isError);
+  const firstError = queries.find((q) => q.error)?.error as Error | undefined;
+  const allDone = queries.every((q) => q.isSuccess || q.isError);
+
+  const modeCards = modesToShow
+    .map((mode, idx) => {
+      const tree = queries[idx]?.data;
+      if (!tree || tree.seconds === 0) return null;
+      return <ModeStatsCard key={mode.id} tree={tree} mode={mode} />;
+    })
+    .filter(Boolean);
+
+  const hasNoData = allDone && modeCards.length === 0 && !isError;
+
   return (
-    <ScrollView contentContainerStyle={{ paddingBottom: 80 }}>
+    <ScrollView
+      contentContainerStyle={{ paddingBottom: 80 }}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+      }
+    >
       {listHeader}
       <DateRangePicker activePreset={preset} onSelect={handlePreset} />
 
       {/* Range label */}
       <View style={{ paddingHorizontal: 20, paddingBottom: 8 }}>
         <Text style={{ fontSize: 12, color: "#9ca3af" }}>
-          {preset === "allTime" ? "All time" : `${from} — ${to}`}
+          {preset === "allTime" ? "All time" : `${resolvedFrom} — ${resolvedTo}`}
         </Text>
       </View>
 
       {modesToShow.length === 0 ? (
         <View style={{ alignItems: "center", paddingTop: 60 }}>
           <Feather name="bar-chart-2" size={40} color="#d1d5db" />
-          <Text
-            style={{ color: "#9ca3af", fontSize: 16, marginTop: 12 }}
-          >
+          <Text style={{ color: "#9ca3af", fontSize: 16, marginTop: 12 }}>
             No modes to display
           </Text>
         </View>
+      ) : isLoading ? (
+        <View style={{ padding: 40, alignItems: "center" }}>
+          <ActivityIndicator size="large" />
+        </View>
+      ) : isError ? (
+        <View style={{ alignItems: "center", paddingTop: 40, paddingHorizontal: 20 }}>
+          <Feather name="alert-circle" size={32} color="#ef4444" />
+          <Text style={{ color: "#ef4444", fontSize: 14, marginTop: 8, textAlign: "center" }}>
+            Failed to load stats{firstError?.message ? `: ${firstError.message}` : ""}
+          </Text>
+        </View>
+      ) : hasNoData ? (
+        <View style={{ alignItems: "center", paddingTop: 60 }}>
+          <Feather name="bar-chart-2" size={40} color="#d1d5db" />
+          <Text style={{ color: "#9ca3af", fontSize: 16, marginTop: 12 }}>
+            No time tracked in this period
+          </Text>
+        </View>
       ) : (
-        modesToShow.map((mode) => (
-          <SingleModeStats
-            key={mode.id}
-            modeId={mode.id}
-            mode={mode}
-            from={from}
-            to={to}
-          />
-        ))
+        modeCards
       )}
     </ScrollView>
   );
