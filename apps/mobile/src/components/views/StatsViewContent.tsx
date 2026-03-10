@@ -1,8 +1,7 @@
-import React, { useState, useMemo, useCallback, type ReactElement } from "react";
+import React, { useState, useMemo, useCallback, useEffect, useRef, type ReactElement } from "react";
 import { View, Text, ScrollView, ActivityIndicator, RefreshControl } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { format, startOfWeek, endOfWeek } from "date-fns";
-import { useQueries, useQueryClient } from "@tanstack/react-query";
 import api from "@shared/api/axios";
 import DateRangePicker from "../stats/DateRangePicker";
 import StatsNodeCard from "../stats/StatsNodeCard";
@@ -192,12 +191,73 @@ function resolveFromTo(
   return { from, to };
 }
 
+/** Fetch a single mode's stats tree with retry + backoff for 429s */
+async function fetchModeTree(
+  modeId: number,
+  from: string,
+  to: string,
+): Promise<StatsTree> {
+  const params = { modeId, from, to };
+  const maxRetries = 3;
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      const res = await api.get<StatsTree>("/stats/tree", { params });
+      return res.data;
+    } catch (err: unknown) {
+      const status = (err as { response?: { status?: number } })?.response?.status;
+      if (status === 429 && attempt < maxRetries) {
+        // Exponential backoff: 1s, 2s, 4s
+        await new Promise((r) => setTimeout(r, 1000 * Math.pow(2, attempt)));
+        continue;
+      }
+      throw err;
+    }
+  }
+  throw new Error("Max retries exceeded");
+}
+
+type ModeTreeResult = {
+  mode: Mode;
+  tree: StatsTree | null;
+  error?: boolean;
+};
+
+/** Fetch mode trees in small batches to avoid rate limiting */
+async function fetchAllModeTreesBatched(
+  modes: Mode[],
+  from: string,
+  to: string,
+  signal?: AbortSignal,
+): Promise<ModeTreeResult[]> {
+  const BATCH_SIZE = 3;
+  const results: ModeTreeResult[] = [];
+
+  for (let i = 0; i < modes.length; i += BATCH_SIZE) {
+    if (signal?.aborted) break;
+
+    const batch = modes.slice(i, i + BATCH_SIZE);
+    const batchResults = await Promise.allSettled(
+      batch.map((mode) => fetchModeTree(mode.id, from, to)),
+    );
+
+    batch.forEach((mode, idx) => {
+      const result = batchResults[idx];
+      if (result.status === "fulfilled") {
+        results.push({ mode, tree: result.value });
+      } else {
+        results.push({ mode, tree: null, error: true });
+      }
+    });
+  }
+
+  return results;
+}
+
 export default function StatsViewContent({
   modes,
   selectedMode,
   listHeader,
 }: Props) {
-  const queryClient = useQueryClient();
   const now = new Date();
   const [preset, setPreset] = useState<Preset>("thisWeek");
   const [from, setFrom] = useState(
@@ -207,6 +267,9 @@ export default function StatsViewContent({
     format(endOfWeek(now, { weekStartsOn: 1 }), "yyyy-MM-dd"),
   );
   const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [results, setResults] = useState<ModeTreeResult[]>([]);
+  const abortRef = useRef<AbortController | null>(null);
 
   const handlePreset = (p: Preset, f: string, t: string) => {
     setPreset(p);
@@ -221,45 +284,50 @@ export default function StatsViewContent({
 
   const { from: resolvedFrom, to: resolvedTo } = resolveFromTo(preset, from, to);
 
-  // Fetch all mode trees in parallel (matches web's useAllModesStatsTrees pattern)
-  const queries = useQueries({
-    queries: modesToShow.map((mode) => ({
-      queryKey: ["statsTree", { modeId: mode.id, from: resolvedFrom, to: resolvedTo }],
-      queryFn: async () => {
-        const params: Record<string, number | string> = {
-          modeId: mode.id,
-          from: resolvedFrom,
-          to: resolvedTo,
-        };
-        const res = await api.get<StatsTree>("/stats/tree", { params });
-        return res.data;
-      },
-      enabled: !!mode.id,
-      retry: 1,
-      staleTime: 0,
-    })),
-  });
+  // Fetch mode trees in batches (3 at a time) to avoid 429 rate limiting
+  const fetchAll = useCallback(async () => {
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
+    setLoading(true);
+    const data = await fetchAllModeTreesBatched(
+      modesToShow,
+      resolvedFrom,
+      resolvedTo,
+      controller.signal,
+    );
+    if (!controller.signal.aborted) {
+      setResults(data);
+      setLoading(false);
+    }
+  }, [modesToShow, resolvedFrom, resolvedTo]);
+
+  useEffect(() => {
+    if (modesToShow.length > 0) {
+      fetchAll();
+    } else {
+      setResults([]);
+      setLoading(false);
+    }
+    return () => abortRef.current?.abort();
+  }, [fetchAll]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await queryClient.invalidateQueries({ queryKey: ["statsTree"] });
+    await fetchAll();
     setRefreshing(false);
-  }, [queryClient]);
+  }, [fetchAll]);
 
-  const isLoading = queries.some((q) => q.isLoading || q.isFetching) && !refreshing;
-  const isError = queries.some((q) => q.isError);
-  const firstError = queries.find((q) => q.error)?.error as Error | undefined;
-  const allDone = queries.every((q) => q.isSuccess || q.isError);
+  const modeCards = results
+    .filter((r) => r.tree && r.tree.seconds > 0)
+    .map((r) => (
+      <ModeStatsCard key={r.mode.id} tree={r.tree!} mode={r.mode} />
+    ));
 
-  const modeCards = modesToShow
-    .map((mode, idx) => {
-      const tree = queries[idx]?.data;
-      if (!tree || tree.seconds === 0) return null;
-      return <ModeStatsCard key={mode.id} tree={tree} mode={mode} />;
-    })
-    .filter(Boolean);
-
-  const hasNoData = allDone && modeCards.length === 0 && !isError;
+  const errorCount = results.filter((r) => r.error).length;
+  const hasNoData = !loading && modeCards.length === 0 && errorCount === 0;
+  const allErrored = !loading && errorCount > 0 && errorCount === results.length;
 
   return (
     <ScrollView
@@ -285,26 +353,36 @@ export default function StatsViewContent({
             No modes to display
           </Text>
         </View>
-      ) : isLoading ? (
+      ) : loading && !refreshing ? (
         <View style={{ padding: 40, alignItems: "center" }}>
           <ActivityIndicator size="large" />
         </View>
-      ) : isError ? (
+      ) : allErrored ? (
         <View style={{ alignItems: "center", paddingTop: 40, paddingHorizontal: 20 }}>
           <Feather name="alert-circle" size={32} color="#ef4444" />
           <Text style={{ color: "#ef4444", fontSize: 14, marginTop: 8, textAlign: "center" }}>
-            Failed to load stats{firstError?.message ? `: ${firstError.message}` : ""}
-          </Text>
-        </View>
-      ) : hasNoData ? (
-        <View style={{ alignItems: "center", paddingTop: 60 }}>
-          <Feather name="bar-chart-2" size={40} color="#d1d5db" />
-          <Text style={{ color: "#9ca3af", fontSize: 16, marginTop: 12 }}>
-            No time tracked in this period
+            Failed to load stats. Pull down to retry.
           </Text>
         </View>
       ) : (
-        modeCards
+        <>
+          {/* Show partial error warning if some but not all failed */}
+          {errorCount > 0 && modeCards.length > 0 && (
+            <View style={{ paddingHorizontal: 20, paddingBottom: 8 }}>
+              <Text style={{ fontSize: 12, color: "#f59e0b" }}>
+                {errorCount} mode{errorCount > 1 ? "s" : ""} failed to load. Pull down to retry.
+              </Text>
+            </View>
+          )}
+          {modeCards.length > 0 ? modeCards : (
+            <View style={{ alignItems: "center", paddingTop: 60 }}>
+              <Feather name="bar-chart-2" size={40} color="#d1d5db" />
+              <Text style={{ color: "#9ca3af", fontSize: 16, marginTop: 12 }}>
+                No time tracked in this period
+              </Text>
+            </View>
+          )}
+        </>
       )}
     </ScrollView>
   );
