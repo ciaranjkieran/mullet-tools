@@ -424,7 +424,7 @@ export default function CalendarViewContent({ listHeader }: Props) {
                     ...textLine(16),
                     fontWeight: "700",
                     color: section.isPastDue
-                      ? "#7f1d1d"
+                      ? "#1e3a8a"
                       : "#1f2937",
                   }}
                 >
