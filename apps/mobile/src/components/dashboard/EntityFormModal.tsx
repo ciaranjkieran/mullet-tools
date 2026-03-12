@@ -11,7 +11,8 @@ import {
   Alert,
   ActivityIndicator,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { useWhiteNavBar } from "../../lib/hooks/useWhiteNavBar";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { Feather } from "@expo/vector-icons";
 import EntityIcon from "../EntityIcon";
@@ -98,6 +99,7 @@ export default function EntityFormModal({
   editEntity,
   defaultModeId,
 }: Props) {
+  useWhiteNavBar(visible);
   const isEdit = !!editEntity;
   const [activeTab, setActiveTab] = useState<ActiveTab>("details");
   const navigation = useNavigation<any>();
@@ -206,6 +208,7 @@ export default function EntityFormModal({
     updateTask.isPending;
 
   const initialTab = useEntityFormStore((s) => s.initialTab);
+  const defaultDate = useEntityFormStore((s) => s.defaultDate);
 
   // Reset form when modal opens
   useEffect(() => {
@@ -240,7 +243,7 @@ export default function EntityFormModal({
       } else {
         setTitle("");
         setDescription("");
-        setDueDate(null);
+        setDueDate(defaultDate);
         setDueTime(null);
         setGoalId(null);
         setProjectId(null);
@@ -252,8 +255,11 @@ export default function EntityFormModal({
     }
   }, [visible, editEntity]);
 
+  const [submitting, setSubmitting] = useState(false);
+
   const handleSubmit = async () => {
-    if (!title.trim()) return;
+    if (!title.trim() || submitting) return;
+    setSubmitting(true);
 
     try {
       if (isEdit) {
@@ -358,8 +364,14 @@ export default function EntityFormModal({
         }
       }
       onClose();
-    } catch {
-      // Mutation error handled by React Query
+    } catch (err: any) {
+      const message =
+        err?.response?.data?.detail ??
+        err?.message ??
+        "Something went wrong. Please try again.";
+      Alert.alert(`${isEdit ? "Save" : "Create"} Failed`, message);
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -515,6 +527,7 @@ export default function EntityFormModal({
     [goals, projects, milestones, tasks, onClose]
   );
 
+  const insets = useSafeAreaInsets();
   const showDescription = entityType === "goal" || entityType === "project";
   const showGoalPicker = entityType !== "goal";
   const showParentProjectPicker = entityType === "project";
@@ -594,9 +607,10 @@ export default function EntityFormModal({
           </Text>
           <TouchableOpacity
             onPress={handleSubmit}
-            disabled={isPending || !title.trim()}
+            disabled={isPending || submitting || !title.trim()}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           >
-            {isPending ? (
+            {isPending || submitting ? (
               <ActivityIndicator size="small" />
             ) : (
               <Text
@@ -758,7 +772,7 @@ export default function EntityFormModal({
         {/* Details tab (or create form) */}
         {(activeTab === "details" || !isEdit) && (
         <ScrollView
-          contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
+          contentContainerStyle={{ padding: 16, paddingBottom: Math.max(insets.bottom, 16) }}
           keyboardShouldPersistTaps="handled"
         >
           {/* Title */}

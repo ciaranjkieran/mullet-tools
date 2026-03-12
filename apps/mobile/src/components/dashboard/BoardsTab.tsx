@@ -10,8 +10,10 @@ import {
   Dimensions,
   Modal,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
+import { useWhiteNavBar } from "../../lib/hooks/useWhiteNavBar";
 import { usePinsByEntity } from "@shared/api/hooks/boards/usePinsByEntity";
 import { useCreatePin } from "@shared/api/hooks/boards/useCreatePin";
 import { useDeletePin } from "@shared/api/hooks/boards/useDeletePin";
@@ -31,10 +33,12 @@ const CARD_GAP = 10;
 const PADDING = 12;
 
 export default function BoardsTab({ entityType, entityId, modeId, modeColor }: Props) {
+  const insets = useSafeAreaInsets();
   const { data: pins = [], isLoading } = usePinsByEntity(entityType, String(entityId));
   const createPin = useCreatePin();
   const deletePin = useDeletePin();
   const [viewingPin, setViewingPin] = useState<Pin | null>(null);
+  useWhiteNavBar(!!viewingPin);
 
   const screenWidth = Dimensions.get("window").width;
   const cardWidth = (screenWidth - PADDING * 2 - CARD_GAP * (COLUMN_COUNT - 1)) / COLUMN_COUNT;
@@ -129,7 +133,7 @@ export default function BoardsTab({ entityType, entityId, modeId, modeColor }: P
         data={dataWithAdd}
         numColumns={COLUMN_COUNT}
         keyExtractor={(item) => String(item.id)}
-        contentContainerStyle={{ padding: PADDING, paddingBottom: 40 }}
+        contentContainerStyle={{ padding: PADDING, paddingBottom: Math.max(40, insets.bottom + 12) }}
         columnWrapperStyle={{ gap: CARD_GAP }}
         renderItem={({ item }) => {
           // Add button card

@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns";
 import { useEntityStatsNode } from "@shared/api/hooks/stats/useEntityStatsNode";
@@ -103,6 +104,7 @@ function flattenNode(rootNode: StatsNode, rootTitle: string): FlattenedItem[] {
 }
 
 export default function StatsTab({ entityType, entityId, modeId, modeColor }: Props) {
+  const insets = useSafeAreaInsets();
   const { range, setRange } = useStatsFilterStore();
   const activePreset = range.preset ?? "today";
 
@@ -124,7 +126,7 @@ export default function StatsTab({ entityType, entityId, modeId, modeColor }: Pr
   }
 
   return (
-    <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
+    <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: Math.max(40, insets.bottom + 16) }}>
       {/* Date range presets */}
       <View style={{ flexDirection: "row", gap: 8, marginBottom: 20 }}>
         {PRESETS.map((p) => {

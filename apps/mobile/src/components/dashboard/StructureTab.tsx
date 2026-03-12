@@ -5,6 +5,7 @@ import {
   FlatList,
   TouchableOpacity,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import EntityIcon from "../EntityIcon";
 import { useGoalStore } from "@shared/store/useGoalStore";
@@ -35,6 +36,7 @@ type TreeRow = {
 
 
 export default function StructureTab({ entityType, entityId, entityTitle, modeId, onNavigate }: Props) {
+  const insets = useSafeAreaInsets();
   const projects = useProjectStore((s) => s.projects);
   const milestones = useMilestoneStore((s) => s.milestones);
   const tasks = useTaskStore((s) => s.tasks);
@@ -210,7 +212,7 @@ export default function StructureTab({ entityType, entityId, entityTitle, modeId
       data={rows}
       keyExtractor={(item) => item.key}
       ListHeaderComponent={header}
-      contentContainerStyle={{ padding: 12, paddingBottom: 40 }}
+      contentContainerStyle={{ padding: 12, paddingBottom: Math.max(40, insets.bottom + 12) }}
       renderItem={({ item }) => (
         <View
           style={{
