@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   Linking,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { format, parseISO } from "date-fns";
@@ -156,6 +157,7 @@ function CommentCard({
 }
 
 export default function CommentsTab({ entityType, entityId, modeId }: Props) {
+  const insets = useSafeAreaInsets();
   const mode = useModeStore((s) => s.modes.find((m) => m.id === modeId));
   const isCollab = (mode?.collaboratorCount ?? 0) > 0;
 
@@ -296,7 +298,8 @@ export default function CommentsTab({ entityType, entityId, modeId }: Props) {
           flexDirection: "row",
           alignItems: "flex-end",
           paddingHorizontal: 16,
-          paddingVertical: 12,
+          paddingTop: 12,
+          paddingBottom: Math.max(12, insets.bottom),
           borderTopWidth: 1,
           borderTopColor: "#e5e7eb",
           backgroundColor: "#fff",

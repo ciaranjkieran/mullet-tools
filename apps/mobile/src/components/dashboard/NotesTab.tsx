@@ -8,6 +8,7 @@ import {
   Alert,
   ActivityIndicator,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { useFetchNotesByEntity } from "@shared/api/hooks/notes/useFetchNotesByEntity";
 import { usePostNote } from "@shared/api/hooks/notes/usePostNote";
@@ -138,6 +139,7 @@ export default function NotesTab({
   entityTitle,
   isCollab = false,
 }: Props) {
+  const insets = useSafeAreaInsets();
   const { data: notes = [], isLoading } = useFetchNotesByEntity(
     entityType,
     entityId
@@ -312,7 +314,8 @@ export default function NotesTab({
             flexDirection: "row",
             alignItems: "center",
             justifyContent: "center",
-            paddingVertical: 14,
+            paddingTop: 14,
+            paddingBottom: Math.max(14, insets.bottom),
             borderTopWidth: 1,
             borderTopColor: "#e5e7eb",
             backgroundColor: "#fff",
