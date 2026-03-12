@@ -10,7 +10,8 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { useWhiteNavBar } from "../../lib/hooks/useWhiteNavBar";
 import { Feather } from "@expo/vector-icons";
 import EntityIcon from "../EntityIcon";
 import DropdownPicker from "../dashboard/DropdownPicker";
@@ -59,6 +60,7 @@ export default function BuildTemplateModal({
   prefillProject,
   prefillModeId,
 }: Props) {
+  useWhiteNavBar(visible);
   const createTemplate = useCreateTemplate();
 
   const [type, setType] = useState<TemplateType>(initialType);
@@ -80,6 +82,7 @@ export default function BuildTemplateModal({
     setSaving(false);
   }, [visible, prefillMilestone, prefillProject, prefillModeId, initialType, modes]);
 
+  const insets = useSafeAreaInsets();
   const modeColor = useMemo(
     () => modes.find((m) => m.id === modeId)?.color ?? "#000",
     [modes, modeId]
@@ -116,7 +119,7 @@ export default function BuildTemplateModal({
     >
       <SafeAreaView
         style={{ flex: 1, backgroundColor: "#fff" }}
-        edges={["top"]}
+        edges={["top", "bottom"]}
       >
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -167,7 +170,7 @@ export default function BuildTemplateModal({
           <View style={{ height: 3, backgroundColor: modeColor }} />
 
           <ScrollView
-            contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
+            contentContainerStyle={{ padding: 16, paddingBottom: Math.max(insets.bottom, 16) }}
             keyboardShouldPersistTaps="handled"
           >
             {/* Type toggle */}

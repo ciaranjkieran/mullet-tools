@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef, type ReactElement } from "react";
-import { ScrollView, View, RefreshControl, AppState } from "react-native";
+import { ScrollView, View, Text, TouchableOpacity, ActivityIndicator, RefreshControl, AppState } from "react-native";
+import { Feather } from "@expo/vector-icons";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTimerLaunchStore } from "../../lib/store/useTimerLaunchStore";
 import { useModes } from "@shared/api/hooks/modes/useModes";
@@ -92,19 +93,17 @@ export default function TimerViewContent({ listHeader }: Props) {
   }, [selectedMode, modes, modeId, activeTimer]);
 
   // Consume launch intent from entity windows
-  const intentConsumed = useRef(false);
+  const launchIntent = useTimerLaunchStore((s) => s.launchIntent);
   useEffect(() => {
-    if (intentConsumed.current) return;
+    if (!launchIntent) return;
     const intent = useTimerLaunchStore.getState().consumeLaunchIntent();
-    if (intent) {
-      intentConsumed.current = true;
-      setModeId(intent.modeId);
-      setGoalId(intent.goalId);
-      setProjectId(intent.projectId);
-      setMilestoneId(intent.milestoneId);
-      setTaskId(intent.taskId);
-    }
-  }, []);
+    if (!intent) return;
+    setModeId(intent.modeId);
+    setGoalId(intent.goalId);
+    setProjectId(intent.projectId);
+    setMilestoneId(intent.milestoneId);
+    setTaskId(intent.taskId);
+  }, [launchIntent]);
 
   // Sync selection from active timer when one exists, resolving lineage
   useEffect(() => {
@@ -215,6 +214,17 @@ export default function TimerViewContent({ listHeader }: Props) {
     return null; // only mode — no complete button
   }, [activeTimer]);
 
+  // Resolve the name of the entity being completed
+  const activeEntityName = useMemo(() => {
+    if (!activeEntity) return null;
+    const { entityType, entityId } = activeEntity;
+    if (entityType === "task") return tasks.find((t) => t.id === entityId)?.title ?? null;
+    if (entityType === "milestone") return milestones.find((m) => m.id === entityId)?.title ?? null;
+    if (entityType === "project") return projects.find((p) => p.id === entityId)?.title ?? null;
+    if (entityType === "goal") return goals.find((g) => g.id === entityId)?.title ?? null;
+    return null;
+  }, [activeEntity, tasks, milestones, projects, goals]);
+
   const handleComplete = useCallback(() => {
     if (!activeEntity) return;
     completeNext.mutate(activeEntity);
@@ -269,11 +279,8 @@ export default function TimerViewContent({ listHeader }: Props) {
           modeColor={modeColor}
           onStart={handleStart}
           onStop={handleStop}
-          onComplete={handleComplete}
           starting={startTimer.isPending}
           stopping={stopTimer.isPending}
-          completing={completeNext.isPending}
-          hasEntity={activeEntity !== null}
         />
 
         {/* Duration picker (countdown mode only) */}
@@ -306,6 +313,42 @@ export default function TimerViewContent({ listHeader }: Props) {
           setTaskId={setTaskId}
           disabled={isRunning}
         />
+
+        {/* Complete button — shown below the dropdowns when timing an entity */}
+        {isRunning && activeEntity && (
+          <TouchableOpacity
+            onPress={handleComplete}
+            disabled={completeNext.isPending}
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "center",
+              backgroundColor: "#14532D",
+              paddingVertical: 12,
+              paddingHorizontal: 20,
+              borderRadius: 10,
+              gap: 8,
+              marginTop: 16,
+              opacity: completeNext.isPending ? 0.5 : 1,
+            }}
+          >
+            {completeNext.isPending ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <>
+                <Feather name="check" size={18} color="#fff" />
+                <Text
+                  style={{ color: "#fff", fontWeight: "600", fontSize: 15 }}
+                  numberOfLines={1}
+                >
+                  {activeEntityName
+                    ? `Complete "${activeEntityName}"`
+                    : "Complete"}
+                </Text>
+              </>
+            )}
+          </TouchableOpacity>
+        )}
 
         <View style={{ height: 24 }} />
 

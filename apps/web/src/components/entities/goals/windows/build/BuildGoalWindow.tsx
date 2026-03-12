@@ -6,6 +6,7 @@ import { Mode } from "@shared/types/Mode";
 import { Goal } from "@shared/types/Goal";
 import { Project } from "@shared/types/Project";
 import { useCreateGoal } from "@shared/api/hooks/goals/useCreateGoal";
+import { useDialogStore } from "@/lib/dialogs/useDialogStore";
 import BuildGoalForm from "./BuildGoalForm";
 
 type Props = {
@@ -21,6 +22,7 @@ export default function BuildGoalWindow({
   defaultModeId,
   modes,
 }: Props) {
+  const defaultDate = useDialogStore((s) => s.defaultDate);
   const [title, setTitle] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [dueTime, setDueTime] = useState("");
@@ -29,10 +31,11 @@ export default function BuildGoalWindow({
   const { mutate: createGoal } = useCreateGoal();
 
   useEffect(() => {
-    if (isOpen && defaultModeId !== null) {
-      setModeId(defaultModeId);
+    if (isOpen) {
+      if (defaultModeId !== null) setModeId(defaultModeId);
+      setDueDate(defaultDate);
     }
-  }, [isOpen, defaultModeId]);
+  }, [isOpen, defaultModeId, defaultDate]);
 
   useEffect(() => {
     if (isOpen) document.body.classList.add("modal-open");

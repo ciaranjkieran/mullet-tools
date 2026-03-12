@@ -54,6 +54,10 @@ type DialogStore = {
   // AI Builder modal
   isAiBuilderOpen: boolean;
   setIsAiBuilderOpen: (open: boolean) => void;
+
+  // Default date for new entities (set by calendar/today views)
+  defaultDate: string;
+  setDefaultDate: (date: string) => void;
 };
 
 export const useDialogStore = create<DialogStore>((set) => ({
@@ -104,4 +108,8 @@ export const useDialogStore = create<DialogStore>((set) => ({
   // AI Builder modal
   isAiBuilderOpen: false,
   setIsAiBuilderOpen: (open) => set({ isAiBuilderOpen: open }),
+
+  // Default date
+  defaultDate: "",
+  setDefaultDate: (date) => set({ defaultDate: date }),
 }));

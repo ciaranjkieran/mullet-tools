@@ -7,6 +7,8 @@ import {
   FlatList,
   Pressable,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useWhiteNavBar } from "../../lib/hooks/useWhiteNavBar";
 import { Feather } from "@expo/vector-icons";
 import { textLine } from "../../lib/styles/platform";
 
@@ -35,6 +37,8 @@ export default function DropdownPicker({
   preserveOrder,
 }: Props) {
   const [open, setOpen] = useState(false);
+  useWhiteNavBar(open);
+  const insets = useSafeAreaInsets();
 
   const sorted = preserveOrder
     ? options
@@ -105,7 +109,7 @@ export default function DropdownPicker({
               borderTopLeftRadius: 16,
               borderTopRightRadius: 16,
               maxHeight: "60%",
-              paddingBottom: 34,
+              paddingBottom: Math.max(insets.bottom, 16),
             }}
           >
             {/* Header */}

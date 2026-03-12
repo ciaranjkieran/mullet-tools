@@ -14,6 +14,7 @@ import {
   Easing,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useWhiteNavBar } from "../../lib/hooks/useWhiteNavBar";
 import { Feather } from "@expo/vector-icons";
 import EntityIcon from "../EntityIcon";
 import { useAiBuild } from "@shared/api/hooks/ai/useAiBuild";
@@ -269,6 +270,7 @@ export default function AiBuilderModal({
   modeTitle,
   modeColor,
 }: Props) {
+  useWhiteNavBar(visible);
   const [prompt, setPrompt] = useState("");
   const [nodes, setNodes] = useState<BuilderNode[]>([]);
   const [history, setHistory] = useState<

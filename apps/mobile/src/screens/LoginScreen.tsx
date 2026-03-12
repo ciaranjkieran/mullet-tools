@@ -7,6 +7,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
+  Image,
 } from "react-native";
 import { useLogin } from "@shared/api/hooks/auth/useLogin";
 import { useRegister } from "@shared/api/hooks/auth/useRegister";
@@ -58,6 +59,11 @@ export default function LoginScreen() {
         backgroundColor: "#fff",
       }}
     >
+      <Image
+        source={require("../../assets/logo.png")}
+        style={{ width: 160, height: 160, alignSelf: "center", marginBottom: 8 }}
+        resizeMode="contain"
+      />
       <Text
         style={{ fontSize: 32, fontWeight: "bold", textAlign: "center" }}
       >
@@ -134,6 +140,7 @@ export default function LoginScreen() {
           padding: 14,
           marginTop: 12,
           fontSize: 16,
+          color: "#000",
         }}
       />
 

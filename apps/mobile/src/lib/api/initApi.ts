@@ -5,10 +5,13 @@ import api, { configureApi } from "@shared/api/axios";
 import { setOnTokenReceived, setOnTokenCleared } from "@shared/api/hooks/auth/tokenCallbacks";
 import { setOnLogoutCleanup } from "@shared/api/hooks/auth/useLogout";
 import { resetAllStores } from "@shared/store/resetAllStores";
+import Constants from "expo-constants";
 import { getToken, setToken, clearToken } from "../auth/tokenStorage";
 import { useAuthStore } from "../store/useAuthStore";
 
-const API_URL = "https://mullet-tools-backend.onrender.com/api";
+const API_URL =
+  Constants.expoConfig?.extra?.apiUrl ??
+  "https://mullet-tools-backend.onrender.com/api";
 
 configureApi(
   {

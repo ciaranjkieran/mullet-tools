@@ -424,7 +424,7 @@ export default function CalendarViewContent({ listHeader }: Props) {
                     ...textLine(16),
                     fontWeight: "700",
                     color: section.isPastDue
-                      ? "#dc2626"
+                      ? "#7f1d1d"
                       : "#1f2937",
                   }}
                 >
@@ -585,7 +585,7 @@ export default function CalendarViewContent({ listHeader }: Props) {
       />
 
       {!selectionActive && (
-        <FAB modeColor={modeColor} onOpenAiBuilder={() => setAiBuilderOpen(true)} />
+        <FAB modeColor={modeColor} onOpenAiBuilder={() => setAiBuilderOpen(true)} defaultDate={format(new Date(), "yyyy-MM-dd")} />
       )}
       {selectionActive && <BatchActionBar modeColor={modeColor} />}
 

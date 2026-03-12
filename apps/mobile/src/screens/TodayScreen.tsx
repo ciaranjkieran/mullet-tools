@@ -469,7 +469,7 @@ export default function TodayScreen() {
       />
 
       {!selectionActive && (
-        <FAB modeColor={modeColor} onOpenAiBuilder={() => setAiBuilderOpen(true)} />
+        <FAB modeColor={modeColor} onOpenAiBuilder={() => setAiBuilderOpen(true)} defaultDate={format(new Date(), "yyyy-MM-dd")} />
       )}
       {selectionActive && <BatchActionBar modeColor={modeColor} />}
 

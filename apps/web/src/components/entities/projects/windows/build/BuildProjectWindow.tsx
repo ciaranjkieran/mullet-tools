@@ -6,6 +6,7 @@ import { Mode } from "@shared/types/Mode";
 import { Goal } from "@shared/types/Goal";
 import { Project } from "@shared/types/Project";
 import { useCreateProject } from "@shared/api/hooks/projects/useCreateProject";
+import { useDialogStore } from "@/lib/dialogs/useDialogStore";
 import BuildProjectForm from "./BuildProjectForm";
 
 type Props = {
@@ -25,6 +26,7 @@ export default function BuildProjectWindow({
   goals,
   projects,
 }: Props) {
+  const defaultDate = useDialogStore((s) => s.defaultDate);
   const [title, setTitle] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [dueTime, setDueTime] = useState("");
@@ -40,10 +42,13 @@ export default function BuildProjectWindow({
     return () => document.body.classList.remove("modal-open");
   }, [isOpen]);
 
-  // seed mode when opening
+  // seed mode and date when opening
   useEffect(() => {
-    if (isOpen && defaultModeId !== null) setModeId(defaultModeId);
-  }, [isOpen, defaultModeId]);
+    if (isOpen) {
+      if (defaultModeId !== null) setModeId(defaultModeId);
+      setDueDate(defaultDate);
+    }
+  }, [isOpen, defaultModeId, defaultDate]);
 
   // tiny ancestry helper (no external lineage fn)
   const projectsById = useMemo(() => {

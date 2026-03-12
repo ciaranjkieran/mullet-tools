@@ -11,6 +11,8 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { useWhiteNavBar } from "../../lib/hooks/useWhiteNavBar";
 import { Feather } from "@expo/vector-icons";
 import { useModeStore } from "@shared/store/useModeStore";
 import { useCreateMode } from "@shared/api/hooks/modes/useCreateMode";
@@ -48,6 +50,7 @@ const PRESET_COLORS = [
 ];
 
 export default function EditModesModal({ visible, onClose }: Props) {
+  useWhiteNavBar(visible);
   const modes = useModeStore((s) => s.modes);
   const createMode = useCreateMode();
   const updateMode = useUpdateMode();
@@ -191,6 +194,8 @@ export default function EditModesModal({ visible, onClose }: Props) {
     }
   };
 
+  const insets = useSafeAreaInsets();
+
   return (
     <Modal
       visible={visible}
@@ -198,9 +203,10 @@ export default function EditModesModal({ visible, onClose }: Props) {
       presentationStyle="pageSheet"
       onRequestClose={onClose}
     >
+      <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }} edges={["top", "bottom"]}>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={{ flex: 1, backgroundColor: "#fff" }}
+        style={{ flex: 1 }}
       >
         {/* Header */}
         <View
@@ -232,7 +238,7 @@ export default function EditModesModal({ visible, onClose }: Props) {
         </View>
 
         <ScrollView
-          contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
+          contentContainerStyle={{ padding: 16, paddingBottom: Math.max(insets.bottom, 16) }}
           keyboardShouldPersistTaps="handled"
         >
           {editModes.map((mode, index) => (
@@ -359,6 +365,7 @@ export default function EditModesModal({ visible, onClose }: Props) {
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
+      </SafeAreaView>
     </Modal>
   );
 }

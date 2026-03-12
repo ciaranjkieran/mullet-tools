@@ -160,6 +160,7 @@ export default function DashboardPage() {
     setIsEditModesOpen,
     openCollaborationModal,
     setIsAiBuilderOpen,
+    setDefaultDate,
   } = useDialogStore();
 
   const fallbackModeId = activeMode?.id ?? modes[0]?.id;
@@ -239,6 +240,16 @@ export default function DashboardPage() {
   // Derive active view from Zustand store (goView updates both store + URL via replaceState,
   // but useSearchParams doesn't react to replaceState, so urlView can go stale).
   const activeView: View = viewType === "dashboard" ? "home" : (viewType as View);
+
+  // Pre-fill today's date for entity creation on calendar view
+  useEffect(() => {
+    if (activeView === "calendar") {
+      const today = new Date().toISOString().slice(0, 10);
+      setDefaultDate(today);
+    } else {
+      setDefaultDate("");
+    }
+  }, [activeView, setDefaultDate]);
 
   return (
     <div className="min-h-screen">

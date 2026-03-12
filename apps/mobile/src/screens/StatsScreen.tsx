@@ -117,8 +117,7 @@ function ModeStatsCard({
             <StatsNodeCard
               key={`g-${g.id}`}
               node={g}
-              type="goal"
-              maxSeconds={maxSeconds}
+              kind="goal"
               modeColor={mode.color}
             />
           ))}
@@ -126,8 +125,7 @@ function ModeStatsCard({
             <StatsNodeCard
               key={`p-${p.id}`}
               node={p}
-              type="project"
-              maxSeconds={maxSeconds}
+              kind="project"
               modeColor={mode.color}
             />
           ))}
@@ -135,8 +133,7 @@ function ModeStatsCard({
             <StatsNodeCard
               key={`m-${m.id}`}
               node={m}
-              type="milestone"
-              maxSeconds={maxSeconds}
+              kind="milestone"
               modeColor={mode.color}
             />
           ))}
@@ -144,8 +141,7 @@ function ModeStatsCard({
             <StatsNodeCard
               key={`t-${t.id}`}
               node={t}
-              type="task"
-              maxSeconds={maxSeconds}
+              kind="task"
               modeColor={mode.color}
             />
           ))}

@@ -10,6 +10,7 @@ import { Milestone } from "@shared/types/Milestone";
 
 import BuildMilestoneForm from "./BuildMilestoneForm";
 import { buildMilestonePayload } from "@shared/lineage/xor";
+import { useDialogStore } from "@/lib/dialogs/useDialogStore";
 
 type Props = {
   isOpen: boolean;
@@ -30,6 +31,7 @@ export default function BuildMilestoneWindow({
   projects,
   milestones,
 }: Props) {
+  const defaultDate = useDialogStore((s) => s.defaultDate);
   const [title, setTitle] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [dueTime, setDueTime] = useState("");
@@ -41,8 +43,11 @@ export default function BuildMilestoneWindow({
   const { mutate: createMilestone } = useCreateMilestone();
 
   useEffect(() => {
-    if (isOpen && defaultModeId !== null) setModeId(defaultModeId);
-  }, [isOpen, defaultModeId]);
+    if (isOpen) {
+      if (defaultModeId !== null) setModeId(defaultModeId);
+      setDueDate(defaultDate);
+    }
+  }, [isOpen, defaultModeId, defaultDate]);
 
   useEffect(() => {
     if (isOpen) document.body.classList.add("modal-open");

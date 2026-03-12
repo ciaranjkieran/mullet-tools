@@ -8,6 +8,7 @@
   ],
   "dependencies": {
     "@tanstack/react-query": "5.81.5",
+    "expo-updates": "~29.0.16",
     "linkify-react": "^4.3.2",
     "linkifyjs": "^4.3.2",
     "react": "19.1.0",

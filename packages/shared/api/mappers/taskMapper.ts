@@ -44,15 +44,35 @@ export function mapTaskToApi(task: Partial<Task>) {
     }
   }
 
-  // Parents: include only if caller provided them (undefined means "don’t touch")
-  if ("milestoneId" in task && task.milestoneId !== undefined) {
-    out.milestoneId = task.milestoneId; // number or null
-  }
-  if ("projectId" in task && task.projectId !== undefined) {
-    out.projectId = task.projectId; // number or null
-  }
-  if ("goalId" in task && task.goalId !== undefined) {
-    out.goalId = task.goalId; // number or null
+  // Parents: a task may belong to at most ONE of milestone / project / goal.
+  // Most-specific wins: milestone > project > goal; the others are nulled out.
+  const hasM = "milestoneId" in task && task.milestoneId !== undefined;
+  const hasP = "projectId" in task && task.projectId !== undefined;
+  const hasG = "goalId" in task && task.goalId !== undefined;
+
+  if (hasM || hasP || hasG) {
+    const m = hasM ? (task.milestoneId ?? null) : null;
+    const p = hasP ? (task.projectId ?? null) : null;
+    const g = hasG ? (task.goalId ?? null) : null;
+
+    if (m !== null) {
+      out.milestoneId = m;
+      out.projectId = null;
+      out.goalId = null;
+    } else if (p !== null) {
+      out.milestoneId = null;
+      out.projectId = p;
+      out.goalId = null;
+    } else if (g !== null) {
+      out.milestoneId = null;
+      out.projectId = null;
+      out.goalId = g;
+    } else {
+      // All were explicitly set to null — clear everything
+      if (hasM) out.milestoneId = null;
+      if (hasP) out.projectId = null;
+      if (hasG) out.goalId = null;
+    }
   }
 
   // position is server-controlled for container moves; include only if you mean to set it

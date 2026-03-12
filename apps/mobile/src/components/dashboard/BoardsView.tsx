@@ -18,6 +18,7 @@ import {
 import { Feather } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import * as DocumentPicker from "expo-document-picker";
+import { useWhiteNavBar } from "../../lib/hooks/useWhiteNavBar";
 import { usePinsByMode } from "@shared/api/hooks/boards/usePinsByMode";
 import { useCreatePin } from "@shared/api/hooks/boards/useCreatePin";
 import { useDeletePin } from "@shared/api/hooks/boards/useDeletePin";
@@ -162,6 +163,7 @@ function CreatePinModal({
   modeId: number;
   modeColor: string;
 }) {
+  useWhiteNavBar(visible);
   const createPin = useCreatePin();
   const [kind, setKind] = useState<PinKind>("image");
   const [title, setTitle] = useState("");

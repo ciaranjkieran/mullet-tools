@@ -17,12 +17,13 @@ import type { EntityFormType } from "../../lib/store/useEntityFormStore";
 type Props = {
   modeColor: string;
   onOpenAiBuilder?: () => void;
+  defaultDate?: string;
 };
 
 const DRAG_THRESHOLD = 8;
 const SCREEN = Dimensions.get("window");
 
-export default function FAB({ modeColor, onOpenAiBuilder }: Props) {
+export default function FAB({ modeColor, onOpenAiBuilder, defaultDate }: Props) {
   const [expanded, setExpanded] = useState(false);
   const [pos, setPos] = useState({ bottom: 24, right: 24 });
   const openCreate = useEntityFormStore((s) => s.openCreate);
@@ -84,12 +85,14 @@ export default function FAB({ modeColor, onOpenAiBuilder }: Props) {
     if (!wasDrag()) setExpanded((p) => !p);
   }, []);
 
+  const createOpts = defaultDate ? { defaultDate } : undefined;
+
   const handleTaskPress = useCallback(() => {
     if (!wasDrag()) {
       setExpanded(false);
-      openCreate("task");
+      openCreate("task", createOpts);
     }
-  }, [openCreate]);
+  }, [openCreate, createOpts]);
 
   const handleAiPress = useCallback(() => {
     if (!wasDrag()) {
@@ -101,9 +104,9 @@ export default function FAB({ modeColor, onOpenAiBuilder }: Props) {
   const handleEntitySelect = useCallback(
     (type: EntityFormType) => {
       setExpanded(false);
-      openCreate(type);
+      openCreate(type, createOpts);
     },
-    [openCreate]
+    [openCreate, createOpts]
   );
 
   const expandedEntities: { type: EntityFormType; label: string }[] = [

@@ -29,9 +29,6 @@
       },
       "edgeToEdgeEnabled": true
     },
-    "web": {
-      "favicon": "./assets/favicon.png"
-    },
     "updates": {
       "url": "https://u.expo.dev/95a76fa8-5d2c-4e60-bdff-762d9544e286"
     },
@@ -40,9 +37,12 @@
     },
     "plugins": [
       "expo-secure-store",
+      "expo-document-picker",
+      "expo-image-picker",
       "@react-native-community/datetimepicker"
     ],
     "extra": {
+      "apiUrl": "https://mullet-tools-backend.onrender.com/api",
       "eas": {
         "projectId": "95a76fa8-5d2c-4e60-bdff-762d9544e286"
       }

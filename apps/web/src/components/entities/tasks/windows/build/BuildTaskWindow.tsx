@@ -4,6 +4,7 @@
 import * as Dialog from "@radix-ui/react-dialog";
 import { useEffect, useState } from "react";
 import { useCreateTask } from "@shared/api/hooks/tasks/useCreateTask";
+import { useDialogStore } from "@/lib/dialogs/useDialogStore";
 
 import { Mode } from "@shared/types/Mode";
 import { Goal } from "@shared/types/Goal";
@@ -31,6 +32,7 @@ export default function BuildTaskWindow({
   projects,
   milestones,
 }: Props) {
+  const defaultDate = useDialogStore((s) => s.defaultDate);
   const [title, setTitle] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [dueTime, setDueTime] = useState("");
@@ -44,10 +46,11 @@ export default function BuildTaskWindow({
   const { mutate: createTask } = useCreateTask();
 
   useEffect(() => {
-    if (isOpen && defaultModeId !== null) {
-      setModeId(defaultModeId);
+    if (isOpen) {
+      if (defaultModeId !== null) setModeId(defaultModeId);
+      setDueDate(defaultDate);
     }
-  }, [isOpen, defaultModeId]);
+  }, [isOpen, defaultModeId, defaultDate]);
 
   useEffect(() => {
     if (isOpen) document.body.classList.add("modal-open");

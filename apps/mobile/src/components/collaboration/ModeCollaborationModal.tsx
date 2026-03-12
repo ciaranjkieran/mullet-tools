@@ -11,6 +11,8 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { useWhiteNavBar } from "../../lib/hooks/useWhiteNavBar";
 import { Feather } from "@expo/vector-icons";
 import { useModeCollaborators } from "@shared/api/hooks/collaboration/useModeCollaborators";
 import { useInviteToMode } from "@shared/api/hooks/collaboration/useInviteToMode";
@@ -238,6 +240,7 @@ export default function ModeCollaborationModal({
   modeColor,
   isOwner,
 }: Props) {
+  useWhiteNavBar(visible);
   const { data, isLoading } = useModeCollaborators(visible ? modeId : null);
   const inviteToMode = useInviteToMode();
   const leaveMode = useLeaveMode();
@@ -283,6 +286,8 @@ export default function ModeCollaborationModal({
     );
   };
 
+  const insets = useSafeAreaInsets();
+
   return (
     <Modal
       visible={visible}
@@ -290,9 +295,10 @@ export default function ModeCollaborationModal({
       presentationStyle="pageSheet"
       onRequestClose={onClose}
     >
+      <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }} edges={["top", "bottom"]}>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={{ flex: 1, backgroundColor: "#fff" }}
+        style={{ flex: 1 }}
       >
         {/* Header */}
         <View
@@ -323,7 +329,7 @@ export default function ModeCollaborationModal({
           </View>
         ) : (
           <ScrollView
-            contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
+            contentContainerStyle={{ padding: 16, paddingBottom: Math.max(insets.bottom, 16) }}
             keyboardShouldPersistTaps="handled"
           >
             {/* Invite form — owner only */}
@@ -512,6 +518,7 @@ export default function ModeCollaborationModal({
           </ScrollView>
         )}
       </KeyboardAvoidingView>
+      </SafeAreaView>
     </Modal>
   );
 }

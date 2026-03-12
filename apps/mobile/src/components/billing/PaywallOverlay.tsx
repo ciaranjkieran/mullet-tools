@@ -13,8 +13,10 @@ import { useLogout } from "@shared/api/hooks/auth/useLogout";
 import { ensureCsrf } from "@shared/api/hooks/auth/ensureCsrf";
 import api from "@shared/api/axios";
 import { useAuthStore } from "../../lib/store/useAuthStore";
+import { useWhiteNavBar } from "../../lib/hooks/useWhiteNavBar";
 
 export default function PaywallOverlay() {
+  useWhiteNavBar(true);
   const { isExpired, isLoading } = useSubscription();
   const logout = useLogout();
   const setAuthenticated = useAuthStore((s) => s.setAuthenticated);
