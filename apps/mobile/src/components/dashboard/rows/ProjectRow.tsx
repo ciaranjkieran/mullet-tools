@@ -1,6 +1,7 @@
 import React from "react";
 import { View, Text, TouchableOpacity, Alert } from "react-native";
 import { Feather, MaterialIcons } from "@expo/vector-icons";
+import { useQueryClient } from "@tanstack/react-query";
 import { useUpdateProject } from "@shared/api/hooks/projects/useUpdateProject";
 import { useDeleteProject } from "@shared/api/hooks/projects/useDeleteProject";
 import { useCollapseStore } from "../../../lib/store/useCollapseStore";
@@ -15,6 +16,7 @@ type Props = { row: DashboardRow };
 
 function ProjectRow({ row }: Props) {
   const project = row.entity as Project;
+  const qc = useQueryClient();
   const updateProject = useUpdateProject();
   const deleteProject = useDeleteProject();
   const toggle = useCollapseStore((s) => s.toggle);
@@ -28,7 +30,14 @@ function ProjectRow({ row }: Props) {
   const collapsed = isCollapsed(collapseKey);
 
   const handleToggleComplete = () => {
-    updateProject.mutate({ id: project.id, isCompleted: !project.isCompleted });
+    updateProject.mutate({ id: project.id, isCompleted: !project.isCompleted }, {
+      onSuccess: () => {
+        qc.invalidateQueries({ queryKey: ["activeTimer"], exact: false });
+        qc.invalidateQueries({ queryKey: ["timer"], exact: false });
+        qc.invalidateQueries({ queryKey: ["time-entries"], exact: false });
+        qc.invalidateQueries({ queryKey: ["timeEntries"], exact: false });
+      },
+    });
   };
 
   const handleDelete = () => {

@@ -1,6 +1,7 @@
 import React from "react";
 import { View, Text, TouchableOpacity, Alert } from "react-native";
 import { Feather } from "@expo/vector-icons";
+import { useQueryClient } from "@tanstack/react-query";
 import { useUpdateGoal } from "@shared/api/hooks/goals/useUpdateGoal";
 import { useDeleteGoal } from "@shared/api/hooks/goals/useDeleteGoal";
 import { useCollapseStore } from "../../../lib/store/useCollapseStore";
@@ -15,6 +16,7 @@ type Props = { row: DashboardRow };
 
 function GoalRow({ row }: Props) {
   const goal = row.entity as Goal;
+  const qc = useQueryClient();
   const updateGoal = useUpdateGoal();
   const deleteGoal = useDeleteGoal();
   const toggle = useCollapseStore((s) => s.toggle);
@@ -28,7 +30,14 @@ function GoalRow({ row }: Props) {
   const collapsed = isCollapsed(collapseKey);
 
   const handleToggleComplete = () => {
-    updateGoal.mutate({ id: goal.id, isCompleted: !goal.isCompleted });
+    updateGoal.mutate({ id: goal.id, isCompleted: !goal.isCompleted }, {
+      onSuccess: () => {
+        qc.invalidateQueries({ queryKey: ["activeTimer"], exact: false });
+        qc.invalidateQueries({ queryKey: ["timer"], exact: false });
+        qc.invalidateQueries({ queryKey: ["time-entries"], exact: false });
+        qc.invalidateQueries({ queryKey: ["timeEntries"], exact: false });
+      },
+    });
   };
 
   const handleDelete = () => {

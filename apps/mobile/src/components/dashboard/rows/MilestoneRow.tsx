@@ -1,6 +1,7 @@
 import React from "react";
 import { View, Text, TouchableOpacity, Alert } from "react-native";
 import { Feather } from "@expo/vector-icons";
+import { useQueryClient } from "@tanstack/react-query";
 import { useUpdateMilestone } from "@shared/api/hooks/milestones/useUpdateMilestone";
 import { useDeleteMilestone } from "@shared/api/hooks/milestones/useDeleteMilestone";
 import { useCollapseStore } from "../../../lib/store/useCollapseStore";
@@ -15,6 +16,7 @@ type Props = { row: DashboardRow };
 
 function MilestoneRow({ row }: Props) {
   const milestone = row.entity as Milestone;
+  const qc = useQueryClient();
   const updateMilestone = useUpdateMilestone();
   const deleteMilestone = useDeleteMilestone();
   const toggle = useCollapseStore((s) => s.toggle);
@@ -31,6 +33,13 @@ function MilestoneRow({ row }: Props) {
     updateMilestone.mutate({
       id: milestone.id,
       isCompleted: !milestone.isCompleted,
+    }, {
+      onSuccess: () => {
+        qc.invalidateQueries({ queryKey: ["activeTimer"], exact: false });
+        qc.invalidateQueries({ queryKey: ["timer"], exact: false });
+        qc.invalidateQueries({ queryKey: ["time-entries"], exact: false });
+        qc.invalidateQueries({ queryKey: ["timeEntries"], exact: false });
+      },
     });
   };
 

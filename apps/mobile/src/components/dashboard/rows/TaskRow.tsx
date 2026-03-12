@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from "react";
 import { View, Text, TouchableOpacity, Alert, Animated } from "react-native";
 import { Feather } from "@expo/vector-icons";
+import { useQueryClient } from "@tanstack/react-query";
 import { useDeleteTask } from "@shared/api/hooks/tasks/useDeleteTask";
 import { useEntityFormStore } from "../../../lib/store/useEntityFormStore";
 import { useSelectionStore } from "../../../lib/store/useSelectionStore";
@@ -13,6 +14,7 @@ type Props = { row: DashboardRow };
 
 function TaskRow({ row }: Props) {
   const task = row.entity as Task;
+  const qc = useQueryClient();
   const deleteTask = useDeleteTask();
   const openEdit = useEntityFormStore((s) => s.openEdit);
   const selectionActive = useSelectionStore((s) => s.isActive);
@@ -30,9 +32,16 @@ function TaskRow({ row }: Props) {
       delay: 200,
       useNativeDriver: true,
     }).start(() => {
-      deleteTask.mutate(task.id);
+      deleteTask.mutate(task.id, {
+        onSuccess: () => {
+          qc.invalidateQueries({ queryKey: ["activeTimer"], exact: false });
+          qc.invalidateQueries({ queryKey: ["timer"], exact: false });
+          qc.invalidateQueries({ queryKey: ["time-entries"], exact: false });
+          qc.invalidateQueries({ queryKey: ["timeEntries"], exact: false });
+        },
+      });
     });
-  }, [checked, opacity, deleteTask, task.id]);
+  }, [checked, opacity, deleteTask, task.id, qc]);
 
   const handleDelete = () => {
     Alert.alert(
