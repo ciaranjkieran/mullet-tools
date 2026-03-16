@@ -1,17 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { format, parseISO } from "date-fns";
-import {
-  DndContext,
-  closestCenter,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  DragStartEvent,
-  DragEndEvent,
-  DragOverlay,
-} from "@dnd-kit/core";
+import { useMemo, useRef } from "react";
+import { useDndMonitor, DragEndEvent } from "@dnd-kit/core";
 import {
   SortableContext,
   verticalListSortingStrategy,
@@ -106,7 +96,6 @@ export default function TodayDailyOrderList({
 }: Props) {
   const { data: savedOrder } = useDailyOrder(dateStr);
   const { mutate: setDailyOrder } = useSetDailyOrder();
-  const [activeKey, setActiveKey] = useState<string | null>(null);
 
   const modeMap = useMemo(
     () => Object.fromEntries(modes.map((m) => [m.id, m])),
@@ -187,78 +176,54 @@ export default function TodayDailyOrderList({
     return [...ordered, ...unordered];
   }, [allItems, savedOrder]);
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
-  );
+  // Keep a ref so the monitor callback always sees the latest ordered items
+  const orderedRef = useRef(orderedItems);
+  orderedRef.current = orderedItems;
 
-  const handleDragStart = (event: DragStartEvent) => {
-    setActiveKey(event.active.id as string);
-  };
+  // Listen for drag-end events from the parent CalendarDndProvider's DndContext.
+  // If both active and over are items in our sortable list, treat it as a reorder.
+  // Otherwise the outer provider handles it as a date-to-date move.
+  useDndMonitor({
+    onDragEnd(event: DragEndEvent) {
+      const { active, over } = event;
+      if (!over || active.id === over.id) return;
 
-  const handleDragEnd = (event: DragEndEvent) => {
-    setActiveKey(null);
-    const { active, over } = event;
-    if (!over || active.id === over.id) return;
+      const items = orderedRef.current;
+      const oldIndex = items.findIndex((it) => it.key === active.id);
+      const newIndex = items.findIndex((it) => it.key === over.id);
+      if (oldIndex === -1 || newIndex === -1) return;
 
-    const oldIndex = orderedItems.findIndex((it) => it.key === active.id);
-    const newIndex = orderedItems.findIndex((it) => it.key === over.id);
-    if (oldIndex === -1 || newIndex === -1) return;
-
-    const newOrder = arrayMove(orderedItems, oldIndex, newIndex);
-    setDailyOrder({
-      dateStr,
-      items: newOrder.map((it, i) => ({
-        entity_type: it.entityType,
-        entity_id: it.entityId,
-        position: i,
-      })),
-    });
-  };
-
-  const activeItem = activeKey
-    ? orderedItems.find((it) => it.key === activeKey) ?? null
-    : null;
+      const newOrder = arrayMove(items, oldIndex, newIndex);
+      setDailyOrder({
+        dateStr,
+        items: newOrder.map((it, i) => ({
+          entity_type: it.entityType,
+          entity_id: it.entityId,
+          position: i,
+        })),
+      });
+    },
+  });
 
   if (orderedItems.length === 0) return null;
 
   return (
-    <DndContext
-      sensors={sensors}
-      collisionDetection={closestCenter}
-      onDragStart={handleDragStart}
-      onDragEnd={handleDragEnd}
+    <SortableContext
+      items={orderedItems.map((it) => it.key)}
+      strategy={verticalListSortingStrategy}
     >
-      <SortableContext
-        items={orderedItems.map((it) => it.key)}
-        strategy={verticalListSortingStrategy}
-      >
-        <div className="mt-2 flex flex-col gap-2">
-          {orderedItems.map((item) => (
-            <TodayOrderItem
-              key={item.key}
-              item={item}
-              maps={maps}
-              showModeTitle={showModeTitle}
-              dateStr={dateStr}
-            />
-          ))}
-        </div>
-      </SortableContext>
-
-      <DragOverlay
-        dropAnimation={{ duration: 150, easing: "cubic-bezier(0.2, 0, 0, 1)" }}
-      >
-        {activeItem && (
-          <div className="pointer-events-none">
-            <ItemRenderer
-              item={activeItem}
-              maps={maps}
-              showModeTitle={showModeTitle}
-            />
-          </div>
-        )}
-      </DragOverlay>
-    </DndContext>
+      <div className="mt-2 flex flex-col gap-2">
+        {orderedItems.map((item) => (
+          <TodayOrderItem
+            key={item.key}
+            item={item}
+            maps={maps}
+            showModeTitle={showModeTitle}
+            dateStr={dateStr}
+          />
+        ))}
+      </div>
+    </SortableContext>
   );
 }
 
