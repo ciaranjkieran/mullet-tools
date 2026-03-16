@@ -16,6 +16,7 @@ import { Maps, getEntityBreadcrumb } from "@shared/utils/getEntityBreadcrumb";
 import { useDailyOrder } from "@shared/api/hooks/dailyOrder/useDailyOrder";
 import { useSetDailyOrder } from "@shared/api/hooks/dailyOrder/useSetDailyOrder";
 
+import { useSelectionStore } from "@/lib/store/useSelectionStore";
 import CalendarEntityDragCard from "@/components/dnd/calendar/CalendarEntityDragCard";
 import TaskRendererCalendar from "@/components/entities/tasks/renderers/calendar/TaskRendererCalendar";
 import MilestoneRendererCalendar from "@/components/entities/milestones/renderers/calendar/MilestoneRendererCalendar";
@@ -183,17 +184,69 @@ export default function TodayDailyOrderList({
   // Listen for drag-end events from the parent CalendarDndProvider's DndContext.
   // If both active and over are items in our sortable list, treat it as a reorder.
   // Otherwise the outer provider handles it as a date-to-date move.
+  // Supports multi-select: if the dragged item is part of a selection, all
+  // selected items move as a block to the drop position.
   useDndMonitor({
     onDragEnd(event: DragEndEvent) {
       const { active, over } = event;
       if (!over || active.id === over.id) return;
 
       const items = orderedRef.current;
-      const oldIndex = items.findIndex((it) => it.key === active.id);
-      const newIndex = items.findIndex((it) => it.key === over.id);
-      if (oldIndex === -1 || newIndex === -1) return;
+      const activeKey = active.id as string;
+      const overKey = over.id as string;
 
-      const newOrder = arrayMove(items, oldIndex, newIndex);
+      const oldIndex = items.findIndex((it) => it.key === activeKey);
+      const overIndex = items.findIndex((it) => it.key === overKey);
+      if (oldIndex === -1 || overIndex === -1) return;
+
+      // Build the set of keys being moved (multi-select aware)
+      const sel = useSelectionStore.getState().selected;
+      const activeItem = items[oldIndex];
+      const isActiveSelected = sel[activeItem.entityType].has(activeItem.entityId);
+
+      let movingKeys: Set<string>;
+      if (isActiveSelected) {
+        // Collect all selected items that are in this list
+        movingKeys = new Set<string>();
+        for (const item of items) {
+          if (sel[item.entityType].has(item.entityId)) {
+            movingKeys.add(item.key);
+          }
+        }
+      } else {
+        movingKeys = new Set([activeKey]);
+      }
+
+      // Split into static items and moving items (preserving their relative order)
+      const staticItems = items.filter((it) => !movingKeys.has(it.key));
+      const movingItems = items.filter((it) => movingKeys.has(it.key));
+
+      // Find where to insert in the static list
+      const overIndexInStatic = staticItems.findIndex((it) => it.key === overKey);
+      // If over target is one of the moving items, fall back to simple arrayMove
+      if (overIndexInStatic === -1) {
+        const newOrder = arrayMove(items, oldIndex, overIndex);
+        setDailyOrder({
+          dateStr,
+          items: newOrder.map((it, i) => ({
+            entity_type: it.entityType,
+            entity_id: it.entityId,
+            position: i,
+          })),
+        });
+        return;
+      }
+
+      // Insert after or before depending on drag direction
+      const isMovingDown = overIndex > oldIndex;
+      const insertAt = isMovingDown ? overIndexInStatic + 1 : overIndexInStatic;
+
+      const newOrder = [
+        ...staticItems.slice(0, insertAt),
+        ...movingItems,
+        ...staticItems.slice(insertAt),
+      ];
+
       setDailyOrder({
         dateStr,
         items: newOrder.map((it, i) => ({
