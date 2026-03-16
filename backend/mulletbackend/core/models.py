@@ -528,3 +528,36 @@ class Task(ArchivableModel):
 
     def __str__(self):
         return self.title
+
+
+# ─────────────────────────────────────────────
+# Daily ordering (cross-mode drag-and-drop)
+# ─────────────────────────────────────────────
+
+class DailyOrder(models.Model):
+    ENTITY_TYPES = [
+        ("goal", "Goal"),
+        ("project", "Project"),
+        ("milestone", "Milestone"),
+        ("task", "Task"),
+    ]
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="daily_orders",
+    )
+    date = models.DateField()
+    entity_type = models.CharField(max_length=20, choices=ENTITY_TYPES)
+    entity_id = models.PositiveIntegerField()
+    position = models.IntegerField(default=0)
+
+    class Meta:
+        ordering = ["position"]
+        unique_together = [("user", "date", "entity_type", "entity_id")]
+        indexes = [
+            Index(fields=["user", "date"]),
+        ]
+
+    def __str__(self):
+        return f"{self.entity_type}:{self.entity_id} @ pos {self.position}"

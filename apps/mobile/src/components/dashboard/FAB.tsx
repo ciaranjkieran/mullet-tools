@@ -16,14 +16,13 @@ import type { EntityFormType } from "../../lib/store/useEntityFormStore";
 
 type Props = {
   modeColor: string;
-  onOpenAiBuilder?: () => void;
   defaultDate?: string;
 };
 
 const DRAG_THRESHOLD = 8;
 const SCREEN = Dimensions.get("window");
 
-export default function FAB({ modeColor, onOpenAiBuilder, defaultDate }: Props) {
+export default function FAB({ modeColor, defaultDate }: Props) {
   const [expanded, setExpanded] = useState(false);
   const [pos, setPos] = useState({ bottom: 24, right: 24 });
   const openCreate = useEntityFormStore((s) => s.openCreate);
@@ -93,13 +92,6 @@ export default function FAB({ modeColor, onOpenAiBuilder, defaultDate }: Props) 
       openCreate("task", createOpts);
     }
   }, [openCreate, createOpts]);
-
-  const handleAiPress = useCallback(() => {
-    if (!wasDrag()) {
-      setExpanded(false);
-      onOpenAiBuilder?.();
-    }
-  }, [onOpenAiBuilder]);
 
   const handleEntitySelect = useCallback(
     (type: EntityFormType) => {
@@ -192,18 +184,6 @@ export default function FAB({ modeColor, onOpenAiBuilder, defaultDate }: Props) 
           <Feather name="plus" size={24} color={textColor} />
         </TouchableOpacity>
 
-        {/* AI Builder button */}
-        <TouchableOpacity
-          onPress={handleAiPress}
-          activeOpacity={0.8}
-          style={[
-            styles.smallButton,
-            btnShadow,
-            { backgroundColor: modeColor, marginTop: 10 },
-          ]}
-        >
-          <Feather name="zap" size={20} color={textColor} />
-        </TouchableOpacity>
       </View>
     </>
   );
@@ -215,9 +195,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   smallButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     justifyContent: "center",
     alignItems: "center",
   },

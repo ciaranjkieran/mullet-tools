@@ -79,7 +79,7 @@ export default function DashboardScreen() {
 
   const firstMode = modes[0];
   const modeColor =
-    selectedMode === "All" ? (firstMode?.color ?? "#000") : (selectedMode as Mode).color;
+    selectedMode === "All" ? "#000" : (selectedMode as Mode).color;
   const activeModeId =
     selectedMode === "All" ? (firstMode?.id ?? 0) : (selectedMode as Mode).id;
   const activeModeTitle =

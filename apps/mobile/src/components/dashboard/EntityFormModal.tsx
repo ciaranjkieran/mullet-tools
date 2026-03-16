@@ -42,6 +42,7 @@ import {
 } from "@shared/lineage/editorFilter";
 import { toTimerPath, type EntityRef } from "@shared/lineage/toTimerPath";
 import { pathToSelection } from "@shared/lineage/pathToSelection";
+import { buildMilestonePayload, buildProjectPayload, buildTaskPayload } from "@shared/lineage/xor";
 import {
   projectToTemplateData,
   milestoneToTemplateData,
@@ -135,52 +136,78 @@ export default function EntityFormModal({
     });
   }, [isEdit, entityType]);
 
-  // Build datasets and current selection for shared filter
-  const datasets = useMemo(
+  // Build selection object matching web's per-entity-type mapping:
+  // - Milestone form: parentMilestoneId → sel.milestoneId, projectId → sel.projectId
+  // - Project form: parentProjectId → sel.projectId, no milestoneId
+  // - Task form: milestoneId, projectId, goalId as-is
+  const sel = useMemo(() => {
+    if (entityType === "milestone") {
+      return { modeId: defaultModeId, goalId, projectId, milestoneId: parentMilestoneId };
+    }
+    if (entityType === "project") {
+      return { modeId: defaultModeId, goalId, projectId: parentProjectId, milestoneId: null };
+    }
+    return { modeId: defaultModeId, goalId, projectId, milestoneId };
+  }, [entityType, defaultModeId, goalId, projectId, milestoneId, parentMilestoneId, parentProjectId]);
+
+  const milestoneDatasets = useMemo(
     () => ({ modes, goals, projects, milestones }),
     [modes, goals, projects, milestones]
   );
 
-  const sel = useMemo(
-    () => ({ modeId: defaultModeId, goalId, projectId, milestoneId }),
-    [defaultModeId, goalId, projectId, milestoneId]
+  const projectDatasets = useMemo(
+    () => ({ modes, goals, projects, milestones: [] as typeof milestones }),
+    [modes, goals, projects]
   );
+
+  // Use entity-appropriate datasets (web project form passes milestones: [])
+  const activeDatasets = entityType === "project" ? projectDatasets : milestoneDatasets;
 
   // Cascading-filtered options
   const filtered = useMemo(
-    () => filterEditorOptions(sel, datasets),
-    [sel, datasets]
+    () => filterEditorOptions(sel, activeDatasets),
+    [sel, activeDatasets]
   );
 
-  // Cascading onChange handlers
+  // Cascading onChange handlers — apply reconciled values back to correct state vars
+  const applyRec = useCallback(
+    (next: { modeId: number; goalId: number | null; projectId: number | null; milestoneId: number | null }) => {
+      setGoalId(next.goalId);
+      if (entityType === "milestone") {
+        setProjectId(next.projectId);
+        setParentMilestoneId(next.milestoneId);
+      } else if (entityType === "project") {
+        setParentProjectId(next.projectId);
+      } else {
+        setProjectId(next.projectId);
+        setMilestoneId(next.milestoneId);
+      }
+    },
+    [entityType]
+  );
+
   const handleGoalChange = useCallback(
     (id: number | null) => {
-      const next = reconcileAfterChange(sel, { goalId: id }, datasets);
-      setGoalId(next.goalId);
-      setProjectId(next.projectId);
-      setMilestoneId(next.milestoneId);
+      const next = reconcileAfterChange(sel, { goalId: id }, activeDatasets);
+      applyRec(next);
     },
-    [sel, datasets]
+    [sel, activeDatasets, applyRec]
   );
 
   const handleProjectChange = useCallback(
     (id: number | null) => {
-      const next = reconcileAfterChange(sel, { projectId: id }, datasets);
-      setGoalId(next.goalId);
-      setProjectId(next.projectId);
-      setMilestoneId(next.milestoneId);
+      const next = reconcileAfterChange(sel, { projectId: id }, activeDatasets);
+      applyRec(next);
     },
-    [sel, datasets]
+    [sel, activeDatasets, applyRec]
   );
 
   const handleMilestoneChange = useCallback(
     (id: number | null) => {
-      const next = reconcileAfterChange(sel, { milestoneId: id }, datasets);
-      setGoalId(next.goalId);
-      setProjectId(next.projectId);
-      setMilestoneId(next.milestoneId);
+      const next = reconcileAfterChange(sel, { milestoneId: id }, activeDatasets);
+      applyRec(next);
     },
-    [sel, datasets]
+    [sel, activeDatasets, applyRec]
   );
 
   // Mutations
@@ -275,42 +302,65 @@ export default function EntityFormModal({
               assignedToId,
             });
             break;
-          case "project":
+          case "project": {
+            const { parentId: nParent, goalId: nGoal } = buildProjectPayload({
+              modeId: defaultModeId,
+              parentId: parentProjectId,
+              goalId,
+            });
             await updateProject.mutateAsync({
               id: editEntity!.id,
               title: title.trim(),
               description: description || null,
               dueDate: dueDate,
               dueTime: dueTime || null,
-              goalId,
-              parentId: parentProjectId,
+              parentId: nParent,
+              goalId: nGoal,
               assignedToId,
             });
             break;
-          case "milestone":
+          }
+          case "milestone": {
+            const { parentId: nParent, projectId: nProj, goalId: nGoal } = buildMilestonePayload({
+              title: title.trim(),
+              modeId: defaultModeId,
+              dueDate: dueDate || null,
+              dueTime: dueTime || null,
+              parentId: parentMilestoneId,
+              projectId,
+              goalId,
+            });
             await updateMilestone.mutateAsync({
               id: editEntity!.id,
               title: title.trim(),
               dueDate: dueDate,
               dueTime: dueTime || null,
-              goalId,
-              projectId,
-              parentId: parentMilestoneId,
+              parentId: nParent,
+              projectId: nProj,
+              goalId: nGoal,
               assignedToId,
             });
             break;
-          case "task":
+          }
+          case "task": {
+            const { milestoneId: nMs, projectId: nProj, goalId: nGoal } = buildTaskPayload({
+              modeId: defaultModeId,
+              milestoneId,
+              projectId,
+              goalId,
+            });
             await updateTask.mutateAsync({
               id: editEntity!.id,
               title: title.trim(),
               dueDate: dueDate,
               dueTime: dueTime || null,
-              milestoneId,
-              projectId,
-              goalId,
+              milestoneId: nMs,
+              projectId: nProj,
+              goalId: nGoal,
               assignedToId,
             });
             break;
+          }
         }
       } else {
         // Create
@@ -325,42 +375,65 @@ export default function EntityFormModal({
               assignedToId,
             });
             break;
-          case "project":
+          case "project": {
+            const { parentId: nParent, goalId: nGoal } = buildProjectPayload({
+              modeId: defaultModeId,
+              parentId: parentProjectId,
+              goalId,
+            });
             await createProject.mutateAsync({
               title: title.trim(),
               modeId: defaultModeId,
               description: description || undefined,
               dueDate: dueDate,
               dueTime: dueTime || undefined,
-              goalId,
-              parentId: parentProjectId,
+              parentId: nParent,
+              goalId: nGoal,
               assignedToId,
             });
             break;
-          case "milestone":
+          }
+          case "milestone": {
+            const { parentId: nParent, projectId: nProj, goalId: nGoal } = buildMilestonePayload({
+              title: title.trim(),
+              modeId: defaultModeId,
+              dueDate: dueDate || null,
+              dueTime: dueTime || null,
+              parentId: parentMilestoneId,
+              projectId,
+              goalId,
+            });
             await createMilestone.mutateAsync({
               title: title.trim(),
               modeId: defaultModeId,
               dueDate: dueDate,
               dueTime: dueTime || undefined,
-              goalId,
-              projectId,
-              parentId: parentMilestoneId,
+              parentId: nParent,
+              projectId: nProj,
+              goalId: nGoal,
               assignedToId,
             });
             break;
-          case "task":
+          }
+          case "task": {
+            const { milestoneId: nMs, projectId: nProj, goalId: nGoal } = buildTaskPayload({
+              modeId: defaultModeId,
+              milestoneId,
+              projectId,
+              goalId,
+            });
             await createTask.mutateAsync({
               title: title.trim(),
               modeId: defaultModeId,
               dueDate: dueDate,
               dueTime: dueTime || undefined,
-              milestoneId,
-              projectId,
-              goalId,
+              milestoneId: nMs,
+              projectId: nProj,
+              goalId: nGoal,
               assignedToId,
             });
             break;
+          }
         }
       }
       onClose();
@@ -536,44 +609,6 @@ export default function EntityFormModal({
   const showMilestonePicker = entityType === "task";
   const showParentMilestonePicker = entityType === "milestone";
 
-  // For parent project picker: filter to same mode, exclude self and descendants
-  const parentProjectOptions = useMemo(() => {
-    if (!showParentProjectPicker) return [];
-    const modeProjects = projects.filter((p) => p.modeId === defaultModeId);
-    if (!isEdit || !editEntity) return modeProjects;
-    // Collect all descendant IDs to prevent circular nesting
-    const excluded = new Set<number>([editEntity.id]);
-    let changed = true;
-    while (changed) {
-      changed = false;
-      for (const p of modeProjects) {
-        if (p.parentId != null && excluded.has(p.parentId) && !excluded.has(p.id)) {
-          excluded.add(p.id);
-          changed = true;
-        }
-      }
-    }
-    return modeProjects.filter((p) => !excluded.has(p.id));
-  }, [showParentProjectPicker, projects, defaultModeId, isEdit, editEntity]);
-
-  // For parent milestone picker: filter to same mode, exclude self and descendants
-  const parentMilestoneOptions = useMemo(() => {
-    if (!showParentMilestonePicker) return [];
-    const modeMilestones = milestones.filter((m) => m.modeId === defaultModeId);
-    if (!isEdit || !editEntity) return modeMilestones;
-    const excluded = new Set<number>([editEntity.id]);
-    let changed = true;
-    while (changed) {
-      changed = false;
-      for (const m of modeMilestones) {
-        if (m.parentId != null && excluded.has(m.parentId) && !excluded.has(m.id)) {
-          excluded.add(m.id);
-          changed = true;
-        }
-      }
-    }
-    return modeMilestones.filter((m) => !excluded.has(m.id));
-  }, [showParentMilestonePicker, milestones, defaultModeId, isEdit, editEntity]);
 
   return (
     <Modal
@@ -582,7 +617,8 @@ export default function EntityFormModal({
       presentationStyle="pageSheet"
       onRequestClose={onClose}
     >
-      <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }} edges={["top"]}>
+      <View style={{ flex: 1, backgroundColor: "#fff" }}>
+      <SafeAreaView style={{ flex: 1 }} edges={["top"]}>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={{ flex: 1 }}
@@ -892,13 +928,13 @@ export default function EntityFormModal({
             />
           )}
 
-          {showParentProjectPicker && parentProjectOptions.length > 0 && (
+          {showParentProjectPicker && filtered.projects.length > 0 && (
             <DropdownPicker
               label="Parent Project"
               iconElement={<EntityIcon type="project" color={modeColor} size={14} />}
-              options={parentProjectOptions}
+              options={filtered.projects}
               selectedId={parentProjectId}
-              onChange={setParentProjectId}
+              onChange={handleProjectChange}
               modeColor={modeColor}
             />
           )}
@@ -914,13 +950,13 @@ export default function EntityFormModal({
             />
           )}
 
-          {showParentMilestonePicker && parentMilestoneOptions.length > 0 && (
+          {showParentMilestonePicker && filtered.milestones.length > 0 && (
             <DropdownPicker
               label="Parent Milestone"
               iconElement={<EntityIcon type="milestone" color={modeColor} size={14} />}
-              options={parentMilestoneOptions}
+              options={filtered.milestones}
               selectedId={parentMilestoneId}
-              onChange={setParentMilestoneId}
+              onChange={handleMilestoneChange}
               modeColor={modeColor}
             />
           )}
@@ -966,6 +1002,7 @@ export default function EntityFormModal({
         )}
       </KeyboardAvoidingView>
       </SafeAreaView>
+      </View>
     </Modal>
   );
 }

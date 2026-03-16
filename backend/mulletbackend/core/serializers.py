@@ -451,3 +451,14 @@ class GoalReorderTodaySerializer(serializers.Serializer):
     mode_id = serializers.IntegerField()
     date_str = serializers.DateField()
     changes = serializers.ListField(child=serializers.DictField())
+
+
+class DailyOrderItemSerializer(serializers.Serializer):
+    entity_type = serializers.ChoiceField(choices=["goal", "project", "milestone", "task"])
+    entity_id = serializers.IntegerField()
+    position = serializers.IntegerField()
+
+
+class DailyOrderSerializer(serializers.Serializer):
+    date = serializers.DateField()
+    items = DailyOrderItemSerializer(many=True)

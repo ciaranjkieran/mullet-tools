@@ -25,6 +25,7 @@ const normalizePositions = (modes: Mode[]) =>
 interface ModeStore {
   modes: Mode[];
   selectedMode: Mode | "All";
+  isModeFocus: boolean;
 
   // setters
   setModes: (modes: Mode[]) => void;
@@ -32,6 +33,8 @@ interface ModeStore {
   updateMode: (updated: Mode) => void;
   deleteMode: (id: number) => void;
   setSelectedMode: (mode: Mode | "All") => void;
+  setIsModeFocus: (focus: boolean) => void;
+  toggleModeFocus: () => void;
 
   // ordering
   reorderModes: (newOrder: Mode[]) => void;
@@ -52,6 +55,7 @@ interface ModeStore {
 const initialState = {
   modes: [] as Mode[],
   selectedMode: "All" as const,
+  isModeFocus: false,
 };
 
 export const useModeStore = create<ModeStore>((set, get) => ({
@@ -100,6 +104,9 @@ export const useModeStore = create<ModeStore>((set, get) => ({
     }),
 
   setSelectedMode: (mode) => set({ selectedMode: mode }),
+
+  setIsModeFocus: (focus) => set({ isModeFocus: focus }),
+  toggleModeFocus: () => set((state) => ({ isModeFocus: !state.isModeFocus })),
 
   reorderModes: (newOrder) =>
     set({ modes: normalizePositions(sortModes(newOrder)) }),

@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useMemo } from "react";
 import { View, Text, TouchableOpacity, Animated } from "react-native";
 import { Feather } from "@expo/vector-icons";
+import { useQueryClient } from "@tanstack/react-query";
 import EntityIcon from "../EntityIcon";
 import { differenceInCalendarDays, parseISO, startOfDay } from "date-fns";
 import { useUpdateGoal } from "@shared/api/hooks/goals/useUpdateGoal";
@@ -24,6 +25,7 @@ type Props = {
 };
 
 export default function CalendarDayItem({ entity, formStore }: Props) {
+  const qc = useQueryClient();
   const updateGoal = useUpdateGoal();
   const updateProject = useUpdateProject();
   const updateMilestone = useUpdateMilestone();
@@ -41,6 +43,13 @@ export default function CalendarDayItem({ entity, formStore }: Props) {
   const [checked, setChecked] = useState(false);
   const [opacity] = useState(() => new Animated.Value(1));
 
+  const invalidateTimer = useCallback(() => {
+    qc.invalidateQueries({ queryKey: ["activeTimer"], exact: false });
+    qc.invalidateQueries({ queryKey: ["timer"], exact: false });
+    qc.invalidateQueries({ queryKey: ["time-entries"], exact: false });
+    qc.invalidateQueries({ queryKey: ["timeEntries"], exact: false });
+  }, [qc]);
+
   const handleCheck = useCallback(() => {
     if (checked) return;
     setChecked(true);
@@ -52,7 +61,7 @@ export default function CalendarDayItem({ entity, formStore }: Props) {
         delay: 200,
         useNativeDriver: true,
       }).start(() => {
-        deleteTask.mutate(entity.id);
+        deleteTask.mutate(entity.id, { onSuccess: invalidateTimer });
       });
     } else {
       const payload = { id: entity.id, isCompleted: true };
@@ -64,18 +73,18 @@ export default function CalendarDayItem({ entity, formStore }: Props) {
       }).start(() => {
         switch (entity.type) {
           case "goal":
-            updateGoal.mutate(payload);
+            updateGoal.mutate(payload, { onSuccess: invalidateTimer });
             break;
           case "project":
-            updateProject.mutate(payload);
+            updateProject.mutate(payload, { onSuccess: invalidateTimer });
             break;
           case "milestone":
-            updateMilestone.mutate(payload);
+            updateMilestone.mutate(payload, { onSuccess: invalidateTimer });
             break;
         }
       });
     }
-  }, [checked, entity, opacity, deleteTask, updateGoal, updateProject, updateMilestone]);
+  }, [checked, entity, opacity, deleteTask, updateGoal, updateProject, updateMilestone, invalidateTimer]);
 
   const handleTap = () => {
     if (checked) return;

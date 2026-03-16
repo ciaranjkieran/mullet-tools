@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef } from "react";
-import api from "../../axios";
+import api, { getAuthMode, getTokenHeader } from "../../axios";
 import { ensureCsrf } from "../auth/ensureCsrf";
 import type { AiBuildRequest, AiBuildResponse } from "../../../types/AiBuilder";
 
@@ -21,16 +21,24 @@ export function useAiBuild() {
       abortRef.current = new AbortController();
 
       try {
-        const csrfToken = await ensureCsrf();
         const baseURL = api.defaults.baseURL;
+        const isToken = getAuthMode() === "token";
+
+        let authHeaders: Record<string, string> = {};
+        if (isToken) {
+          authHeaders = await getTokenHeader();
+        } else {
+          const csrfToken = await ensureCsrf();
+          if (csrfToken) authHeaders["X-CSRFToken"] = csrfToken;
+        }
 
         const response = await fetch(`${baseURL}/ai/build/`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            ...(csrfToken ? { "X-CSRFToken": csrfToken } : {}),
+            ...authHeaders,
           },
-          credentials: "include",
+          ...(isToken ? {} : { credentials: "include" as const }),
           body: JSON.stringify(payload),
           signal: abortRef.current.signal,
         });
@@ -39,18 +47,38 @@ export function useAiBuild() {
           throw new Error("Request failed");
         }
 
-        const reader = response.body!.getReader();
-        const decoder = new TextDecoder();
         let fullText = "";
-        let buffer = "";
 
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
+        if (response.body && typeof response.body.getReader === "function") {
+          // Browser: stream via ReadableStream
+          const reader = response.body.getReader();
+          const decoder = new TextDecoder();
+          let buffer = "";
 
-          buffer += decoder.decode(value, { stream: true });
-          const parts = buffer.split("\n\n");
-          buffer = parts.pop() || "";
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            buffer += decoder.decode(value, { stream: true });
+            const parts = buffer.split("\n\n");
+            buffer = parts.pop() || "";
+
+            for (const part of parts) {
+              if (!part.startsWith("data: ")) continue;
+              const data = JSON.parse(part.slice(6));
+
+              if (data.type === "delta") {
+                fullText += data.text;
+                setStreamingText(fullText);
+              } else if (data.type === "error") {
+                throw new Error(data.message);
+              }
+            }
+          }
+        } else {
+          // React Native: no ReadableStream, read full response
+          const raw = await response.text();
+          const parts = raw.split("\n\n");
 
           for (const part of parts) {
             if (!part.startsWith("data: ")) continue;
@@ -58,11 +86,11 @@ export function useAiBuild() {
 
             if (data.type === "delta") {
               fullText += data.text;
-              setStreamingText(fullText);
             } else if (data.type === "error") {
               throw new Error(data.message);
             }
           }
+          setStreamingText(fullText);
         }
 
         // Extract JSON from accumulated text

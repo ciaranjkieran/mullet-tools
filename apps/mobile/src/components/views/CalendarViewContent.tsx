@@ -77,7 +77,6 @@ export default function CalendarViewContent({ listHeader }: Props) {
   const [weekOffset, setWeekOffset] = useState(0);
   const [pastDueCollapsed, setPastDueCollapsed] = useState(false);
   const [movingToToday, setMovingToToday] = useState(false);
-  const [isTodayFocus, setIsTodayFocus] = useState(false);
   const [timeSortKeys, setTimeSortKeys] = useState<Record<string, boolean>>({});
 
   const selectionActive = useSelectionStore((s) => s.isActive);
@@ -105,7 +104,7 @@ export default function CalendarViewContent({ listHeader }: Props) {
 
   const firstMode = modes[0];
   const modeColor =
-    selectedMode === "All" ? (firstMode?.color ?? "#000") : (selectedMode as Mode).color;
+    selectedMode === "All" ? "#000" : (selectedMode as Mode).color;
 
   const modeColorMap = useMemo(() => {
     const m: Record<number, string> = {};
@@ -245,11 +244,6 @@ export default function CalendarViewContent({ listHeader }: Props) {
       const d = new Date(weekStart);
       d.setDate(d.getDate() + i);
       const key = format(d, "yyyy-MM-dd");
-      // Today focus: only show today
-      if (isTodayFocus) {
-        if (key === todayStr) byDate[key] = [];
-        continue;
-      }
       // Current week: skip past days
       if (isCurrentWeek && key < todayStr) continue;
       byDate[key] = [];
@@ -271,8 +265,7 @@ export default function CalendarViewContent({ listHeader }: Props) {
     const sorted = pastDue.sort((a, b) => a.dueDate.localeCompare(b.dueDate));
     const result: CalendarSection[] = [];
 
-    // Hide past due when in today focus
-    if (sorted.length > 0 && isCurrentWeek && !isTodayFocus) {
+    if (sorted.length > 0 && isCurrentWeek) {
       result.push({
         title: "Past Due",
         dateKey: "past-due",
@@ -300,7 +293,7 @@ export default function CalendarViewContent({ listHeader }: Props) {
     }
 
     return { sections: result, pastDueEntities: sorted };
-  }, [allEntities, weekStart, weekEnd, weekOffset, pastDueCollapsed, isTodayFocus, timeSortKeys, sortEntities]);
+  }, [allEntities, weekStart, weekEnd, weekOffset, pastDueCollapsed, timeSortKeys, sortEntities]);
 
   const activeModeId =
     selectedMode === "All" ? (firstMode?.id ?? 0) : (selectedMode as Mode).id;
@@ -348,7 +341,7 @@ export default function CalendarViewContent({ listHeader }: Props) {
     // React Query handles dedup — just trigger refetches
   }, []);
 
-  const weekNav = isTodayFocus ? null : (
+  const weekNav = (
     <View
       style={{
         flexDirection: "row",
@@ -410,7 +403,7 @@ export default function CalendarViewContent({ listHeader }: Props) {
                 paddingHorizontal: 20,
                 paddingVertical: 14,
                 backgroundColor: section.isPastDue
-                  ? "#fef2f2"
+                  ? "#1e3a8a15"
                   : section.isToday
                     ? modeColor + "15"
                     : "#fff",
@@ -484,26 +477,6 @@ export default function CalendarViewContent({ listHeader }: Props) {
                       color={timeSortKeys[section.dateKey] ? "#2563eb" : "#9ca3af"}
                     />
                   </TouchableOpacity>
-                  {section.isToday && (
-                    <TouchableOpacity
-                      onPress={() => {
-                        setIsTodayFocus((f) => !f);
-                        if (!isTodayFocus) setWeekOffset(0);
-                      }}
-                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                      style={{
-                        padding: 4,
-                        borderRadius: 6,
-                        backgroundColor: isTodayFocus ? "#dcfce7" : "transparent",
-                      }}
-                    >
-                      {isTodayFocus ? (
-                        <Feather name="x" size={18} color="#059669" />
-                      ) : (
-                        <Feather name="crosshair" size={18} color="#059669" />
-                      )}
-                    </TouchableOpacity>
-                  )}
                 </View>
               )}
             </View>
@@ -519,7 +492,7 @@ export default function CalendarViewContent({ listHeader }: Props) {
                   justifyContent: "flex-end",
                   paddingHorizontal: 16,
                   paddingVertical: 10,
-                  backgroundColor: "#fef2f2",
+                  backgroundColor: "#fff",
                 }}
               >
                 <TouchableOpacity
@@ -585,7 +558,7 @@ export default function CalendarViewContent({ listHeader }: Props) {
       />
 
       {!selectionActive && (
-        <FAB modeColor={modeColor} onOpenAiBuilder={() => setAiBuilderOpen(true)} defaultDate={format(new Date(), "yyyy-MM-dd")} />
+        <FAB modeColor={modeColor} defaultDate={format(new Date(), "yyyy-MM-dd")} />
       )}
       {selectionActive && <BatchActionBar modeColor={modeColor} />}
 

@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { getContrastingText } from "@shared/utils/getContrastingText";
 import type { Mode } from "@shared/types/Mode";
+import { useModeStore } from "@shared/store/useModeStore";
 
 type Props = {
   modes: Mode[];
@@ -12,7 +13,8 @@ type Props = {
 };
 
 export default function ModeFilter({ modes, selectedMode, setSelectedMode, onLongPressMode }: Props) {
-  const [isModeFocus, setIsModeFocus] = React.useState(false);
+  const isModeFocus = useModeStore((s) => s.isModeFocus);
+  const toggleModeFocus = useModeStore((s) => s.toggleModeFocus);
 
   const modesToShow =
     !isModeFocus
@@ -109,7 +111,7 @@ export default function ModeFilter({ modes, selectedMode, setSelectedMode, onLon
           })}
 
           <TouchableOpacity
-            onPress={() => setIsModeFocus((prev) => !prev)}
+            onPress={toggleModeFocus}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             style={{
               marginLeft: 4,

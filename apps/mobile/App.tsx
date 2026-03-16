@@ -2,6 +2,7 @@ import "./src/lib/api/initApi"; // must be first — configures shared axios for
 
 import React, { useEffect } from "react";
 import { Platform } from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { StatusBar } from "expo-status-bar";
 import * as NavigationBar from "expo-navigation-bar";
@@ -19,11 +20,13 @@ export default function App() {
   }, []);
 
   return (
-    <ErrorBoundary>
-      <QueryClientProvider client={queryClient}>
-        <StatusBar style="dark" />
-        <AppNavigator />
-      </QueryClientProvider>
-    </ErrorBoundary>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <ErrorBoundary>
+        <QueryClientProvider client={queryClient}>
+          <StatusBar style="dark" />
+          <AppNavigator />
+        </QueryClientProvider>
+      </ErrorBoundary>
+    </GestureHandlerRootView>
   );
 }

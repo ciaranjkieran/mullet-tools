@@ -2,7 +2,6 @@ import React, { useState, useMemo, useCallback } from "react";
 import {
   View,
   Text,
-  SectionList,
   TouchableOpacity,
   Alert,
   ActivityIndicator,
@@ -10,6 +9,10 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
+import DraggableFlatList, {
+  RenderItemParams,
+  ScaleDecorator,
+} from "react-native-draggable-flatlist";
 import { format, parseISO, isBefore, startOfDay } from "date-fns";
 import { useModes } from "@shared/api/hooks/modes/useModes";
 import { useGoals } from "@shared/api/hooks/goals/useGoals";
@@ -20,6 +23,8 @@ import { useBulkMoveTasks } from "@shared/api/hooks/tasks/useBulkMoveTasks";
 import { useBulkMoveGoals } from "@shared/api/hooks/goals/useBulkMoveGoals";
 import { useBulkMoveProjects } from "@shared/api/hooks/projects/useBulkMoveProjects";
 import { useBulkMoveMilestones } from "@shared/api/hooks/milestones/useBulkMoveMilestones";
+import { useDailyOrder } from "@shared/api/hooks/dailyOrder/useDailyOrder";
+import { useSetDailyOrder } from "@shared/api/hooks/dailyOrder/useSetDailyOrder";
 import { useModeStore } from "@shared/store/useModeStore";
 import { useGoalStore } from "@shared/store/useGoalStore";
 import { useProjectStore } from "@shared/store/useProjectStore";
@@ -43,19 +48,10 @@ import type { Project } from "@shared/types/Project";
 import type { Milestone } from "@shared/types/Milestone";
 import type { Task } from "@shared/types/Task";
 
-type TodaySection = {
-  title: string;
-  dateKey: string;
-  isPastDue: boolean;
-  itemCount: number;
-  data: CalendarEntity[];
-};
-
 export default function TodayScreen() {
   const navigation = useNavigation<any>();
   const [pastDueCollapsed, setPastDueCollapsed] = useState(false);
   const [movingToToday, setMovingToToday] = useState(false);
-  const [sortByTime, setSortByTime] = useState(false);
   const selectionActive = useSelectionStore((s) => s.isActive);
 
   const bulkMoveTasks = useBulkMoveTasks();
@@ -81,7 +77,7 @@ export default function TodayScreen() {
 
   const firstMode = modes[0];
   const modeColor =
-    selectedMode === "All" ? (firstMode?.color ?? "#000") : (selectedMode as Mode).color;
+    selectedMode === "All" ? "#000" : (selectedMode as Mode).color;
 
   const isLoading =
     useModes().isLoading ||
@@ -111,6 +107,16 @@ export default function TodayScreen() {
   const goalMap = useMemo(() => Object.fromEntries(goals.map((g) => [g.id, g])), [goals]);
   const projectMap = useMemo(() => Object.fromEntries(projects.map((p) => [p.id, p])), [projects]);
   const milestoneMap = useMemo(() => Object.fromEntries(milestones.map((m) => [m.id, m])), [milestones]);
+
+  const today = useMemo(() => startOfDay(new Date()), []);
+  const todayStr = useMemo(() => format(today, "yyyy-MM-dd"), [today]);
+  const todayLabel = useMemo(() => format(today, "EEEE, MMM d"), [today]);
+
+  // Fetch saved daily order
+  const { data: savedOrder } = useDailyOrder(todayStr);
+  const setDailyOrder = useSetDailyOrder();
+
+  const TYPE_RANK: Record<string, number> = { task: 0, milestone: 1, project: 2, goal: 3 };
 
   const allEntities = useMemo(() => {
     const entities: CalendarEntity[] = [];
@@ -161,31 +167,13 @@ export default function TodayScreen() {
     return entities;
   }, [goals, projects, milestones, tasks, selectedMode, modeColorMap, modeTitleMap, goalMap, projectMap, milestoneMap]);
 
-  const today = useMemo(() => startOfDay(new Date()), []);
-  const todayStr = useMemo(() => format(today, "yyyy-MM-dd"), [today]);
-  const todayLabel = useMemo(() => format(today, "EEEE, MMM d"), [today]);
-
-  // Lower entities first: task=0, milestone=1, project=2, goal=3
-  const TYPE_RANK: Record<string, number> = { task: 0, milestone: 1, project: 2, goal: 3 };
-
-  const sortEntities = useCallback(
+  // Default sort: mode position → timed first → entity type → title
+  const defaultSort = useCallback(
     (items: CalendarEntity[]) => {
       return [...items].sort((a, b) => {
-        if (sortByTime) {
-          // Time toggle: all timed items first sorted by time, then non-timed
-          const aHasTime = !!a.dueTime;
-          const bHasTime = !!b.dueTime;
-          if (aHasTime !== bHasTime) return aHasTime ? -1 : 1;
-          if (aHasTime && bHasTime) {
-            const cmp = a.dueTime!.localeCompare(b.dueTime!);
-            if (cmp !== 0) return cmp;
-          }
-        }
-        // Group by mode
         const modeA = modePositionMap[a.modeId] ?? 999;
         const modeB = modePositionMap[b.modeId] ?? 999;
         if (modeA !== modeB) return modeA - modeB;
-        // Within a mode: timed items first
         const aHasTime = !!a.dueTime;
         const bHasTime = !!b.dueTime;
         if (aHasTime !== bHasTime) return aHasTime ? -1 : 1;
@@ -193,53 +181,64 @@ export default function TodayScreen() {
           const cmp = a.dueTime!.localeCompare(b.dueTime!);
           if (cmp !== 0) return cmp;
         }
-        // Entity type rank
         const typeA = TYPE_RANK[a.type] ?? 9;
         const typeB = TYPE_RANK[b.type] ?? 9;
         if (typeA !== typeB) return typeA - typeB;
         return a.title.localeCompare(b.title);
       });
     },
-    [sortByTime, modePositionMap]
+    [modePositionMap]
   );
 
-  const { sections, pastDueEntities } = useMemo(() => {
+  const { pastDueItems, todayItems } = useMemo(() => {
     const pastDue: CalendarEntity[] = [];
-    const todayItems: CalendarEntity[] = [];
+    const todayList: CalendarEntity[] = [];
 
     for (const entity of allEntities) {
       if (entity.isCompleted) continue;
       if (isBefore(parseISO(entity.dueDate), today)) {
         pastDue.push(entity);
       } else if (entity.dueDate === todayStr) {
-        todayItems.push(entity);
+        todayList.push(entity);
       }
     }
 
-    const sortedPastDue = sortEntities(pastDue);
-    const sortedToday = sortEntities(todayItems);
-    const result: TodaySection[] = [];
+    // Sort today items: apply saved order if available, fallback to default
+    let sortedToday: CalendarEntity[];
+    if (savedOrder && savedOrder.length > 0) {
+      const orderMap = new Map<string, number>();
+      for (const o of savedOrder) {
+        orderMap.set(`${o.entity_type}-${o.entity_id}`, o.position);
+      }
 
-    if (sortedPastDue.length > 0) {
-      result.push({
-        title: "Past Due",
-        dateKey: "past-due",
-        isPastDue: true,
-        itemCount: sortedPastDue.length,
-        data: pastDueCollapsed ? [] : sortedPastDue,
+      const ordered: CalendarEntity[] = [];
+      const unordered: CalendarEntity[] = [];
+      for (const item of todayList) {
+        const key = `${item.type}-${item.id}`;
+        if (orderMap.has(key)) {
+          ordered.push(item);
+        } else {
+          unordered.push(item);
+        }
+      }
+
+      ordered.sort((a, b) => {
+        const posA = orderMap.get(`${a.type}-${a.id}`) ?? 999;
+        const posB = orderMap.get(`${b.type}-${b.id}`) ?? 999;
+        return posA - posB;
       });
+
+      // New items go at the end, sorted by default
+      sortedToday = [...ordered, ...defaultSort(unordered)];
+    } else {
+      sortedToday = defaultSort(todayList);
     }
 
-    result.push({
-      title: todayLabel,
-      dateKey: todayStr,
-      isPastDue: false,
-      itemCount: sortedToday.length,
-      data: sortedToday,
-    });
-
-    return { sections: result, pastDueEntities: sortedPastDue };
-  }, [allEntities, today, todayStr, todayLabel, pastDueCollapsed, sortEntities]);
+    return {
+      pastDueItems: defaultSort(pastDue),
+      todayItems: sortedToday,
+    };
+  }, [allEntities, today, todayStr, savedOrder, defaultSort]);
 
   const activeModeId =
     selectedMode === "All" ? (firstMode?.id ?? 0) : (selectedMode as Mode).id;
@@ -247,11 +246,11 @@ export default function TodayScreen() {
     selectedMode === "All" ? (firstMode?.title ?? "") : (selectedMode as Mode).title;
 
   const handleMoveAllToToday = useCallback(() => {
-    if (pastDueEntities.length === 0) return;
+    if (pastDueItems.length === 0) return;
 
     Alert.alert(
       "Move All to Today",
-      `Reschedule ${pastDueEntities.length} past due item${pastDueEntities.length > 1 ? "s" : ""} to today?`,
+      `Reschedule ${pastDueItems.length} past due item${pastDueItems.length > 1 ? "s" : ""} to today?`,
       [
         { text: "Cancel", style: "cancel" },
         {
@@ -259,10 +258,10 @@ export default function TodayScreen() {
           onPress: async () => {
             setMovingToToday(true);
             try {
-              const taskIds = pastDueEntities.filter((e) => e.type === "task").map((e) => e.id);
-              const goalIds = pastDueEntities.filter((e) => e.type === "goal").map((e) => e.id);
-              const projectIds = pastDueEntities.filter((e) => e.type === "project").map((e) => e.id);
-              const milestoneIds = pastDueEntities.filter((e) => e.type === "milestone").map((e) => e.id);
+              const taskIds = pastDueItems.filter((e) => e.type === "task").map((e) => e.id);
+              const goalIds = pastDueItems.filter((e) => e.type === "goal").map((e) => e.id);
+              const projectIds = pastDueItems.filter((e) => e.type === "project").map((e) => e.id);
+              const milestoneIds = pastDueItems.filter((e) => e.type === "milestone").map((e) => e.id);
 
               const promises: Promise<unknown>[] = [];
               if (taskIds.length > 0) promises.push(bulkMoveTasks.mutateAsync({ taskIds, dueDate: todayStr }));
@@ -280,7 +279,36 @@ export default function TodayScreen() {
         },
       ]
     );
-  }, [pastDueEntities, todayStr, bulkMoveTasks, bulkMoveGoals, bulkMoveProjects, bulkMoveMilestones]);
+  }, [pastDueItems, todayStr, bulkMoveTasks, bulkMoveGoals, bulkMoveProjects, bulkMoveMilestones]);
+
+  const handleDragEnd = useCallback(
+    ({ data }: { data: CalendarEntity[] }) => {
+      setDailyOrder.mutate({
+        dateStr: todayStr,
+        items: data.map((item, idx) => ({
+          entity_type: item.type,
+          entity_id: item.id,
+          position: idx,
+        })),
+      });
+    },
+    [todayStr, setDailyOrder]
+  );
+
+  const renderDraggableItem = useCallback(
+    ({ item, drag, isActive }: RenderItemParams<CalendarEntity>) => (
+      <ScaleDecorator>
+        <TouchableOpacity
+          onLongPress={drag}
+          disabled={isActive}
+          activeOpacity={1}
+        >
+          <CalendarDayItem entity={item} formStore={formStore} />
+        </TouchableOpacity>
+      </ScaleDecorator>
+    ),
+    [formStore]
+  );
 
   if (isLoading) {
     return (
@@ -292,11 +320,94 @@ export default function TodayScreen() {
     );
   }
 
+  const pastDueSection = pastDueItems.length > 0 ? (
+    <View>
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "space-between",
+          paddingHorizontal: 20,
+          paddingVertical: 14,
+          backgroundColor: "#fef2f2",
+          borderBottomWidth: 1,
+          borderBottomColor: "#e5e7eb",
+        }}
+      >
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+          <Text style={{ ...textLine(16), fontWeight: "700", color: "#dc2626" }}>
+            Past Due
+          </Text>
+          <Text style={{ ...textLine(13), color: "#9ca3af" }}>
+            {pastDueItems.length} {pastDueItems.length === 1 ? "item" : "items"}
+          </Text>
+        </View>
+        <TouchableOpacity
+          onPress={() => setPastDueCollapsed((c) => !c)}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        >
+          <Text style={{ ...textLine(13), fontWeight: "600", color: "#1d4ed8" }}>
+            {pastDueCollapsed ? "Show" : "Hide"}
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {!pastDueCollapsed && (
+        <>
+          {pastDueItems.map((item) => (
+            <CalendarDayItem
+              key={`${item.type}-${item.id}`}
+              entity={item}
+              formStore={formStore}
+            />
+          ))}
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "flex-end",
+              paddingHorizontal: 16,
+              paddingVertical: 10,
+              backgroundColor: "#fef2f2",
+            }}
+          >
+            <TouchableOpacity
+              onPress={handleMoveAllToToday}
+              disabled={movingToToday}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 6,
+                backgroundColor: "#fee2e2",
+                paddingHorizontal: 12,
+                paddingVertical: 8,
+                borderRadius: 8,
+              }}
+            >
+              {movingToToday ? (
+                <ActivityIndicator size="small" color="#991b1b" />
+              ) : (
+                <>
+                  <Feather name="arrow-down" size={14} color="#991b1b" />
+                  <Text style={{ ...textLine(13), fontWeight: "600", color: "#991b1b" }}>
+                    Move all to Today
+                  </Text>
+                </>
+              )}
+            </TouchableOpacity>
+          </View>
+        </>
+      )}
+    </View>
+  ) : null;
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }} edges={["top", "left", "right"]}>
-      <SectionList
-        sections={sections}
+      <DraggableFlatList
+        data={todayItems}
         keyExtractor={(item) => `${item.type}-${item.id}`}
+        renderItem={renderDraggableItem}
+        onDragEnd={handleDragEnd}
+        activationDistance={15}
         ListHeaderComponent={
           <>
             <View
@@ -308,17 +419,16 @@ export default function TodayScreen() {
             >
               <Text style={{ fontSize: 34, fontWeight: "bold", color: "#111" }}>Today</Text>
             </View>
-            <ViewButtons modeColor={modeColor} onViewPress={() => navigation.navigate("Home")} />
+            <ViewButtons modeColor={modeColor} onViewPress={() => navigation.navigate("Home")} onOpenAiBuilder={selectedMode !== "All" ? () => setAiBuilderOpen(true) : undefined} />
             <ModeFilter
               modes={modes}
               selectedMode={selectedMode}
               setSelectedMode={setSelectedMode}
             />
-          </>
-        }
-        renderSectionHeader={({ section }) => {
-          const count = section.itemCount;
-          return (
+
+            {pastDueSection}
+
+            {/* Today section header */}
             <View
               style={{
                 flexDirection: "row",
@@ -326,150 +436,65 @@ export default function TodayScreen() {
                 justifyContent: "space-between",
                 paddingHorizontal: 20,
                 paddingVertical: 14,
-                backgroundColor: section.isPastDue ? "#fef2f2" : modeColor + "15",
+                backgroundColor: modeColor + "15",
                 borderBottomWidth: 1,
                 borderBottomColor: "#e5e7eb",
               }}
             >
               <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                <Text
-                  style={{
-                    ...textLine(16),
-                    fontWeight: "700",
-                    color: section.isPastDue ? "#dc2626" : "#1f2937",
-                  }}
-                >
-                  {section.isPastDue ? "Past Due" : todayLabel}
+                <Text style={{ ...textLine(16), fontWeight: "700", color: "#1f2937" }}>
+                  {todayLabel}
                 </Text>
-                {!section.isPastDue && (
-                  <Text style={{ ...textLine(14), fontWeight: "700", color: "#059669" }}>
-                    Today
-                  </Text>
-                )}
-                {count > 0 && (
+                <Text style={{ ...textLine(14), fontWeight: "700", color: "#059669" }}>
+                  Today
+                </Text>
+                {todayItems.length > 0 && (
                   <Text style={{ ...textLine(13), color: "#9ca3af" }}>
-                    {count} {count === 1 ? "item" : "items"}
+                    {todayItems.length} {todayItems.length === 1 ? "item" : "items"}
                   </Text>
                 )}
               </View>
-              {!section.isPastDue && (
-                <TouchableOpacity
-                  onPress={() => setSortByTime((p) => !p)}
-                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    gap: 4,
-                    paddingHorizontal: 10,
-                    paddingVertical: 5,
-                    borderRadius: 14,
-                    borderWidth: 1,
-                    borderColor: sortByTime ? modeColor : "#d1d5db",
-                    backgroundColor: sortByTime ? modeColor + "15" : "#fff",
-                  }}
-                >
-                  <Feather
-                    name="arrow-up"
-                    size={12}
-                    color={sortByTime ? modeColor : "#9ca3af"}
-                  />
-                  <Feather
-                    name="clock"
-                    size={13}
-                    color={sortByTime ? modeColor : "#9ca3af"}
-                  />
-                </TouchableOpacity>
-              )}
-              {section.isPastDue && (
-                <TouchableOpacity
-                  onPress={() => setPastDueCollapsed((c) => !c)}
-                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                >
-                  <Text style={{ ...textLine(13), fontWeight: "600", color: "#1d4ed8" }}>
-                    {pastDueCollapsed ? "Show" : "Hide"}
-                  </Text>
-                </TouchableOpacity>
-              )}
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                <Feather name="menu" size={16} color="#9ca3af" />
+                <Text style={{ ...textLine(12), color: "#9ca3af" }}>
+                  Hold to reorder
+                </Text>
+              </View>
             </View>
-          );
-        }}
-        renderSectionFooter={({ section }) => {
-          if (section.isPastDue) {
-            if (pastDueCollapsed) return null;
-            return (
+          </>
+        }
+        ListFooterComponent={
+          <View style={{ paddingBottom: 8 }}>
+            {todayItems.length === 0 && (
               <View
                 style={{
-                  flexDirection: "row",
-                  justifyContent: "flex-end",
-                  paddingHorizontal: 16,
-                  paddingVertical: 10,
-                  backgroundColor: "#fef2f2",
+                  marginHorizontal: 12,
+                  marginTop: 4,
+                  borderWidth: 1,
+                  borderStyle: "dashed",
+                  borderColor: "#d1d5db",
+                  borderRadius: 8,
+                  paddingVertical: 16,
+                  alignItems: "center",
+                  backgroundColor: "#f9fafb",
                 }}
               >
-                <TouchableOpacity
-                  onPress={handleMoveAllToToday}
-                  disabled={movingToToday}
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    gap: 6,
-                    backgroundColor: "#fee2e2",
-                    paddingHorizontal: 12,
-                    paddingVertical: 8,
-                    borderRadius: 8,
-                  }}
-                >
-                  {movingToToday ? (
-                    <ActivityIndicator size="small" color="#991b1b" />
-                  ) : (
-                    <>
-                      <Feather name="arrow-down" size={14} color="#991b1b" />
-                      <Text style={{ ...textLine(13), fontWeight: "600", color: "#991b1b" }}>
-                        Move all to Today
-                      </Text>
-                    </>
-                  )}
-                </TouchableOpacity>
+                <Text style={{ fontSize: 14, color: "#9ca3af", fontStyle: "italic" }}>
+                  Nothing scheduled for today
+                </Text>
               </View>
-            );
-          }
-          return (
-            <View style={{ paddingBottom: 8 }}>
-              {section.data.length === 0 && (
-                <View
-                  style={{
-                    marginHorizontal: 12,
-                    marginTop: 4,
-                    borderWidth: 1,
-                    borderStyle: "dashed",
-                    borderColor: "#d1d5db",
-                    borderRadius: 8,
-                    paddingVertical: 16,
-                    alignItems: "center",
-                    backgroundColor: "#f9fafb",
-                  }}
-                >
-                  <Text style={{ fontSize: 14, color: "#9ca3af", fontStyle: "italic" }}>
-                    Nothing scheduled for today
-                  </Text>
-                </View>
-              )}
-              <AddTaskInlineCalendar
-                dateStr={todayStr}
-                modeId={activeModeId}
-              />
-            </View>
-          );
-        }}
-        renderItem={({ item }) => (
-          <CalendarDayItem entity={item} formStore={formStore} />
-        )}
+            )}
+            <AddTaskInlineCalendar
+              dateStr={todayStr}
+              modeId={activeModeId}
+            />
+          </View>
+        }
         contentContainerStyle={{ paddingBottom: selectionActive ? 140 : 80 }}
-        stickySectionHeadersEnabled={false}
       />
 
       {!selectionActive && (
-        <FAB modeColor={modeColor} onOpenAiBuilder={() => setAiBuilderOpen(true)} defaultDate={format(new Date(), "yyyy-MM-dd")} />
+        <FAB modeColor={modeColor} defaultDate={format(new Date(), "yyyy-MM-dd")} />
       )}
       {selectionActive && <BatchActionBar modeColor={modeColor} />}
 

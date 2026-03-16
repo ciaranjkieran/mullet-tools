@@ -10,7 +10,7 @@ from django.db.models import F, Max, Q, Count, Subquery
 logger = logging.getLogger(__name__)
 from django.db import transaction
 
-from .models import Mode, Goal, Project, Milestone, Task
+from .models import Mode, Goal, Project, Milestone, Task, DailyOrder
 from .serializers import (
     ModeSerializer,
     GoalSerializer,
@@ -25,6 +25,7 @@ from .serializers import (
     GoalReorderHomeSerializer,
     GoalReorderTodaySerializer,
     ProjectReorderHomeSerializer,
+    DailyOrderSerializer,
 )
 from .utils.archive_guard import destroy_or_archive
 from timers.services import stop_active_if_targeting
@@ -772,3 +773,47 @@ class TaskReorderHomeView(APIView):
             {"updated": [{"id": t.id, "position": t.position} for t in tasks]},
             status=status.HTTP_200_OK,
         )
+
+
+# ─────────────────────────────────────────────
+# DAILY ORDER (cross-mode drag-and-drop)
+# ─────────────────────────────────────────────
+class DailyOrderView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        date = request.query_params.get("date")
+        if not date:
+            return Response({"error": "date is required"}, status=400)
+
+        orders = DailyOrder.objects.filter(user=request.user, date=date)
+        return Response([
+            {
+                "entity_type": o.entity_type,
+                "entity_id": o.entity_id,
+                "position": o.position,
+            }
+            for o in orders
+        ])
+
+    def put(self, request):
+        serializer = DailyOrderSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        date = serializer.validated_data["date"]
+        items = serializer.validated_data["items"]
+
+        with transaction.atomic():
+            DailyOrder.objects.filter(user=request.user, date=date).delete()
+            DailyOrder.objects.bulk_create([
+                DailyOrder(
+                    user=request.user,
+                    date=date,
+                    entity_type=item["entity_type"],
+                    entity_id=item["entity_id"],
+                    position=item["position"],
+                )
+                for item in items
+            ])
+
+        return Response({"status": "ok"})

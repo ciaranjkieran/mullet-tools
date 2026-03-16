@@ -9,6 +9,7 @@ interface ApiConfig {
 }
 
 let _authMode: AuthMode = "session";
+let _tokenGetter: (() => Promise<string | null>) | undefined;
 
 const api = axios.create();
 
@@ -23,6 +24,7 @@ export function configureApi(
   tokenGetter?: () => Promise<string | null>
 ) {
   _authMode = config.authMode;
+  _tokenGetter = tokenGetter;
   api.defaults.baseURL = config.baseURL;
 
   if (config.authMode === "session") {
@@ -59,6 +61,14 @@ export function configureApi(
 
 export function getAuthMode(): AuthMode {
   return _authMode;
+}
+
+export async function getTokenHeader(): Promise<Record<string, string>> {
+  if (_tokenGetter) {
+    const token = await _tokenGetter();
+    return token ? { Authorization: `Token ${token}` } : {};
+  }
+  return {};
 }
 
 export default api;

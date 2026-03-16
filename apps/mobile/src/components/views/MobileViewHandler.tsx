@@ -46,6 +46,7 @@ function HomeHeader({
   selectedMode,
   setSelectedMode,
   onLongPressMode,
+  onOpenAiBuilder,
   pageTitle,
   headerRight,
 }: {
@@ -54,6 +55,7 @@ function HomeHeader({
   selectedMode: Mode | "All";
   setSelectedMode: (mode: Mode | "All") => void;
   onLongPressMode?: (mode: Mode) => void;
+  onOpenAiBuilder?: () => void;
   pageTitle: string;
   headerRight?: React.ReactNode;
 }) {
@@ -72,7 +74,7 @@ function HomeHeader({
         <Text style={{ fontSize: 34, fontWeight: "bold", color: "#111" }}>{pageTitle}</Text>
         {headerRight}
       </View>
-      <ViewButtons modeColor={modeColor} />
+      <ViewButtons modeColor={modeColor} onOpenAiBuilder={selectedMode !== "All" ? onOpenAiBuilder : undefined} />
       <ModeFilter
         modes={modes}
         selectedMode={selectedMode}
@@ -109,6 +111,7 @@ export default function MobileViewHandler({
       selectedMode={selectedMode}
       setSelectedMode={setSelectedMode}
       onLongPressMode={onLongPressMode}
+      onOpenAiBuilder={onOpenAiBuilder}
       pageTitle={pageTitle}
       headerRight={headerRight}
     />

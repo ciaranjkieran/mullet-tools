@@ -20,8 +20,8 @@ from .views import (
     TaskReorderTodayView,
     ProjectReorderTodayView,
       MilestoneReorderTodayView,
-      GoalReorderTodayView
-          # ← NEW
+      GoalReorderTodayView,
+    DailyOrderView,
 )
 
 router = DefaultRouter()
@@ -52,6 +52,9 @@ urlpatterns = [
     # Position bulk-update endpoints
     path("milestones/bulk-update-positions/", BulkMilestonePositionUpdateView.as_view(), name="milestone-bulk-position-update"),
     path("milestones/reorder-today/", MilestoneReorderTodayView.as_view(), name="milestones-reorder-today"),
+
+    # Daily order (cross-mode DnD)
+    path("daily-order/", DailyOrderView.as_view(), name="daily-order"),
 
     # Router endpoints
     path("", include(router.urls)),

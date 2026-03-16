@@ -96,7 +96,7 @@ export default function DashboardViewContent({
         }
       />
       {!selectionActive && (
-        <FAB modeColor={modeColor} onOpenAiBuilder={onOpenAiBuilder} />
+        <FAB modeColor={modeColor} />
       )}
       {selectionActive && <BatchActionBar modeColor={modeColor} />}
     </>
