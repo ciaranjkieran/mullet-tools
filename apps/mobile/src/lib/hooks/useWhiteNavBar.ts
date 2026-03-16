@@ -9,7 +9,15 @@ import * as NavigationBar from "expo-navigation-bar";
 export function useWhiteNavBar(visible: boolean) {
   useEffect(() => {
     if (!visible || Platform.OS !== "android") return;
+    // Set immediately
     NavigationBar.setBackgroundColorAsync("#ffffff");
     NavigationBar.setButtonStyleAsync("dark");
+    // Also set after a short delay — Android Modals render in a separate
+    // window and the initial call can be ignored.
+    const t = setTimeout(() => {
+      NavigationBar.setBackgroundColorAsync("#ffffff");
+      NavigationBar.setButtonStyleAsync("dark");
+    }, 150);
+    return () => clearTimeout(t);
   }, [visible]);
 }

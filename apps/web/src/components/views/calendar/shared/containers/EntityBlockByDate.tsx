@@ -9,7 +9,7 @@ import { Goal } from "@shared/types/Goal";
 import { Maps } from "@shared/types/Maps";
 
 import ModeSectionCalendar from "./ModeSectionCalendar";
-import TodayModeSectionCalendar from "../../week/today/containers/TodayModeSectionCalendar";
+import TodayDailyOrderList from "../../week/today/containers/TodayDailyOrderList";
 import TimeSortedEntityList from "./TimeSortedEntityList";
 import { isBefore, parseISO, startOfToday } from "date-fns";
 
@@ -106,9 +106,22 @@ export default function EntityBlockByDate({
     );
   }
 
-  const ModeComponent = isToday
-    ? TodayModeSectionCalendar
-    : ModeSectionCalendar;
+  // Today: flat cross-mode sortable list with daily order persistence
+  if (isToday) {
+    const modeIdSet = new Set(modesToRender.map((m) => m.id));
+    return (
+      <TodayDailyOrderList
+        tasks={filteredTasks.filter((t) => modeIdSet.has(t.modeId))}
+        milestones={filteredMilestones.filter((m) => modeIdSet.has(m.modeId))}
+        projects={filteredProjects.filter((p) => modeIdSet.has(p.modeId))}
+        goals={filteredGoals.filter((g) => modeIdSet.has(g.modeId))}
+        modes={modes}
+        maps={maps}
+        showModeTitle={showModeTitle}
+        dateStr={dateStr}
+      />
+    );
+  }
 
   return (
     <>
@@ -124,7 +137,7 @@ export default function EntityBlockByDate({
 
         return (
           <div className="mb-2 last:mb-0" key={mode.id}>
-            <ModeComponent
+            <ModeSectionCalendar
               mode={mode}
               tasks={modeTasks}
               milestones={modeMilestones}
@@ -132,7 +145,7 @@ export default function EntityBlockByDate({
               goals={modeGoals}
               showModeTitle={showModeTitle}
               maps={maps}
-              dateStr={dateStr} // used by ModeSectionCalendar for droppable ids
+              dateStr={dateStr}
             />
           </div>
         );
