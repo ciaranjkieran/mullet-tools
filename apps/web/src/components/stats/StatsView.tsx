@@ -30,6 +30,7 @@ import ConfirmDialog from "../../lib/utils/ConfirmDialog";
 import StatsByModeCard from "./cards/StatsByModeCard";
 import AllModeStatsCard from "./cards/AllModeStatsCard";
 import api from "@shared/api/axios";
+import { ensureCsrf } from "@shared/api/hooks/auth/ensureCsrf";
 
 type Props = {
   modes: Mode[];
@@ -233,6 +234,7 @@ export default function StatsView(props: Props) {
 
     setIsClearing(true);
     try {
+      await ensureCsrf();
       await api.delete("/stats/clear", {
         params: {
           from: range.from,
