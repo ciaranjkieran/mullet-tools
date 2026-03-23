@@ -32,9 +32,7 @@
     "updates": {
       "url": "https://u.expo.dev/95a76fa8-5d2c-4e60-bdff-762d9544e286"
     },
-    "runtimeVersion": {
-      "policy": "appVersion"
-    },
+    "runtimeVersion": "1.0.0",
     "plugins": [
       "expo-secure-store",
       "expo-document-picker",

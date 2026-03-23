@@ -6,7 +6,9 @@
     "dev": "next dev --hostname 0.0.0.0",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "android": "expo run:android",
+    "ios": "expo run:ios"
   },
   "dependencies": {
     "@dnd-kit/accessibility": "^3.1.1",
@@ -38,7 +40,9 @@
     "react-dom": "19.1.0",
     "react-easy-crop": "^5.5.0",
     "react-textarea-autosize": "^8.5.9",
-    "zustand": "^4.5.0"
+    "zustand": "^4.5.0",
+    "expo": "~54.0.33",
+    "react-native": "0.81.5"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

@@ -2,6 +2,23 @@ from django.db import models
 from django.db.models import Q, CheckConstraint, Index
 from django.utils import timezone
 from django.conf import settings
+from django.contrib.contenttypes.models import ContentType
+
+
+def _bulk_sync_comments(model_class, object_ids, new_mode_id):
+    """
+    Sync comments for entity IDs that were updated via bulk QuerySet.update()
+    (which bypasses post_save signals and therefore the per-instance signal handler).
+    Uses apps.get_model to avoid a circular import with the comments app.
+    """
+    if not object_ids:
+        return
+    from django.apps import apps
+    Comment = apps.get_model("comments", "Comment")
+    ct = ContentType.objects.get_for_model(model_class, for_concrete_model=False)
+    Comment.objects.filter(
+        content_type=ct, object_id__in=object_ids
+    ).exclude(mode_id=new_mode_id).update(mode_id=new_mode_id)
 
 
 class Mode(models.Model):
@@ -195,18 +212,23 @@ class Goal(ArchivableModel):
         # 3) Update modes on projects & milestones
         if project_ids:
             Project.all_objects.filter(id__in=project_ids).update(mode_id=new_mode_id)
+            _bulk_sync_comments(Project, project_ids, new_mode_id)
         if milestone_ids:
             Milestone.all_objects.filter(id__in=milestone_ids).update(mode_id=new_mode_id)
+            _bulk_sync_comments(Milestone, milestone_ids, new_mode_id)
 
         # 4) Update tasks:
         #    - linked directly to this goal
         #    - OR to any collected project
         #    - OR to any collected milestone
-        Task.all_objects.filter(
+        task_ids = list(Task.all_objects.filter(
             Q(goal=self)
             | Q(project_id__in=project_ids if project_ids else [])
             | Q(milestone_id__in=milestone_ids if milestone_ids else [])
-        ).update(mode_id=new_mode_id)
+        ).values_list("id", flat=True))
+        if task_ids:
+            Task.all_objects.filter(id__in=task_ids).update(mode_id=new_mode_id)
+            _bulk_sync_comments(Task, task_ids, new_mode_id)
 
 
 class Project(ArchivableModel):
@@ -332,14 +354,19 @@ class Project(ArchivableModel):
 
         # 3) Update projects + milestones
         Project.all_objects.filter(id__in=project_ids).update(mode_id=new_mode_id)
+        _bulk_sync_comments(Project, project_ids, new_mode_id)
         if milestone_ids:
             Milestone.all_objects.filter(id__in=milestone_ids).update(mode_id=new_mode_id)
+            _bulk_sync_comments(Milestone, milestone_ids, new_mode_id)
 
         # 4) Tasks linked to these projects or milestones
-        Task.all_objects.filter(
+        task_ids = list(Task.all_objects.filter(
             Q(project_id__in=project_ids)
             | Q(milestone_id__in=milestone_ids if milestone_ids else [])
-        ).update(mode_id=new_mode_id)
+        ).values_list("id", flat=True))
+        if task_ids:
+            Task.all_objects.filter(id__in=task_ids).update(mode_id=new_mode_id)
+            _bulk_sync_comments(Task, task_ids, new_mode_id)
 
 
 class Milestone(ArchivableModel):
@@ -449,9 +476,13 @@ class Milestone(ArchivableModel):
 
         # 2) Update milestone subtree
         Milestone.all_objects.filter(id__in=milestone_ids).update(mode_id=new_mode_id)
+        _bulk_sync_comments(Milestone, milestone_ids, new_mode_id)
 
         # 3) Tasks linked to those milestones
-        Task.all_objects.filter(milestone_id__in=milestone_ids).update(mode_id=new_mode_id)
+        task_ids = list(Task.all_objects.filter(milestone_id__in=milestone_ids).values_list("id", flat=True))
+        if task_ids:
+            Task.all_objects.filter(id__in=task_ids).update(mode_id=new_mode_id)
+            _bulk_sync_comments(Task, task_ids, new_mode_id)
 
 
 class Task(ArchivableModel):
