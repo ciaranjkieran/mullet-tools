@@ -16,6 +16,8 @@ import {
 } from "@shared/store/useStatsFilterStore";
 import { textLine } from "../../lib/styles/platform";
 import StatsNodeCard from "../stats/StatsNodeCard";
+import StatsPieChart from "../stats/StatsPieChart";
+import type { StatsPieSegment } from "../stats/StatsPieChart";
 import type { EntityFormType } from "../../lib/store/useEntityFormStore";
 import type { StatsNode } from "@shared/types/Stats";
 
@@ -117,6 +119,15 @@ export default function StatsTab({ entityType, entityId, modeId, modeColor }: Pr
     return flattenNode(node, node.title || "This entity");
   }, [node]);
 
+  const pieSegments = useMemo<StatsPieSegment[]>(() => {
+    return flattened
+      .filter((item) => (item.node.selfSeconds ?? 0) > 0)
+      .map((item) => ({
+        label: item.node.title || "Untitled",
+        seconds: item.node.selfSeconds ?? 0,
+      }));
+  }, [flattened]);
+
   if (isLoading) {
     return (
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
@@ -157,29 +168,43 @@ export default function StatsTab({ entityType, entityId, modeId, modeColor }: Pr
         })}
       </View>
 
-      {/* Total time card */}
+      {/* Total time card + pie chart */}
       <View
         style={{
+          flexDirection: "row",
+          alignItems: "flex-start",
+          justifyContent: "space-between",
           borderBottomWidth: 1,
           borderBottomColor: "#f3f4f6",
           paddingBottom: 12,
           marginBottom: 12,
+          gap: 16,
         }}
       >
-        <Text
-          style={{
-            fontSize: 11,
-            fontWeight: "600",
-            textTransform: "uppercase",
-            letterSpacing: 0.5,
-            color: "#9ca3af",
-          }}
-        >
-          Total
-        </Text>
-        <Text style={{ fontSize: 28, fontWeight: "700", color: "#111", fontFamily: "monospace" }}>
-          {formatDuration(totalSeconds)}
-        </Text>
+        <View style={{ flex: 1 }}>
+          <Text
+            style={{
+              fontSize: 14,
+              fontWeight: "600",
+              textTransform: "uppercase",
+              letterSpacing: 0.5,
+              color: "#6b7280",
+            }}
+          >
+            Total
+          </Text>
+          <Text style={{ fontSize: 30, fontWeight: "700", color: "#111" }}>
+            {formatDuration(totalSeconds)}
+          </Text>
+        </View>
+
+        {entityType !== "task" && (
+          <StatsPieChart
+            totalSeconds={totalSeconds}
+            segments={pieSegments}
+            color={modeColor}
+          />
+        )}
       </View>
 
       {/* Child breakdown */}

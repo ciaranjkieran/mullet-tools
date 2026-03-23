@@ -48,6 +48,7 @@ import {
   milestoneToTemplateData,
 } from "@shared/utils/toTemplate";
 import { useTimerLaunchStore } from "../../lib/store/useTimerLaunchStore";
+import { getContrastingText } from "@shared/utils/getContrastingText";
 import type { Goal } from "@shared/types/Goal";
 import type { Project } from "@shared/types/Project";
 import type { Milestone } from "@shared/types/Milestone";
@@ -107,7 +108,7 @@ export default function EntityFormModal({
 
   // Form state
   const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
+  const [formModeId, setFormModeId] = useState<number>(defaultModeId);
   const [dueDate, setDueDate] = useState<string | null>(null);
   const [dueTime, setDueTime] = useState<string | null>(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -125,7 +126,8 @@ export default function EntityFormModal({
   const milestones = useMilestoneStore((s) => s.milestones);
   const tasks = useTaskStore((s) => s.tasks);
   const modes = useModeStore((s) => (s as any).modes as Mode[] | undefined) ?? [];
-  const modeColor = modes.find((m) => m.id === defaultModeId)?.color ?? "#6b7280";
+  const modeColor = modes.find((m) => m.id === formModeId)?.color ?? "#6b7280";
+  const saveTextColor = getContrastingText(modeColor);
 
   // Tabs available for current entity type
   const visibleTabs = useMemo(() => {
@@ -142,13 +144,13 @@ export default function EntityFormModal({
   // - Task form: milestoneId, projectId, goalId as-is
   const sel = useMemo(() => {
     if (entityType === "milestone") {
-      return { modeId: defaultModeId, goalId, projectId, milestoneId: parentMilestoneId };
+      return { modeId: formModeId, goalId, projectId, milestoneId: parentMilestoneId };
     }
     if (entityType === "project") {
-      return { modeId: defaultModeId, goalId, projectId: parentProjectId, milestoneId: null };
+      return { modeId: formModeId, goalId, projectId: parentProjectId, milestoneId: null };
     }
-    return { modeId: defaultModeId, goalId, projectId, milestoneId };
-  }, [entityType, defaultModeId, goalId, projectId, milestoneId, parentMilestoneId, parentProjectId]);
+    return { modeId: formModeId, goalId, projectId, milestoneId };
+  }, [entityType, formModeId, goalId, projectId, milestoneId, parentMilestoneId, parentProjectId]);
 
   const milestoneDatasets = useMemo(
     () => ({ modes, goals, projects, milestones }),
@@ -243,13 +245,9 @@ export default function EntityFormModal({
       setActiveTab((initialTab as ActiveTab) || "details");
       if (editEntity) {
         setTitle(editEntity.title);
+        setFormModeId((editEntity as any).modeId ?? defaultModeId);
         setDueDate(editEntity.dueDate ?? null);
         setDueTime((editEntity as any).dueTime ?? null);
-        if ("description" in editEntity) {
-          setDescription((editEntity as Goal | Project).description ?? "");
-        } else {
-          setDescription("");
-        }
         if ("goalId" in editEntity) {
           setGoalId((editEntity as any).goalId ?? null);
         }
@@ -269,7 +267,7 @@ export default function EntityFormModal({
         setAssignedToId((editEntity as any).assignedToId ?? null);
       } else {
         setTitle("");
-        setDescription("");
+        setFormModeId(defaultModeId);
         setDueDate(defaultDate);
         setDueTime(null);
         setGoalId(null);
@@ -296,7 +294,7 @@ export default function EntityFormModal({
             await updateGoal.mutateAsync({
               id: editEntity!.id,
               title: title.trim(),
-              description: description || null,
+              modeId: formModeId,
               dueDate: dueDate,
               dueTime: dueTime || null,
               assignedToId,
@@ -304,14 +302,14 @@ export default function EntityFormModal({
             break;
           case "project": {
             const { parentId: nParent, goalId: nGoal } = buildProjectPayload({
-              modeId: defaultModeId,
+              modeId: formModeId,
               parentId: parentProjectId,
               goalId,
             });
             await updateProject.mutateAsync({
               id: editEntity!.id,
               title: title.trim(),
-              description: description || null,
+              modeId: formModeId,
               dueDate: dueDate,
               dueTime: dueTime || null,
               parentId: nParent,
@@ -323,7 +321,7 @@ export default function EntityFormModal({
           case "milestone": {
             const { parentId: nParent, projectId: nProj, goalId: nGoal } = buildMilestonePayload({
               title: title.trim(),
-              modeId: defaultModeId,
+              modeId: formModeId,
               dueDate: dueDate || null,
               dueTime: dueTime || null,
               parentId: parentMilestoneId,
@@ -333,6 +331,7 @@ export default function EntityFormModal({
             await updateMilestone.mutateAsync({
               id: editEntity!.id,
               title: title.trim(),
+              modeId: formModeId,
               dueDate: dueDate,
               dueTime: dueTime || null,
               parentId: nParent,
@@ -344,7 +343,7 @@ export default function EntityFormModal({
           }
           case "task": {
             const { milestoneId: nMs, projectId: nProj, goalId: nGoal } = buildTaskPayload({
-              modeId: defaultModeId,
+              modeId: formModeId,
               milestoneId,
               projectId,
               goalId,
@@ -352,6 +351,7 @@ export default function EntityFormModal({
             await updateTask.mutateAsync({
               id: editEntity!.id,
               title: title.trim(),
+              modeId: formModeId,
               dueDate: dueDate,
               dueTime: dueTime || null,
               milestoneId: nMs,
@@ -368,8 +368,7 @@ export default function EntityFormModal({
           case "goal":
             await createGoal.mutateAsync({
               title: title.trim(),
-              modeId: defaultModeId,
-              description: description || undefined,
+              modeId: formModeId,
               dueDate: dueDate,
               dueTime: dueTime || undefined,
               assignedToId,
@@ -377,14 +376,13 @@ export default function EntityFormModal({
             break;
           case "project": {
             const { parentId: nParent, goalId: nGoal } = buildProjectPayload({
-              modeId: defaultModeId,
+              modeId: formModeId,
               parentId: parentProjectId,
               goalId,
             });
             await createProject.mutateAsync({
               title: title.trim(),
-              modeId: defaultModeId,
-              description: description || undefined,
+              modeId: formModeId,
               dueDate: dueDate,
               dueTime: dueTime || undefined,
               parentId: nParent,
@@ -396,7 +394,7 @@ export default function EntityFormModal({
           case "milestone": {
             const { parentId: nParent, projectId: nProj, goalId: nGoal } = buildMilestonePayload({
               title: title.trim(),
-              modeId: defaultModeId,
+              modeId: formModeId,
               dueDate: dueDate || null,
               dueTime: dueTime || null,
               parentId: parentMilestoneId,
@@ -405,7 +403,7 @@ export default function EntityFormModal({
             });
             await createMilestone.mutateAsync({
               title: title.trim(),
-              modeId: defaultModeId,
+              modeId: formModeId,
               dueDate: dueDate,
               dueTime: dueTime || undefined,
               parentId: nParent,
@@ -417,14 +415,14 @@ export default function EntityFormModal({
           }
           case "task": {
             const { milestoneId: nMs, projectId: nProj, goalId: nGoal } = buildTaskPayload({
-              modeId: defaultModeId,
+              modeId: formModeId,
               milestoneId,
               projectId,
               goalId,
             });
             await createTask.mutateAsync({
               title: title.trim(),
-              modeId: defaultModeId,
+              modeId: formModeId,
               dueDate: dueDate,
               dueTime: dueTime || undefined,
               milestoneId: nMs,
@@ -523,7 +521,7 @@ export default function EntityFormModal({
 
     const ref: EntityRef = { kind: entityType, id: editEntity.id };
     const timerPath = toTimerPath(ref, maps);
-    const timerSel = pathToSelection(timerPath, defaultModeId);
+    const timerSel = pathToSelection(timerPath, formModeId);
 
     useTimerLaunchStore.getState().setLaunchIntent({
       modeId: timerSel.modeId,
@@ -601,7 +599,6 @@ export default function EntityFormModal({
   );
 
   const insets = useSafeAreaInsets();
-  const showDescription = entityType === "goal" || entityType === "project";
   const showGoalPicker = entityType !== "goal";
   const showParentProjectPicker = entityType === "project";
   const showProjectPicker =
@@ -617,10 +614,13 @@ export default function EntityFormModal({
       presentationStyle="pageSheet"
       onRequestClose={onClose}
     >
-      <View style={{ flex: 1, backgroundColor: "#fff" }}>
+      <View style={{ flex: 1, backgroundColor: "#fff", borderLeftWidth: 4, borderLeftColor: modeColor }}>
       <SafeAreaView style={{ flex: 1 }} edges={["top"]}>
+      {/* Mode color bar */}
+      <View style={{ height: 6, backgroundColor: modeColor, opacity: 0.5 }} />
       <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        behavior="height"
+        enabled={Platform.OS !== "ios" && activeTab !== "comments" && activeTab !== "notes"}
         style={{ flex: 1 }}
       >
         {/* Header */}
@@ -644,15 +644,21 @@ export default function EntityFormModal({
           <TouchableOpacity
             onPress={handleSubmit}
             disabled={isPending || submitting || !title.trim()}
-            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            style={{
+              backgroundColor: title.trim() ? modeColor : "#d1d5db",
+              paddingHorizontal: 16,
+              paddingVertical: 7,
+              borderRadius: 8,
+              opacity: isPending || submitting ? 0.6 : 1,
+            }}
           >
             {isPending || submitting ? (
-              <ActivityIndicator size="small" />
+              <ActivityIndicator size="small" color={saveTextColor} />
             ) : (
               <Text
                 style={{
-                  color: title.trim() ? "#2563eb" : "#9ca3af",
-                  fontSize: 16,
+                  color: title.trim() ? saveTextColor : "#9ca3af",
+                  fontSize: 15,
                   fontWeight: "600",
                 }}
               >
@@ -821,19 +827,15 @@ export default function EntityFormModal({
             autoFocus={!isEdit}
           />
 
-          {/* Description */}
-          {showDescription && (
-            <>
-              <Text style={labelStyle}>Description</Text>
-              <TextInput
-                value={description}
-                onChangeText={setDescription}
-                placeholder="Optional description"
-                style={[inputStyle, { minHeight: 80, textAlignVertical: "top" }]}
-                multiline
-              />
-            </>
-          )}
+          {/* Mode */}
+          <DropdownPicker
+            label="Mode"
+            options={modes.map((m) => ({ id: m.id, title: m.title }))}
+            selectedId={formModeId}
+            onChange={(id) => { if (id != null) setFormModeId(id); }}
+            modeColor={modeColor}
+            preserveOrder
+          />
 
           {/* Due Date */}
           <Text style={labelStyle}>Due Date</Text>
@@ -983,17 +985,9 @@ export default function EntityFormModal({
           {isEdit && (
             <TouchableOpacity
               onPress={handleDelete}
-              style={{
-                marginTop: 32,
-                paddingVertical: 14,
-                borderRadius: 10,
-                backgroundColor: "#fee2e2",
-                alignItems: "center",
-              }}
+              style={{ marginTop: 24, alignSelf: "flex-start" }}
             >
-              <Text
-                style={{ color: "#dc2626", fontWeight: "600", fontSize: 16 }}
-              >
+              <Text style={{ color: "#dc2626", fontSize: 14, fontWeight: "500" }}>
                 Delete {LABELS[entityType]}
               </Text>
             </TouchableOpacity>

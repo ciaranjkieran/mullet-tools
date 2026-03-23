@@ -14,8 +14,9 @@ import { useStatsTree } from "@shared/api/hooks/stats/useStatsTree";
 import ModeFilter from "../components/ModeFilter";
 import DateRangePicker from "../components/stats/DateRangePicker";
 import StatsNodeCard from "../components/stats/StatsNodeCard";
+import StatsPieChart from "../components/stats/StatsPieChart";
 import type { Mode } from "@shared/types/Mode";
-import type { StatsTree } from "@shared/types/Stats";
+import type { StatsTree, StatsNode } from "@shared/types/Stats";
 
 type Preset = "today" | "thisWeek" | "thisMonth" | "allTime";
 
@@ -29,6 +30,24 @@ function formatDuration(seconds: number): string {
   return `${s}s`;
 }
 
+type EntityKind = "mode" | "goal" | "project" | "milestone" | "task";
+
+function flattenTree(tree: StatsTree): { kind: EntityKind; node: StatsNode }[] {
+  const items: { kind: EntityKind; node: StatsNode }[] = [];
+  const walk = (kind: EntityKind, node: StatsNode) => {
+    if (node.selfSeconds > 0) items.push({ kind, node });
+    node.goals?.forEach((c) => walk("goal", c));
+    node.projects?.forEach((c) => walk("project", c));
+    node.milestones?.forEach((c) => walk("milestone", c));
+    node.tasks?.forEach((c) => walk("task", c));
+  };
+  tree.goals.forEach((g) => walk("goal", g));
+  tree.projects.forEach((p) => walk("project", p));
+  tree.milestones.forEach((m) => walk("milestone", m));
+  tree.tasks.forEach((t) => walk("task", t));
+  return items.sort((a, b) => b.node.selfSeconds - a.node.selfSeconds);
+}
+
 function ModeStatsCard({
   tree,
   mode,
@@ -36,14 +55,16 @@ function ModeStatsCard({
   tree: StatsTree;
   mode: Mode;
 }) {
-  const maxSeconds = useMemo(() => {
-    let max = 0;
-    for (const g of tree.goals) if (g.seconds > max) max = g.seconds;
-    for (const p of tree.projects) if (p.seconds > max) max = p.seconds;
-    for (const m of tree.milestones) if (m.seconds > max) max = m.seconds;
-    for (const t of tree.tasks) if (t.seconds > max) max = t.seconds;
-    return max || 1;
-  }, [tree]);
+  const flattened = useMemo(() => flattenTree(tree), [tree]);
+
+  const pieSegments = useMemo(
+    () =>
+      flattened.map((item) => ({
+        label: item.node.title || "Untitled",
+        seconds: item.node.selfSeconds ?? 0,
+      })),
+    [flattened],
+  );
 
   const hasData =
     tree.goals.length > 0 ||
@@ -94,6 +115,43 @@ function ModeStatsCard({
       {/* Body */}
       {hasData ? (
         <View style={{ padding: 10 }}>
+          {/* Pie chart */}
+          {pieSegments.length > 0 && (
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "flex-start",
+                borderBottomWidth: 1,
+                borderBottomColor: "#f3f4f6",
+                paddingBottom: 8,
+                marginBottom: 8,
+                gap: 16,
+              }}
+            >
+              <View style={{ flex: 1 }}>
+                <Text
+                  style={{
+                    fontSize: 14,
+                    fontWeight: "600",
+                    textTransform: "uppercase",
+                    letterSpacing: 0.5,
+                    color: "#6b7280",
+                  }}
+                >
+                  Total
+                </Text>
+                <Text style={{ fontSize: 30, fontWeight: "700", color: "#111" }}>
+                  {formatDuration(tree.seconds)}
+                </Text>
+              </View>
+              <StatsPieChart
+                totalSeconds={tree.seconds}
+                segments={pieSegments}
+                color={mode.color}
+              />
+            </View>
+          )}
           {tree.selfSeconds > 0 && (
             <View
               style={{

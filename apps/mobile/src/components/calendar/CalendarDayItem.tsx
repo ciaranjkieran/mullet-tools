@@ -22,9 +22,10 @@ type Props = {
   formStore: {
     openEdit: (type: EntityFormType, entity: any) => void;
   };
+  drag?: () => void;
 };
 
-export default function CalendarDayItem({ entity, formStore }: Props) {
+export default function CalendarDayItem({ entity, formStore, drag }: Props) {
   const qc = useQueryClient();
   const updateGoal = useUpdateGoal();
   const updateProject = useUpdateProject();
@@ -195,6 +196,17 @@ export default function CalendarDayItem({ entity, formStore }: Props) {
             </Text>
           ) : null}
         </View>
+
+        {/* Drag handle */}
+        {drag && (
+          <TouchableOpacity
+            onPressIn={drag}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            style={{ marginLeft: 8, padding: 4 }}
+          >
+            <Feather name="menu" size={16} color="#d1d5db" />
+          </TouchableOpacity>
+        )}
 
         {/* Right: checkbox */}
         <TouchableOpacity

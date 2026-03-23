@@ -96,7 +96,6 @@ export default function StatsNodeCard({
             fontSize: 14,
             fontWeight: "600",
             color: "#111",
-            fontFamily: "monospace",
           }}
         >
           {formatDuration(seconds)}

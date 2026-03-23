@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -9,6 +9,8 @@ import {
   Alert,
   ActivityIndicator,
   Linking,
+  Keyboard,
+  Platform,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
@@ -172,6 +174,20 @@ export default function CommentsTab({ entityType, entityId, modeId }: Props) {
   const [attachments, setAttachments] = useState<ImagePicker.ImagePickerAsset[]>(
     []
   );
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  useEffect(() => {
+    const showEvent = Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
+    const hideEvent = Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
+    const showSub = Keyboard.addListener(showEvent, (e) =>
+      setKeyboardHeight(e.endCoordinates.height)
+    );
+    const hideSub = Keyboard.addListener(hideEvent, () => setKeyboardHeight(0));
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -235,7 +251,7 @@ export default function CommentsTab({ entityType, entityId, modeId }: Props) {
   }
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1, marginBottom: keyboardHeight > 0 ? keyboardHeight + 8 : 0 }}>
       {/* Comments list */}
       <FlatList
         data={comments}
@@ -247,7 +263,8 @@ export default function CommentsTab({ entityType, entityId, modeId }: Props) {
             showAuthor={isCollab}
           />
         )}
-        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 8 }}
+        style={{ flex: 1 }}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 8, flexGrow: 1 }}
         ListEmptyComponent={
           <View style={{ alignItems: "center", paddingVertical: 24 }}>
             <Text style={{ color: "#9ca3af" }}>No comments yet</Text>
@@ -299,7 +316,7 @@ export default function CommentsTab({ entityType, entityId, modeId }: Props) {
           alignItems: "flex-end",
           paddingHorizontal: 16,
           paddingTop: 10,
-          paddingBottom: insets.bottom + 6,
+          paddingBottom: Math.max(insets.bottom, 8),
           borderTopWidth: 1,
           borderTopColor: "#e5e7eb",
           backgroundColor: "#fff",

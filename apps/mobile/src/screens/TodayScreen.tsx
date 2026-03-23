@@ -3,7 +3,6 @@ import {
   View,
   Text,
   TouchableOpacity,
-  Alert,
   ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -13,16 +12,12 @@ import DraggableFlatList, {
   RenderItemParams,
   ScaleDecorator,
 } from "react-native-draggable-flatlist";
-import { format, parseISO, isBefore, startOfDay } from "date-fns";
+import { format, startOfDay } from "date-fns";
 import { useModes } from "@shared/api/hooks/modes/useModes";
 import { useGoals } from "@shared/api/hooks/goals/useGoals";
 import { useProjects } from "@shared/api/hooks/projects/useProjects";
 import { useMilestones } from "@shared/api/hooks/milestones/useMilestones";
 import { useTasks } from "@shared/api/hooks/tasks/useTasks";
-import { useBulkMoveTasks } from "@shared/api/hooks/tasks/useBulkMoveTasks";
-import { useBulkMoveGoals } from "@shared/api/hooks/goals/useBulkMoveGoals";
-import { useBulkMoveProjects } from "@shared/api/hooks/projects/useBulkMoveProjects";
-import { useBulkMoveMilestones } from "@shared/api/hooks/milestones/useBulkMoveMilestones";
 import { useDailyOrder } from "@shared/api/hooks/dailyOrder/useDailyOrder";
 import { useSetDailyOrder } from "@shared/api/hooks/dailyOrder/useSetDailyOrder";
 import { useModeStore } from "@shared/store/useModeStore";
@@ -33,7 +28,6 @@ import { useTaskStore } from "@shared/store/useTaskStore";
 import ViewButtons from "../components/views/ViewButtons";
 import ModeFilter from "../components/ModeFilter";
 import CalendarDayItem from "../components/calendar/CalendarDayItem";
-import AddTaskInlineCalendar from "../components/calendar/AddTaskInlineCalendar";
 import EntityFormModal from "../components/dashboard/EntityFormModal";
 import FAB from "../components/dashboard/FAB";
 import BatchActionBar from "../components/batch/BatchActionBar";
@@ -50,14 +44,7 @@ import type { Task } from "@shared/types/Task";
 
 export default function TodayScreen() {
   const navigation = useNavigation<any>();
-  const [pastDueCollapsed, setPastDueCollapsed] = useState(false);
-  const [movingToToday, setMovingToToday] = useState(false);
   const selectionActive = useSelectionStore((s) => s.isActive);
-
-  const bulkMoveTasks = useBulkMoveTasks();
-  const bulkMoveGoals = useBulkMoveGoals();
-  const bulkMoveProjects = useBulkMoveProjects();
-  const bulkMoveMilestones = useBulkMoveMilestones();
 
   useModes();
   useGoals();
@@ -190,21 +177,17 @@ export default function TodayScreen() {
     [modePositionMap]
   );
 
-  const { pastDueItems, todayItems } = useMemo(() => {
-    const pastDue: CalendarEntity[] = [];
+  const todayItems = useMemo(() => {
     const todayList: CalendarEntity[] = [];
 
     for (const entity of allEntities) {
       if (entity.isCompleted) continue;
-      if (isBefore(parseISO(entity.dueDate), today)) {
-        pastDue.push(entity);
-      } else if (entity.dueDate === todayStr) {
+      if (entity.dueDate === todayStr) {
         todayList.push(entity);
       }
     }
 
     // Sort today items: apply saved order if available, fallback to default
-    let sortedToday: CalendarEntity[];
     if (savedOrder && savedOrder.length > 0) {
       const orderMap = new Map<string, number>();
       for (const o of savedOrder) {
@@ -228,83 +211,48 @@ export default function TodayScreen() {
         return posA - posB;
       });
 
-      // New items go at the end, sorted by default
-      sortedToday = [...ordered, ...defaultSort(unordered)];
-    } else {
-      sortedToday = defaultSort(todayList);
+      return [...ordered, ...defaultSort(unordered)];
     }
 
-    return {
-      pastDueItems: defaultSort(pastDue),
-      todayItems: sortedToday,
-    };
-  }, [allEntities, today, todayStr, savedOrder, defaultSort]);
+    return defaultSort(todayList);
+  }, [allEntities, todayStr, savedOrder, defaultSort]);
 
   const activeModeId =
     selectedMode === "All" ? (firstMode?.id ?? 0) : (selectedMode as Mode).id;
   const activeModeTitle =
     selectedMode === "All" ? (firstMode?.title ?? "") : (selectedMode as Mode).title;
 
-  const handleMoveAllToToday = useCallback(() => {
-    if (pastDueItems.length === 0) return;
-
-    Alert.alert(
-      "Move All to Today",
-      `Reschedule ${pastDueItems.length} past due item${pastDueItems.length > 1 ? "s" : ""} to today?`,
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Move",
-          onPress: async () => {
-            setMovingToToday(true);
-            try {
-              const taskIds = pastDueItems.filter((e) => e.type === "task").map((e) => e.id);
-              const goalIds = pastDueItems.filter((e) => e.type === "goal").map((e) => e.id);
-              const projectIds = pastDueItems.filter((e) => e.type === "project").map((e) => e.id);
-              const milestoneIds = pastDueItems.filter((e) => e.type === "milestone").map((e) => e.id);
-
-              const promises: Promise<unknown>[] = [];
-              if (taskIds.length > 0) promises.push(bulkMoveTasks.mutateAsync({ taskIds, dueDate: todayStr }));
-              if (goalIds.length > 0) promises.push(bulkMoveGoals.mutateAsync({ goalIds, dueDate: todayStr }));
-              if (projectIds.length > 0) promises.push(bulkMoveProjects.mutateAsync({ projectIds, dueDate: todayStr }));
-              if (milestoneIds.length > 0) promises.push(bulkMoveMilestones.mutateAsync({ milestoneIds, dueDate: todayStr }));
-
-              await Promise.all(promises);
-            } catch {
-              Alert.alert("Error", "Failed to move items. Please try again.");
-            } finally {
-              setMovingToToday(false);
-            }
-          },
-        },
-      ]
-    );
-  }, [pastDueItems, todayStr, bulkMoveTasks, bulkMoveGoals, bulkMoveProjects, bulkMoveMilestones]);
-
   const handleDragEnd = useCallback(
     ({ data }: { data: CalendarEntity[] }) => {
+      // When filtering by mode, merge reordered items with existing order
+      // for items not currently visible, so we don't overwrite other modes
+      const reordered = data.map((item, idx) => ({
+        entity_type: item.type as "goal" | "project" | "milestone" | "task",
+        entity_id: item.id,
+        position: idx,
+      }));
+
+      const reorderedKeys = new Set(
+        reordered.map((r) => `${r.entity_type}-${r.entity_id}`)
+      );
+
+      // Keep existing positions for items not in the current view
+      const preserved = (savedOrder ?? [])
+        .filter((o) => !reorderedKeys.has(`${o.entity_type}-${o.entity_id}`))
+        .map((o, i) => ({ ...o, position: reordered.length + i }));
+
       setDailyOrder.mutate({
         dateStr: todayStr,
-        items: data.map((item, idx) => ({
-          entity_type: item.type,
-          entity_id: item.id,
-          position: idx,
-        })),
+        items: [...reordered, ...preserved],
       });
     },
-    [todayStr, setDailyOrder]
+    [todayStr, setDailyOrder, savedOrder]
   );
 
   const renderDraggableItem = useCallback(
     ({ item, drag, isActive }: RenderItemParams<CalendarEntity>) => (
       <ScaleDecorator>
-        <TouchableOpacity
-          onLongPress={drag}
-          disabled={isActive}
-          activeOpacity={1}
-        >
-          <CalendarDayItem entity={item} formStore={formStore} />
-        </TouchableOpacity>
+        <CalendarDayItem entity={item} formStore={formStore} drag={drag} />
       </ScaleDecorator>
     ),
     [formStore]
@@ -319,86 +267,6 @@ export default function TodayScreen() {
       </SafeAreaView>
     );
   }
-
-  const pastDueSection = pastDueItems.length > 0 ? (
-    <View>
-      <View
-        style={{
-          flexDirection: "row",
-          alignItems: "center",
-          justifyContent: "space-between",
-          paddingHorizontal: 20,
-          paddingVertical: 14,
-          backgroundColor: "#fef2f2",
-          borderBottomWidth: 1,
-          borderBottomColor: "#e5e7eb",
-        }}
-      >
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-          <Text style={{ ...textLine(16), fontWeight: "700", color: "#dc2626" }}>
-            Past Due
-          </Text>
-          <Text style={{ ...textLine(13), color: "#9ca3af" }}>
-            {pastDueItems.length} {pastDueItems.length === 1 ? "item" : "items"}
-          </Text>
-        </View>
-        <TouchableOpacity
-          onPress={() => setPastDueCollapsed((c) => !c)}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-        >
-          <Text style={{ ...textLine(13), fontWeight: "600", color: "#1d4ed8" }}>
-            {pastDueCollapsed ? "Show" : "Hide"}
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      {!pastDueCollapsed && (
-        <>
-          {pastDueItems.map((item) => (
-            <CalendarDayItem
-              key={`${item.type}-${item.id}`}
-              entity={item}
-              formStore={formStore}
-            />
-          ))}
-          <View
-            style={{
-              flexDirection: "row",
-              justifyContent: "flex-end",
-              paddingHorizontal: 16,
-              paddingVertical: 10,
-              backgroundColor: "#fef2f2",
-            }}
-          >
-            <TouchableOpacity
-              onPress={handleMoveAllToToday}
-              disabled={movingToToday}
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                gap: 6,
-                backgroundColor: "#fee2e2",
-                paddingHorizontal: 12,
-                paddingVertical: 8,
-                borderRadius: 8,
-              }}
-            >
-              {movingToToday ? (
-                <ActivityIndicator size="small" color="#991b1b" />
-              ) : (
-                <>
-                  <Feather name="arrow-down" size={14} color="#991b1b" />
-                  <Text style={{ ...textLine(13), fontWeight: "600", color: "#991b1b" }}>
-                    Move all to Today
-                  </Text>
-                </>
-              )}
-            </TouchableOpacity>
-          </View>
-        </>
-      )}
-    </View>
-  ) : null;
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }} edges={["top", "left", "right"]}>
@@ -425,8 +293,6 @@ export default function TodayScreen() {
               selectedMode={selectedMode}
               setSelectedMode={setSelectedMode}
             />
-
-            {pastDueSection}
 
             {/* Today section header */}
             <View
@@ -455,9 +321,9 @@ export default function TodayScreen() {
                 )}
               </View>
               <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-                <Feather name="menu" size={16} color="#9ca3af" />
+                <Feather name="menu" size={14} color="#9ca3af" />
                 <Text style={{ ...textLine(12), color: "#9ca3af" }}>
-                  Hold to reorder
+                  Drag to reorder
                 </Text>
               </View>
             </View>
@@ -484,10 +350,6 @@ export default function TodayScreen() {
                 </Text>
               </View>
             )}
-            <AddTaskInlineCalendar
-              dateStr={todayStr}
-              modeId={activeModeId}
-            />
           </View>
         }
         contentContainerStyle={{ paddingBottom: selectionActive ? 140 : 80 }}

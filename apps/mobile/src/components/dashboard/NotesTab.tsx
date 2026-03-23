@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from "react";
+import React, { useState, useCallback, useRef, useEffect } from "react";
 import {
   View,
   Text,
@@ -7,6 +7,8 @@ import {
   FlatList,
   Alert,
   ActivityIndicator,
+  Keyboard,
+  Platform,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
@@ -151,6 +153,20 @@ export default function NotesTab({
   const [composerOpen, setComposerOpen] = useState(false);
   const [editingNote, setEditingNote] = useState<Note | null>(null);
   const [body, setBody] = useState("");
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  useEffect(() => {
+    const showEvent = Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
+    const hideEvent = Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
+    const showSub = Keyboard.addListener(showEvent, (e) =>
+      setKeyboardHeight(e.endCoordinates.height)
+    );
+    const hideSub = Keyboard.addListener(hideEvent, () => setKeyboardHeight(0));
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
   const selectionRef = useRef({ start: 0, end: 0 });
   const inputRef = useRef<any>(null);
 
@@ -216,7 +232,7 @@ export default function NotesTab({
   }
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1, marginBottom: keyboardHeight > 0 ? keyboardHeight + 8 : 0 }}>
       {/* Composer (expanded) */}
       {composerOpen && (
         <View
@@ -298,7 +314,8 @@ export default function NotesTab({
             showAuthor={isCollab}
           />
         )}
-        contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 8 }}
+        style={{ flex: 1 }}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 8, flexGrow: 1 }}
         ListEmptyComponent={
           <View style={{ alignItems: "center", paddingVertical: 24 }}>
             <Text style={{ color: "#9ca3af" }}>No notes yet</Text>
@@ -315,7 +332,7 @@ export default function NotesTab({
             alignItems: "center",
             justifyContent: "center",
             paddingTop: 10,
-            paddingBottom: insets.bottom + 6,
+            paddingBottom: Math.max(insets.bottom, 8),
             borderTopWidth: 1,
             borderTopColor: "#e5e7eb",
             backgroundColor: "#fff",
