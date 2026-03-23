@@ -7,6 +7,7 @@ import { useDeleteGoal } from "@shared/api/hooks/goals/useDeleteGoal";
 import { useCollapseStore } from "../../../lib/store/useCollapseStore";
 import { useEntityFormStore } from "../../../lib/store/useEntityFormStore";
 import { useSelectionStore } from "../../../lib/store/useSelectionStore";
+import { useFocusModalStore } from "../../../lib/store/useFocusModalStore";
 import { cardShadow, selectedShadow, textLine } from "../../../lib/styles/platform";
 import type { Goal } from "@shared/types/Goal";
 import type { DashboardRow } from "../../../hooks/useBuildDashboardRows";
@@ -30,12 +31,10 @@ function GoalRow({ row }: Props) {
   const collapsed = isCollapsed(collapseKey);
 
   const handleToggleComplete = () => {
-    updateGoal.mutate({ id: goal.id, isCompleted: !goal.isCompleted }, {
+    deleteGoal.mutate(goal.id, {
       onSuccess: () => {
         qc.invalidateQueries({ queryKey: ["activeTimer"], exact: false });
         qc.invalidateQueries({ queryKey: ["timer"], exact: false });
-        qc.invalidateQueries({ queryKey: ["time-entries"], exact: false });
-        qc.invalidateQueries({ queryKey: ["timeEntries"], exact: false });
       },
     });
   };
@@ -151,10 +150,10 @@ function GoalRow({ row }: Props) {
         </TouchableOpacity>
       </View>
 
-      {/* Right: assignee + completion */}
+      {/* Right: assignee + scope/completion */}
       <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginLeft: 8 }}>
         <AssigneeBadge assignee={goal.assignee} />
-        {collapsed && (
+        {collapsed ? (
           <TouchableOpacity
             onPress={handleToggleComplete}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
@@ -164,6 +163,15 @@ function GoalRow({ row }: Props) {
               size={20}
               color={goal.isCompleted ? "#9ca3af" : row.modeColor}
             />
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity
+            onPress={() =>
+              useFocusModalStore.getState().open("goal", goal, row.modeColor, row.modeId)
+            }
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Feather name="crosshair" size={20} color={row.modeColor} />
           </TouchableOpacity>
         )}
       </View>

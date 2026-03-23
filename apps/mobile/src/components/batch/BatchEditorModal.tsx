@@ -115,12 +115,12 @@ export default function BatchEditorModal({ visible, onClose }: Props) {
       addMode((g as any)?.modeId);
     });
     const same = ids.size === 1;
-    return { sameMode: same, onlyModeId: same ? [...ids][0] : null as number | null };
+    return { sameMode: same, onlyModeId: same ? ([...ids][0] ?? null) : null as number | null };
   }, [selected, tasks, milestones, projects, goals]);
 
   const effectiveModeId = targetModeId ?? onlyModeId ?? modes[0]?.id ?? null;
 
-  const modeColor = (effectiveModeId && modes.find((m) => m.id === effectiveModeId)?.color) ?? "#333";
+  const modeColor = (effectiveModeId != null ? modes.find((m) => m.id === effectiveModeId)?.color : undefined) ?? "#333";
   const applyFg = getContrastingText(modeColor);
 
   // --- Group under: filter entities by effective mode ---

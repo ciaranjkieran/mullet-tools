@@ -35,9 +35,11 @@ import { useTaskStore } from "@shared/store/useTaskStore";
 import CalendarDayItem from "../calendar/CalendarDayItem";
 import AddTaskInlineCalendar from "../calendar/AddTaskInlineCalendar";
 import EntityFormModal from "../dashboard/EntityFormModal";
+import FocusModal from "../dashboard/FocusModal";
 import FAB from "../dashboard/FAB";
 import BatchActionBar from "../batch/BatchActionBar";
 import AiBuilderModal from "../ai/AiBuilderModal";
+import { useDailyOrder } from "@shared/api/hooks/dailyOrder/useDailyOrder";
 import { textLine } from "../../lib/styles/platform";
 import { useEntityFormStore } from "../../lib/store/useEntityFormStore";
 import { useSelectionStore } from "../../lib/store/useSelectionStore";
@@ -101,6 +103,9 @@ export default function CalendarViewContent({ listHeader }: Props) {
   const tasks = useTaskStore((s) => s.tasks);
   const formStore = useEntityFormStore();
   const [aiBuilderOpen, setAiBuilderOpen] = useState(false);
+
+  const todayStr = useMemo(() => format(startOfDay(new Date()), "yyyy-MM-dd"), []);
+  const { data: savedOrder } = useDailyOrder(todayStr);
 
   const firstMode = modes[0];
   const modeColor =
@@ -282,18 +287,44 @@ export default function CalendarViewContent({ listHeader }: Props) {
       const dayIsToday = key === todayStr;
       const isByTime = !!timeSortKeys[key];
 
+      // For today, apply saved daily order if available (consistent with TodayScreen)
+      let sortedDayItems: CalendarEntity[];
+      if (dayIsToday && savedOrder && savedOrder.length > 0) {
+        const orderMap = new Map<string, number>();
+        for (const o of savedOrder) {
+          orderMap.set(`${o.entity_type}-${o.entity_id}`, o.position);
+        }
+        const ordered: CalendarEntity[] = [];
+        const unordered: CalendarEntity[] = [];
+        for (const item of dayItems) {
+          if (orderMap.has(`${item.type}-${item.id}`)) {
+            ordered.push(item);
+          } else {
+            unordered.push(item);
+          }
+        }
+        ordered.sort((a, b) => {
+          const posA = orderMap.get(`${a.type}-${a.id}`) ?? 999;
+          const posB = orderMap.get(`${b.type}-${b.id}`) ?? 999;
+          return posA - posB;
+        });
+        sortedDayItems = [...ordered, ...sortEntities(unordered, isByTime)];
+      } else {
+        sortedDayItems = sortEntities(dayItems, isByTime);
+      }
+
       result.push({
         title: format(parseISO(key), "EEEE, MMM d"),
         dateKey: key,
         isToday: dayIsToday,
         isPastDue: false,
-        itemCount: dayItems.length,
-        data: sortEntities(dayItems, isByTime),
+        itemCount: sortedDayItems.length,
+        data: sortedDayItems,
       });
     }
 
     return { sections: result, pastDueEntities: sorted };
-  }, [allEntities, weekStart, weekEnd, weekOffset, pastDueCollapsed, timeSortKeys, sortEntities]);
+  }, [allEntities, weekStart, weekEnd, weekOffset, pastDueCollapsed, timeSortKeys, sortEntities, savedOrder, todayStr]);
 
   const activeModeId =
     selectedMode === "All" ? (firstMode?.id ?? 0) : (selectedMode as Mode).id;
@@ -569,6 +600,7 @@ export default function CalendarViewContent({ listHeader }: Props) {
         editEntity={formStore.editEntity}
         defaultModeId={activeModeId}
       />
+      <FocusModal />
 
       <AiBuilderModal
         visible={aiBuilderOpen}

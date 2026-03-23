@@ -4,6 +4,7 @@
 import { Milestone } from "@shared/types/Milestone";
 import { Mode } from "@shared/types/Mode";
 import { PencilSquareIcon } from "@heroicons/react/24/outline";
+import { LocateFixed } from "lucide-react";
 import clsx from "clsx";
 import { parseISO } from "date-fns";
 import { formatDateLabel } from "@/lib/utils/formatDateLabel";
@@ -158,7 +159,7 @@ export default function MilestoneRenderer({
         </div>
       </div>
 
-      {/* RIGHT: assignee avatar + checkbox (only when collapsed) */}
+      {/* RIGHT: assignee avatar + checkbox/scope */}
       {isCollapsed === true ? (
         <div className="flex items-center gap-2">
           <AssigneeAvatar assignee={milestone.assignee} size={20} />
@@ -170,7 +171,20 @@ export default function MilestoneRenderer({
           />
         </div>
       ) : (
-        <AssigneeAvatar assignee={milestone.assignee} size={20} />
+        <div className="flex items-center gap-2">
+          <AssigneeAvatar assignee={milestone.assignee} size={20} />
+          <button
+            type="button"
+            onClick={() => {
+              const { openFocusModal } = useDialogStore.getState();
+              openFocusModal("milestone", milestone, modeColor, mode.id);
+            }}
+            className="p-1 rounded hover:bg-gray-100 transition cursor-pointer"
+            aria-label={`Focus on "${milestone.title}"`}
+          >
+            <LocateFixed size={20} strokeWidth={2} style={{ color: modeColor }} />
+          </button>
+        </div>
       )}
     </div>
   );

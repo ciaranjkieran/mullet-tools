@@ -7,6 +7,17 @@ import { Goal } from "@shared/types/Goal";
 
 type Tab = "edit" | "structure" | "comments" | "notes" | "boards" | "stats"; // ← Add this
 
+// Focus Modal
+export type FocusEntityType = "goal" | "project" | "milestone";
+export type FocusEntity = Goal | Project | Milestone;
+
+export type FocusFrame = {
+  entityType: FocusEntityType;
+  entity: FocusEntity;
+  modeColor: string;
+  modeId: number;
+};
+
 type DialogStore = {
   // Tasks
   taskToEdit: Task | null;
@@ -54,6 +65,14 @@ type DialogStore = {
   // AI Builder modal
   isAiBuilderOpen: boolean;
   setIsAiBuilderOpen: (open: boolean) => void;
+
+  // Focus Modal
+  focusStack: FocusFrame[];
+  isFocusModalOpen: boolean;
+  openFocusModal: (entityType: FocusEntityType, entity: FocusEntity, modeColor: string, modeId: number) => void;
+  pushFocus: (entityType: FocusEntityType, entity: FocusEntity, modeColor: string, modeId: number) => void;
+  popFocus: () => void;
+  closeFocusModal: () => void;
 
   // Default date for new entities (set by calendar/today views)
   defaultDate: string;
@@ -108,6 +127,24 @@ export const useDialogStore = create<DialogStore>((set) => ({
   // AI Builder modal
   isAiBuilderOpen: false,
   setIsAiBuilderOpen: (open) => set({ isAiBuilderOpen: open }),
+
+  // Focus Modal
+  focusStack: [],
+  isFocusModalOpen: false,
+  openFocusModal: (entityType, entity, modeColor, modeId) =>
+    set({ isFocusModalOpen: true, focusStack: [{ entityType, entity, modeColor, modeId }] }),
+  pushFocus: (entityType, entity, modeColor, modeId) =>
+    set((s) => {
+      // Prevent circular focus
+      if (s.focusStack.some((f) => f.entityType === entityType && f.entity.id === entity.id)) return s;
+      return { focusStack: [...s.focusStack, { entityType, entity, modeColor, modeId }] };
+    }),
+  popFocus: () =>
+    set((s) => {
+      if (s.focusStack.length <= 1) return { isFocusModalOpen: false, focusStack: [] };
+      return { focusStack: s.focusStack.slice(0, -1) };
+    }),
+  closeFocusModal: () => set({ isFocusModalOpen: false, focusStack: [] }),
 
   // Default date
   defaultDate: "",

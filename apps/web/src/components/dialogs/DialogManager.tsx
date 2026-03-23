@@ -15,6 +15,7 @@ import GoalWindow from "../entities/goals/windows/GoalWindow";
 import EditModesModal from "../entities/modes/windows/EditModesModal";
 import ModeCollaborationModal from "@/components/collaboration/ModeCollaborationModal";
 import AiBuilderModal from "@/components/ai/AiBuilderModal";
+import FocusModal from "@/components/focus/FocusModal";
 import BatchEditorWindow from "@/components/batch/BatchEditorWindow";
 import BatchEditorTrigger from "@/components/batch/BatchEditorTrigger";
 
@@ -79,6 +80,10 @@ export default function DialogManager({
     // AI Builder
     isAiBuilderOpen,
     setIsAiBuilderOpen,
+
+    // Focus Modal
+    isFocusModalOpen,
+    closeFocusModal,
   } = useDialogStore();
 
   // Back-button closes modals on mobile
@@ -122,6 +127,7 @@ export default function DialogManager({
   useBackClose(isEditModesOpen, closeModes);
   useBackClose(isCollaborationModalOpen, closeCollaboration);
   useBackClose(isAiBuilderOpen, closeAiBuilder);
+  useBackClose(isFocusModalOpen, closeFocusModal);
 
   return (
     <>
@@ -241,6 +247,8 @@ export default function DialogManager({
       {isAiBuilderOpen && (
         <AiBuilderModal isOpen={isAiBuilderOpen} onClose={closeAiBuilder} />
       )}
+      {/* Focus Modal */}
+      {isFocusModalOpen && <FocusModal />}
     </>
   );
 }

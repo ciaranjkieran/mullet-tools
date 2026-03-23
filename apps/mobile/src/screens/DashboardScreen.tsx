@@ -15,6 +15,7 @@ import { useTaskStore } from "@shared/store/useTaskStore";
 import { useViewStore } from "@shared/store/useViewStore";
 import MobileViewHandler from "../components/views/MobileViewHandler";
 import EntityFormModal from "../components/dashboard/EntityFormModal";
+import FocusModal from "../components/dashboard/FocusModal";
 import AiBuilderModal from "../components/ai/AiBuilderModal";
 import ModeCollaborationModal from "../components/collaboration/ModeCollaborationModal";
 import TrialBanner from "../components/billing/TrialBanner";
@@ -151,6 +152,7 @@ export default function DashboardScreen() {
         editEntity={formStore.editEntity}
         defaultModeId={activeModeId}
       />
+      <FocusModal />
 
       {collabMode && (
         <ModeCollaborationModal

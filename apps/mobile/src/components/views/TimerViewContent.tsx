@@ -105,14 +105,16 @@ export default function TimerViewContent({ listHeader }: Props) {
     setTaskId(intent.taskId);
   }, [launchIntent]);
 
-  // Sync selection from active timer when one exists, resolving lineage
+  // Sync selection from active timer when one exists, resolving lineage.
+  // Only run when the active timer's identity changes, not on every refetch.
+  const activeTimerId = activeTimer?.startedAt ?? null;
   useEffect(() => {
     if (!activeTimer) return;
     setClockType(activeTimer.kind);
 
     const p = activeTimer.path;
     if (p.modeId) setModeId(p.modeId);
-    if (p.taskId) setTaskId(p.taskId);
+    setTaskId(p.taskId ?? null);
 
     // Resolve lineage for missing parent IDs
     let resolvedGoalId = p.goalId ?? null;
@@ -134,7 +136,8 @@ export default function TimerViewContent({ listHeader }: Props) {
     setMilestoneId(resolvedMilestoneId);
     setProjectId(resolvedProjectId);
     setGoalId(resolvedGoalId);
-  }, [activeTimer, projects, milestones]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTimerId]);
 
   // Re-sync active timer on app foreground
   useEffect(() => {

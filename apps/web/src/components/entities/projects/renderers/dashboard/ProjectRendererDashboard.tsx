@@ -3,7 +3,7 @@
 
 import { Project } from "@shared/types/Project";
 import { PencilSquareIcon } from "@heroicons/react/24/outline";
-import { Folder as OutlineFolderIcon } from "lucide-react";
+import { Folder as OutlineFolderIcon, LocateFixed } from "lucide-react";
 import clsx from "clsx";
 import { parseISO } from "date-fns";
 import { formatDateLabel } from "@/lib/utils/formatDateLabel";
@@ -152,7 +152,7 @@ export default function ProjectRenderer({
         </div>
       </div>
 
-      {/* RIGHT: assignee avatar + completion checkbox (collapsed only) */}
+      {/* RIGHT: assignee avatar + checkbox/scope */}
       {isCollapsed === true ? (
         <div className="flex items-center gap-2">
           <AssigneeAvatar assignee={project.assignee} size={20} />
@@ -164,7 +164,20 @@ export default function ProjectRenderer({
           />
         </div>
       ) : (
-        <AssigneeAvatar assignee={project.assignee} size={20} />
+        <div className="flex items-center gap-2">
+          <AssigneeAvatar assignee={project.assignee} size={20} />
+          <button
+            type="button"
+            onClick={() => {
+              const { openFocusModal } = useDialogStore.getState();
+              openFocusModal("project", project, modeColor, project.modeId);
+            }}
+            className="p-1 rounded hover:bg-gray-100 transition cursor-pointer"
+            aria-label={`Focus on "${project.title}"`}
+          >
+            <LocateFixed size={20} strokeWidth={2} style={{ color: modeColor }} />
+          </button>
+        </div>
       )}
     </div>
   );

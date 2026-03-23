@@ -12,6 +12,7 @@ import { useDeleteGoal } from "@shared/api/hooks/goals/useDeleteGoal";
 import Icon from "../../UI/GoalIcon";
 import GoalTarget from "../../UI/GoalTarget";
 import { PencilSquareIcon } from "@heroicons/react/24/outline";
+import { LocateFixed } from "lucide-react";
 
 import { useSelectionStore } from "../../../../../lib/store/useSelectionStore";
 import { useShiftClickSelect } from "../../../../../lib/hooks/useShiftClickSelect";
@@ -172,7 +173,7 @@ export default function GoalRendererDashboard({
         </div>
       </div>
 
-      {/* RIGHT: assignee avatar + checkbox (collapsed only) */}
+      {/* RIGHT: assignee avatar + checkbox/scope */}
       {isCollapsed === true ? (
         <div className="flex items-center gap-2">
           <AssigneeAvatar assignee={goal.assignee} size={20} />
@@ -184,7 +185,20 @@ export default function GoalRendererDashboard({
           />
         </div>
       ) : (
-        <AssigneeAvatar assignee={goal.assignee} size={20} />
+        <div className="flex items-center gap-2">
+          <AssigneeAvatar assignee={goal.assignee} size={20} />
+          <button
+            type="button"
+            onClick={() => {
+              const { openFocusModal } = useDialogStore.getState();
+              openFocusModal("goal", goal, modeColor, mode.id);
+            }}
+            className="p-1 rounded hover:bg-gray-100 transition cursor-pointer"
+            aria-label={`Focus on "${goal.title}"`}
+          >
+            <LocateFixed size={20} strokeWidth={2} style={{ color: modeColor }} />
+          </button>
+        </div>
       )}
     </div>
   );

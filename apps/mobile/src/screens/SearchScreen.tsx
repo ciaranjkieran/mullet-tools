@@ -22,6 +22,7 @@ import { useUpdateTask } from "@shared/api/hooks/tasks/useUpdateTask";
 import { useEntityFormStore } from "../lib/store/useEntityFormStore";
 import type { EntityFormType } from "../lib/store/useEntityFormStore";
 import EntityFormModal from "../components/dashboard/EntityFormModal";
+import FocusModal from "../components/dashboard/FocusModal";
 
 type SearchResult = {
   id: number;
@@ -287,6 +288,7 @@ export default function SearchScreen() {
         editEntity={formStore.editEntity}
         defaultModeId={formStore.editEntity?.modeId ?? 0}
       />
+      <FocusModal />
     </SafeAreaView>
   );
 }

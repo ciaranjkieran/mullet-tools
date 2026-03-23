@@ -26,21 +26,19 @@ function TaskRow({ row }: Props) {
   const handleToggle = useCallback(() => {
     if (checked) return;
     setChecked(true);
+    // Fire mutation immediately; animate fade-out concurrently
+    deleteTask.mutate(task.id, {
+      onSuccess: () => {
+        qc.invalidateQueries({ queryKey: ["activeTimer"], exact: false });
+        qc.invalidateQueries({ queryKey: ["timer"], exact: false });
+      },
+    });
     Animated.timing(opacity, {
       toValue: 0,
-      duration: 400,
-      delay: 200,
+      duration: 350,
+      delay: 100,
       useNativeDriver: true,
-    }).start(() => {
-      deleteTask.mutate(task.id, {
-        onSuccess: () => {
-          qc.invalidateQueries({ queryKey: ["activeTimer"], exact: false });
-          qc.invalidateQueries({ queryKey: ["timer"], exact: false });
-          qc.invalidateQueries({ queryKey: ["time-entries"], exact: false });
-          qc.invalidateQueries({ queryKey: ["timeEntries"], exact: false });
-        },
-      });
-    });
+    }).start();
   }, [checked, opacity, deleteTask, task.id, qc]);
 
   const handleDelete = () => {

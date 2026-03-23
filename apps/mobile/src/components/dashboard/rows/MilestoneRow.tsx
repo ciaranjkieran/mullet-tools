@@ -7,6 +7,7 @@ import { useDeleteMilestone } from "@shared/api/hooks/milestones/useDeleteMilest
 import { useCollapseStore } from "../../../lib/store/useCollapseStore";
 import { useEntityFormStore } from "../../../lib/store/useEntityFormStore";
 import { useSelectionStore } from "../../../lib/store/useSelectionStore";
+import { useFocusModalStore } from "../../../lib/store/useFocusModalStore";
 import { cardShadow, selectedShadow, textLine } from "../../../lib/styles/platform";
 import type { Milestone } from "@shared/types/Milestone";
 import type { DashboardRow } from "../../../hooks/useBuildDashboardRows";
@@ -30,15 +31,10 @@ function MilestoneRow({ row }: Props) {
   const collapsed = isCollapsed(collapseKey);
 
   const handleToggleComplete = () => {
-    updateMilestone.mutate({
-      id: milestone.id,
-      isCompleted: !milestone.isCompleted,
-    }, {
+    deleteMilestone.mutate(milestone.id, {
       onSuccess: () => {
         qc.invalidateQueries({ queryKey: ["activeTimer"], exact: false });
         qc.invalidateQueries({ queryKey: ["timer"], exact: false });
-        qc.invalidateQueries({ queryKey: ["time-entries"], exact: false });
-        qc.invalidateQueries({ queryKey: ["timeEntries"], exact: false });
       },
     });
   };
@@ -145,10 +141,10 @@ function MilestoneRow({ row }: Props) {
         </TouchableOpacity>
       </View>
 
-      {/* Right: assignee + completion */}
+      {/* Right: assignee + scope/completion */}
       <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginLeft: 8 }}>
         <AssigneeBadge assignee={milestone.assignee} />
-        {collapsed && (
+        {collapsed ? (
           <TouchableOpacity
             onPress={handleToggleComplete}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
@@ -158,6 +154,15 @@ function MilestoneRow({ row }: Props) {
               size={20}
               color={milestone.isCompleted ? "#9ca3af" : row.modeColor}
             />
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity
+            onPress={() =>
+              useFocusModalStore.getState().open("milestone", milestone, row.modeColor, row.modeId)
+            }
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Feather name="crosshair" size={20} color={row.modeColor} />
           </TouchableOpacity>
         )}
       </View>

@@ -1,9 +1,10 @@
-import React, { useState, useMemo, useCallback } from "react";
+import React, { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import {
   View,
   Text,
   TouchableOpacity,
   ActivityIndicator,
+  Animated,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
@@ -29,6 +30,7 @@ import ViewButtons from "../components/views/ViewButtons";
 import ModeFilter from "../components/ModeFilter";
 import CalendarDayItem from "../components/calendar/CalendarDayItem";
 import EntityFormModal from "../components/dashboard/EntityFormModal";
+import FocusModal from "../components/dashboard/FocusModal";
 import FAB from "../components/dashboard/FAB";
 import BatchActionBar from "../components/batch/BatchActionBar";
 import AiBuilderModal from "../components/ai/AiBuilderModal";
@@ -61,6 +63,18 @@ export default function TodayScreen() {
   const tasks = useTaskStore((s) => s.tasks);
   const formStore = useEntityFormStore();
   const [aiBuilderOpen, setAiBuilderOpen] = useState(false);
+  const [focusMode, setFocusMode] = useState(false);
+  const fadeAnim = useRef(new Animated.Value(1)).current;
+
+  const toggleFocus = useCallback(() => {
+    const entering = !focusMode;
+    setFocusMode(entering);
+    Animated.timing(fadeAnim, {
+      toValue: entering ? 0 : 1,
+      duration: 200,
+      useNativeDriver: true,
+    }).start();
+  }, [focusMode, fadeAnim]);
 
   const firstMode = modes[0];
   const modeColor =
@@ -283,16 +297,41 @@ export default function TodayScreen() {
                 paddingHorizontal: 20,
                 paddingTop: 16,
                 paddingBottom: 8,
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
               }}
             >
               <Text style={{ fontSize: 34, fontWeight: "bold", color: "#111" }}>Today</Text>
+              <TouchableOpacity
+                onPress={toggleFocus}
+                activeOpacity={0.7}
+                style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: 20,
+                  backgroundColor: focusMode ? "#04785720" : "transparent",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Feather
+                  name={focusMode ? "x" : "crosshair"}
+                  size={22}
+                  color="#047857"
+                />
+              </TouchableOpacity>
             </View>
-            <ViewButtons modeColor={modeColor} onViewPress={() => navigation.navigate("Home")} onOpenAiBuilder={selectedMode !== "All" ? () => setAiBuilderOpen(true) : undefined} />
-            <ModeFilter
-              modes={modes}
-              selectedMode={selectedMode}
-              setSelectedMode={setSelectedMode}
-            />
+            {!focusMode && (
+              <Animated.View style={{ opacity: fadeAnim }}>
+                <ViewButtons modeColor={modeColor} onViewPress={() => navigation.navigate("Home")} onOpenAiBuilder={selectedMode !== "All" ? () => setAiBuilderOpen(true) : undefined} />
+                <ModeFilter
+                  modes={modes}
+                  selectedMode={selectedMode}
+                  setSelectedMode={setSelectedMode}
+                />
+              </Animated.View>
+            )}
 
             {/* Today section header */}
             <View
@@ -301,8 +340,8 @@ export default function TodayScreen() {
                 alignItems: "center",
                 justifyContent: "space-between",
                 paddingHorizontal: 20,
-                paddingVertical: 14,
-                backgroundColor: modeColor + "15",
+                paddingVertical: focusMode ? 8 : 14,
+                backgroundColor: focusMode ? "transparent" : modeColor + "15",
                 borderBottomWidth: 1,
                 borderBottomColor: "#e5e7eb",
               }}
@@ -311,21 +350,20 @@ export default function TodayScreen() {
                 <Text style={{ ...textLine(16), fontWeight: "700", color: "#1f2937" }}>
                   {todayLabel}
                 </Text>
-                <Text style={{ ...textLine(14), fontWeight: "700", color: "#059669" }}>
-                  Today
-                </Text>
                 {todayItems.length > 0 && (
                   <Text style={{ ...textLine(13), color: "#9ca3af" }}>
                     {todayItems.length} {todayItems.length === 1 ? "item" : "items"}
                   </Text>
                 )}
               </View>
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-                <Feather name="menu" size={14} color="#9ca3af" />
-                <Text style={{ ...textLine(12), color: "#9ca3af" }}>
-                  Drag to reorder
-                </Text>
-              </View>
+              {!focusMode && (
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                  <Feather name="menu" size={14} color="#9ca3af" />
+                  <Text style={{ ...textLine(12), color: "#9ca3af" }}>
+                    Drag to reorder
+                  </Text>
+                </View>
+              )}
             </View>
           </>
         }
@@ -352,13 +390,13 @@ export default function TodayScreen() {
             )}
           </View>
         }
-        contentContainerStyle={{ paddingBottom: selectionActive ? 140 : 80 }}
+        contentContainerStyle={{ paddingBottom: focusMode ? 20 : selectionActive ? 140 : 80 }}
       />
 
-      {!selectionActive && (
+      {!focusMode && !selectionActive && (
         <FAB modeColor={modeColor} defaultDate={format(new Date(), "yyyy-MM-dd")} />
       )}
-      {selectionActive && <BatchActionBar modeColor={modeColor} />}
+      {!focusMode && selectionActive && <BatchActionBar modeColor={modeColor} />}
 
       <EntityFormModal
         visible={formStore.visible}
@@ -367,6 +405,7 @@ export default function TodayScreen() {
         editEntity={formStore.editEntity}
         defaultModeId={activeModeId}
       />
+      <FocusModal />
 
       <AiBuilderModal
         visible={aiBuilderOpen}
