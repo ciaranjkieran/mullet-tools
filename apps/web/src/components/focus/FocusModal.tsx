@@ -38,8 +38,8 @@ export default function FocusModal() {
   if (!isOpen || !frame) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[85vh] flex flex-col mx-4">
+    <div className="fixed inset-0 z-[100] flex flex-col bg-white">
+      <div className="w-full max-w-3xl mx-auto flex-1 flex flex-col">
         <FocusModalContent
           key={`${frame.entityType}-${frame.entity.id}`}
           frame={frame}
@@ -197,7 +197,7 @@ function FocusModalContent({
     <>
       {/* Header */}
       <div
-        className="flex items-center gap-3 px-5 py-3 rounded-t-xl border-b"
+        className="flex items-center gap-3 px-5 py-3 border-b"
         style={{ backgroundColor: modeColor + "12" }}
       >
         <button
