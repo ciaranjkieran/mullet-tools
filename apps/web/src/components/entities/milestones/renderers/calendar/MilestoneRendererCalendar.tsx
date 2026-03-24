@@ -1,11 +1,14 @@
 "use client";
 
+import { useState } from "react";
 import { Milestone } from "@shared/types/Milestone";
 import { Mode } from "@shared/types/Mode";
 import { PencilSquareIcon } from "@heroicons/react/24/outline";
 import clsx from "clsx";
 
+import { useDeleteMilestone } from "@shared/api/hooks/milestones/useDeleteMilestone";
 import { useDialogStore } from "../../../../../lib/dialogs/useDialogStore";
+import CompletionCheckbox from "../../../../common/CompletionCheckbox";
 import {
   parseISO,
   isBefore,
@@ -51,8 +54,10 @@ export default function MilestoneRendererCalendar({
   activatorRef, // ⬅️ receive it
 }: Props) {
   const modeColor = mode?.color || "#000";
+  const { mutate: deleteMilestone } = useDeleteMilestone();
   const { setMilestoneToEdit, setIsMilestoneDialogOpen } = useDialogStore();
   const today = startOfToday();
+  const [showCheckbox, setShowCheckbox] = useState(false);
 
   const isSelected = useSelectionStore((s) =>
     s.isSelected("milestone", milestone.id),
@@ -96,13 +101,20 @@ export default function MilestoneRendererCalendar({
       <div className="flex justify-between items-start">
         {/* Left: triangle + content */}
         <div className="flex items-start gap-2">
-          <span
-            className="triangle mt-1"
-            style={{
-              borderTopColor: modeColor,
-              marginTop: 8,
-            }}
-          />
+          <button
+            type="button"
+            onClick={() => setShowCheckbox((v) => !v)}
+            className="cursor-pointer"
+            aria-label="Toggle between focus and complete"
+          >
+            <span
+              className="triangle mt-1"
+              style={{
+                borderTopColor: modeColor,
+                marginTop: 8,
+              }}
+            />
+          </button>
           <div className="flex flex-col">
             <div
               className="group/edit flex items-center gap-2 cursor-pointer"
@@ -155,17 +167,26 @@ export default function MilestoneRendererCalendar({
             activatorRef={activatorRef}
           />
 
-          <button
-            type="button"
-            onClick={() => {
-              const { openFocusModal } = useDialogStore.getState();
-              openFocusModal("milestone", milestone, modeColor, mode?.id ?? 0);
-            }}
-            className="p-1 rounded hover:bg-gray-100 transition cursor-pointer"
-            aria-label={`Focus on "${milestone.title}"`}
-          >
-            <LocateFixed size={20} strokeWidth={2} style={{ color: modeColor }} />
-          </button>
+          {showCheckbox ? (
+            <CompletionCheckbox
+              modeColor={modeColor}
+              label={`Mark "${milestone.title}" as complete`}
+              onComplete={() => deleteMilestone(milestone.id)}
+              shape="square"
+            />
+          ) : (
+            <button
+              type="button"
+              onClick={() => {
+                const { openFocusModal } = useDialogStore.getState();
+                openFocusModal("milestone", milestone, modeColor, mode?.id ?? 0);
+              }}
+              className="p-1 rounded hover:bg-gray-100 transition cursor-pointer"
+              aria-label={`Focus on "${milestone.title}"`}
+            >
+              <LocateFixed size={20} strokeWidth={2} style={{ color: modeColor }} />
+            </button>
+          )}
         </div>
       </div>
     </div>

@@ -1,10 +1,13 @@
 "use client";
 
+import { useState } from "react";
 import { Project } from "@shared/types/Project";
 import { Mode } from "@shared/types/Mode";
 import { PencilSquareIcon } from "@heroicons/react/24/outline";
 import clsx from "clsx";
 import { useDialogStore } from "@/lib/dialogs/useDialogStore";
+import CompletionCheckbox from "@/components/common/CompletionCheckbox";
+import { useDeleteProject } from "@shared/api/hooks/projects/useDeleteProject";
 import {
   parseISO,
   isBefore,
@@ -48,8 +51,10 @@ export default function ProjectRendererCalendar({
   activatorRef,
 }: Props) {
   const modeColor = mode?.color || "#000";
+  const { mutate: deleteProject } = useDeleteProject();
   const { setProjectToEdit, setIsProjectDialogOpen } = useDialogStore();
   const today = startOfToday();
+  const [showCheckbox, setShowCheckbox] = useState(false);
 
   const isSelected = useSelectionStore((s) =>
     s.isSelected("project", project.id),
@@ -90,14 +95,21 @@ export default function ProjectRendererCalendar({
       <div className="flex justify-between items-start">
         {/* Left: icon + content */}
         <div className="flex items-start gap-2">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill={modeColor}
-            className="w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0 mt-0.5"
+          <button
+            type="button"
+            onClick={() => setShowCheckbox((v) => !v)}
+            className="flex-shrink-0 mt-0.5 cursor-pointer"
+            aria-label="Toggle between focus and complete"
           >
-            <path d="M3 4.5A1.5 1.5 0 0 1 4.5 3h5.379a1.5 1.5 0 0 1 1.06.44l1.621 1.62H19.5A1.5 1.5 0 0 1 21 6.56V18a1.5 1.5 0 0 1-1.5 1.5H4.5A1.5 1.5 0 0 1 3 18V4.5Z" />
-          </svg>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill={modeColor}
+              className="w-5 h-5 sm:w-6 sm:h-6"
+            >
+              <path d="M3 4.5A1.5 1.5 0 0 1 4.5 3h5.379a1.5 1.5 0 0 1 1.06.44l1.621 1.62H19.5A1.5 1.5 0 0 1 21 6.56V18a1.5 1.5 0 0 1-1.5 1.5H4.5A1.5 1.5 0 0 1 3 18V4.5Z" />
+            </svg>
+          </button>
 
           <div className="flex flex-col">
             <div
@@ -148,17 +160,26 @@ export default function ProjectRendererCalendar({
             activatorRef={activatorRef}
           />
 
-          <button
-            type="button"
-            onClick={() => {
-              const { openFocusModal } = useDialogStore.getState();
-              openFocusModal("project", project, modeColor, mode?.id ?? 0);
-            }}
-            className="p-1 rounded hover:bg-gray-100 transition cursor-pointer"
-            aria-label={`Focus on "${project.title}"`}
-          >
-            <LocateFixed size={20} strokeWidth={2} style={{ color: modeColor }} />
-          </button>
+          {showCheckbox ? (
+            <CompletionCheckbox
+              modeColor={modeColor}
+              label={`Mark "${project.title}" as complete`}
+              onComplete={() => deleteProject(project.id)}
+              shape="square"
+            />
+          ) : (
+            <button
+              type="button"
+              onClick={() => {
+                const { openFocusModal } = useDialogStore.getState();
+                openFocusModal("project", project, modeColor, mode?.id ?? 0);
+              }}
+              className="p-1 rounded hover:bg-gray-100 transition cursor-pointer"
+              aria-label={`Focus on "${project.title}"`}
+            >
+              <LocateFixed size={20} strokeWidth={2} style={{ color: modeColor }} />
+            </button>
+          )}
         </div>
       </div>
     </div>

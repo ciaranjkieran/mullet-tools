@@ -1,16 +1,19 @@
 "use client";
 
+import { useState } from "react";
 import { Goal } from "@shared/types/Goal";
 import { Mode } from "@shared/types/Mode";
 import { PencilSquareIcon } from "@heroicons/react/24/outline";
 import clsx from "clsx";
 import { useDialogStore } from "@/lib/dialogs/useDialogStore";
+import CompletionCheckbox from "@/components/common/CompletionCheckbox";
 import {
   parseISO,
   isBefore,
   differenceInCalendarDays,
   startOfToday,
 } from "date-fns";
+import { useDeleteGoal } from "@shared/api/hooks/goals/useDeleteGoal";
 import { TargetIcon, LocateFixed } from "lucide-react";
 
 import { useSelectionStore } from "@/lib/store/useSelectionStore";
@@ -45,8 +48,10 @@ export default function GoalRendererCalendar({
   activatorRef,
 }: Props) {
   const modeColor = mode?.color || "#000";
+  const { mutate: deleteGoal } = useDeleteGoal();
   const { setGoalToEdit, setIsGoalDialogOpen } = useDialogStore();
   const today = startOfToday();
+  const [showCheckbox, setShowCheckbox] = useState(false);
 
   const isSelected = useSelectionStore((s) => s.isSelected("goal", goal.id));
   const { onClickCapture, onMouseDownCapture } = useShiftClickSelect("goal", goal.id);
@@ -85,12 +90,15 @@ export default function GoalRendererCalendar({
       <div className="flex justify-between items-start">
         {/* Left: icon + text */}
         <div className="flex items-start gap-2">
-          <div
-            className="w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0 mt-0.5 rounded-full flex items-center justify-center mt-0.5"
+          <button
+            type="button"
+            onClick={() => setShowCheckbox((v) => !v)}
+            className="w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0 mt-0.5 rounded-full flex items-center justify-center cursor-pointer"
             style={{ backgroundColor: modeColor }}
+            aria-label="Toggle between focus and complete"
           >
             <TargetIcon className="w-4 h-4 text-white" />
-          </div>
+          </button>
 
           <div className="flex flex-col">
             <div
@@ -137,17 +145,26 @@ export default function GoalRendererCalendar({
             activatorRef={activatorRef}
           />
 
-          <button
-            type="button"
-            onClick={() => {
-              const { openFocusModal } = useDialogStore.getState();
-              openFocusModal("goal", goal, modeColor, mode?.id ?? 0);
-            }}
-            className="p-1 rounded hover:bg-gray-100 transition cursor-pointer"
-            aria-label={`Focus on "${goal.title}"`}
-          >
-            <LocateFixed size={20} strokeWidth={2} style={{ color: modeColor }} />
-          </button>
+          {showCheckbox ? (
+            <CompletionCheckbox
+              modeColor={modeColor}
+              label={`Mark "${goal.title}" as complete`}
+              onComplete={() => deleteGoal(goal.id)}
+              shape="square"
+            />
+          ) : (
+            <button
+              type="button"
+              onClick={() => {
+                const { openFocusModal } = useDialogStore.getState();
+                openFocusModal("goal", goal, modeColor, mode?.id ?? 0);
+              }}
+              className="p-1 rounded hover:bg-gray-100 transition cursor-pointer"
+              aria-label={`Focus on "${goal.title}"`}
+            >
+              <LocateFixed size={20} strokeWidth={2} style={{ color: modeColor }} />
+            </button>
+          )}
         </div>
       </div>
     </div>
