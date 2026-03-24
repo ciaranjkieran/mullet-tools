@@ -5,15 +5,13 @@ import { Mode } from "@shared/types/Mode";
 import { PencilSquareIcon } from "@heroicons/react/24/outline";
 import clsx from "clsx";
 import { useDialogStore } from "@/lib/dialogs/useDialogStore";
-import CompletionCheckbox from "@/components/common/CompletionCheckbox";
 import {
   parseISO,
   isBefore,
   differenceInCalendarDays,
   startOfToday,
 } from "date-fns";
-import { useDeleteGoal } from "@shared/api/hooks/goals/useDeleteGoal";
-import { TargetIcon } from "lucide-react";
+import { TargetIcon, LocateFixed } from "lucide-react";
 
 import { useSelectionStore } from "@/lib/store/useSelectionStore";
 import { useShiftClickSelect } from "@/lib/hooks/useShiftClickSelect";
@@ -47,7 +45,6 @@ export default function GoalRendererCalendar({
   activatorRef,
 }: Props) {
   const modeColor = mode?.color || "#000";
-  const { mutate: deleteGoal } = useDeleteGoal();
   const { setGoalToEdit, setIsGoalDialogOpen } = useDialogStore();
   const today = startOfToday();
 
@@ -64,10 +61,6 @@ export default function GoalRendererCalendar({
     onEdit?.(goal);
     setGoalToEdit(goal);
     setIsGoalDialogOpen(true);
-  };
-
-  const handleCompletion = () => {
-    deleteGoal(goal.id);
   };
 
   return (
@@ -144,12 +137,17 @@ export default function GoalRendererCalendar({
             activatorRef={activatorRef}
           />
 
-          <CompletionCheckbox
-            modeColor={modeColor}
-            label={`Mark "${goal.title}" as complete`}
-            onComplete={handleCompletion}
-            shape="square"
-          />
+          <button
+            type="button"
+            onClick={() => {
+              const { openFocusModal } = useDialogStore.getState();
+              openFocusModal("goal", goal, modeColor, mode?.id ?? 0);
+            }}
+            className="p-1 rounded hover:bg-gray-100 transition cursor-pointer"
+            aria-label={`Focus on "${goal.title}"`}
+          >
+            <LocateFixed size={20} strokeWidth={2} style={{ color: modeColor }} />
+          </button>
         </div>
       </div>
     </div>

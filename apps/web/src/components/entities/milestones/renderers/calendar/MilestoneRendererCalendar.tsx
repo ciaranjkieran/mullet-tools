@@ -5,9 +5,7 @@ import { Mode } from "@shared/types/Mode";
 import { PencilSquareIcon } from "@heroicons/react/24/outline";
 import clsx from "clsx";
 
-import { useDeleteMilestone } from "@shared/api/hooks/milestones/useDeleteMilestone";
 import { useDialogStore } from "../../../../../lib/dialogs/useDialogStore";
-import CompletionCheckbox from "../../../../common/CompletionCheckbox";
 import {
   parseISO,
   isBefore,
@@ -20,6 +18,8 @@ import { useSelectionStore } from "../../../../../lib/store/useSelectionStore";
 import { useShiftClickSelect } from "../../../../../lib/hooks/useShiftClickSelect";
 import EntityDragHandle from "../../../../common/EntityDragHandle";
 import AssigneeAvatar from "../../../../common/AssigneeAvatar";
+
+import { LocateFixed } from "lucide-react";
 
 // shared drag types
 import type {
@@ -51,7 +51,6 @@ export default function MilestoneRendererCalendar({
   activatorRef, // ⬅️ receive it
 }: Props) {
   const modeColor = mode?.color || "#000";
-  const { mutate: deleteMilestone } = useDeleteMilestone();
   const { setMilestoneToEdit, setIsMilestoneDialogOpen } = useDialogStore();
   const today = startOfToday();
 
@@ -68,10 +67,6 @@ export default function MilestoneRendererCalendar({
     );
     computedOverdueLabel = `${daysLate} day${daysLate > 1 ? "s" : ""} ago`;
   }
-
-  const handleCompletion = () => {
-    deleteMilestone(milestone.id);
-  };
 
   const handleEdit = () => {
     if (onEdit) onEdit(milestone);
@@ -160,12 +155,17 @@ export default function MilestoneRendererCalendar({
             activatorRef={activatorRef}
           />
 
-          <CompletionCheckbox
-            modeColor={modeColor}
-            label={`Mark "${milestone.title}" as complete`}
-            onComplete={handleCompletion}
-            shape="square"
-          />
+          <button
+            type="button"
+            onClick={() => {
+              const { openFocusModal } = useDialogStore.getState();
+              openFocusModal("milestone", milestone, modeColor, mode?.id ?? 0);
+            }}
+            className="p-1 rounded hover:bg-gray-100 transition cursor-pointer"
+            aria-label={`Focus on "${milestone.title}"`}
+          >
+            <LocateFixed size={20} strokeWidth={2} style={{ color: modeColor }} />
+          </button>
         </div>
       </div>
     </div>

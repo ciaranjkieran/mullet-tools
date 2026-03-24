@@ -4,9 +4,7 @@ import { Project } from "@shared/types/Project";
 import { Mode } from "@shared/types/Mode";
 import { PencilSquareIcon } from "@heroicons/react/24/outline";
 import clsx from "clsx";
-import { useDeleteProject } from "@shared/api/hooks/projects/useDeleteProject";
 import { useDialogStore } from "@/lib/dialogs/useDialogStore";
-import CompletionCheckbox from "@/components/common/CompletionCheckbox";
 import {
   parseISO,
   isBefore,
@@ -18,6 +16,8 @@ import { useSelectionStore } from "@/lib/store/useSelectionStore";
 import { useShiftClickSelect } from "@/lib/hooks/useShiftClickSelect";
 import EntityDragHandle from "@/components/common/EntityDragHandle";
 import AssigneeAvatar from "@/components/common/AssigneeAvatar";
+
+import { LocateFixed } from "lucide-react";
 
 import type {
   DragAttributes,
@@ -48,7 +48,6 @@ export default function ProjectRendererCalendar({
   activatorRef,
 }: Props) {
   const modeColor = mode?.color || "#000";
-  const { mutate: deleteProject } = useDeleteProject();
   const { setProjectToEdit, setIsProjectDialogOpen } = useDialogStore();
   const today = startOfToday();
 
@@ -68,8 +67,6 @@ export default function ProjectRendererCalendar({
     setProjectToEdit(project);
     setIsProjectDialogOpen(true);
   };
-
-  const handleCompletion = () => deleteProject(project.id);
 
   return (
     <div
@@ -151,12 +148,17 @@ export default function ProjectRendererCalendar({
             activatorRef={activatorRef}
           />
 
-          <CompletionCheckbox
-            modeColor={modeColor}
-            label={`Mark "${project.title}" as complete`}
-            onComplete={handleCompletion}
-            shape="square"
-          />
+          <button
+            type="button"
+            onClick={() => {
+              const { openFocusModal } = useDialogStore.getState();
+              openFocusModal("project", project, modeColor, mode?.id ?? 0);
+            }}
+            className="p-1 rounded hover:bg-gray-100 transition cursor-pointer"
+            aria-label={`Focus on "${project.title}"`}
+          >
+            <LocateFixed size={20} strokeWidth={2} style={{ color: modeColor }} />
+          </button>
         </div>
       </div>
     </div>
