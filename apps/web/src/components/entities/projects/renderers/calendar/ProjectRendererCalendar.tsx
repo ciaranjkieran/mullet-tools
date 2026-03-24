@@ -20,7 +20,7 @@ import { useShiftClickSelect } from "@/lib/hooks/useShiftClickSelect";
 import EntityDragHandle from "@/components/common/EntityDragHandle";
 import AssigneeAvatar from "@/components/common/AssigneeAvatar";
 
-import { LocateFixed } from "lucide-react";
+import { LocateFixed, Folder as OutlineFolderIcon } from "lucide-react";
 
 import type {
   DragAttributes,
@@ -101,14 +101,21 @@ export default function ProjectRendererCalendar({
             className="flex-shrink-0 mt-0.5 cursor-pointer"
             aria-label="Toggle between focus and complete"
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill={modeColor}
-              className="w-5 h-5 sm:w-6 sm:h-6"
-            >
-              <path d="M3 4.5A1.5 1.5 0 0 1 4.5 3h5.379a1.5 1.5 0 0 1 1.06.44l1.621 1.62H19.5A1.5 1.5 0 0 1 21 6.56V18a1.5 1.5 0 0 1-1.5 1.5H4.5A1.5 1.5 0 0 1 3 18V4.5Z" />
-            </svg>
+            {showCheckbox ? (
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill={modeColor}
+                className="w-5 h-5 sm:w-6 sm:h-6"
+              >
+                <path d="M3 4.5A1.5 1.5 0 0 1 4.5 3h5.379a1.5 1.5 0 0 1 1.06.44l1.621 1.62H19.5A1.5 1.5 0 0 1 21 6.56V18a1.5 1.5 0 0 1-1.5 1.5H4.5A1.5 1.5 0 0 1 3 18V4.5Z" />
+              </svg>
+            ) : (
+              <OutlineFolderIcon
+                className="w-5 h-5 sm:w-6 sm:h-6"
+                style={{ color: modeColor }}
+              />
+            )}
           </button>
 
           <div className="flex flex-col">

@@ -14,7 +14,9 @@ import {
   startOfToday,
 } from "date-fns";
 import { useDeleteGoal } from "@shared/api/hooks/goals/useDeleteGoal";
-import { TargetIcon, LocateFixed } from "lucide-react";
+import { LocateFixed } from "lucide-react";
+import Icon from "../../UI/GoalIcon";
+import GoalTarget from "../../UI/GoalTarget";
 
 import { useSelectionStore } from "@/lib/store/useSelectionStore";
 import { useShiftClickSelect } from "@/lib/hooks/useShiftClickSelect";
@@ -93,11 +95,29 @@ export default function GoalRendererCalendar({
           <button
             type="button"
             onClick={() => setShowCheckbox((v) => !v)}
-            className="w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0 mt-0.5 rounded-full flex items-center justify-center cursor-pointer"
-            style={{ backgroundColor: modeColor }}
+            className="w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0 mt-0.5 flex items-center justify-center cursor-pointer"
             aria-label="Toggle between focus and complete"
           >
-            <TargetIcon className="w-4 h-4 text-white" />
+            {showCheckbox ? (
+              <div
+                className="w-5 h-5 flex items-center justify-center border-2 rounded-full"
+                style={{ borderColor: modeColor }}
+              >
+                <div
+                  className="w-1.5 h-1.5 rounded-full"
+                  style={{ backgroundColor: modeColor }}
+                />
+              </div>
+            ) : (
+              <div
+                className="w-5 h-5 flex items-center justify-center rounded-full"
+                style={{ backgroundColor: modeColor }}
+              >
+                <Icon size={16} className="text-white">
+                  <GoalTarget />
+                </Icon>
+              </div>
+            )}
           </button>
 
           <div className="flex flex-col">

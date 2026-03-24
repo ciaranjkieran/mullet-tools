@@ -112,6 +112,8 @@ export default function MilestoneRendererCalendar({
               style={{
                 borderTopColor: modeColor,
                 marginTop: 8,
+                transform: showCheckbox ? "rotate(-90deg)" : "rotate(0deg)",
+                transition: "transform 0.2s ease",
               }}
             />
           </button>
