@@ -104,14 +104,14 @@ export default function MilestoneRendererCalendar({
           <button
             type="button"
             onClick={() => setShowCheckbox((v) => !v)}
-            className="cursor-pointer"
+            className="flex items-center justify-center cursor-pointer"
+            style={{ width: 20, height: 20, marginTop: 2 }}
             aria-label="Toggle between focus and complete"
           >
             <span
-              className="triangle mt-1"
+              className="triangle"
               style={{
                 borderTopColor: modeColor,
-                marginTop: 8,
                 transform: showCheckbox ? "rotate(-90deg)" : "rotate(0deg)",
                 transition: "transform 0.2s ease",
               }}
