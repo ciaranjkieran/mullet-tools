@@ -261,10 +261,10 @@ function FocusModalContent({
     const pushProject = (proj: Project, depth: number) => {
       const subProjects = projects.filter((p) => p.parentId === proj.id);
       const projMs = milestones.filter(
-        (m) => m.projectId === proj.id && !m.parentId
+        (m) => m.projectId === proj.id && m.parentId == null
       );
       const projTasks = tasks.filter(
-        (t) => t.projectId === proj.id && !t.milestoneId
+        (t) => t.projectId === proj.id && t.milestoneId == null
       );
       const hasChildren =
         subProjects.length + projMs.length + projTasks.length > 0;
@@ -283,7 +283,7 @@ function FocusModalContent({
         for (const sub of subProjects) pushProject(sub, depth + 1);
         for (const ms of projMs) pushMilestone(ms, depth + 1);
         pushTasks(
-          (t) => t.projectId === proj.id && !t.milestoneId,
+          (t) => t.projectId === proj.id && t.milestoneId == null,
           depth + 1
         );
         result.push({
@@ -298,20 +298,21 @@ function FocusModalContent({
     };
 
     if (entityType === "goal") {
-      for (const proj of projects.filter(
-        (p) => p.goalId === entity.id && !p.parentId
-      ))
-        pushProject(proj, 0);
-      for (const ms of milestones.filter(
-        (m) =>
-          m.goalId === entity.id && !m.projectId && !m.parentId
-      ))
-        pushMilestone(ms, 0);
+      // Tasks directly under the goal (no project or milestone)
       pushTasks(
         (t) =>
-          t.goalId === entity.id && !t.projectId && !t.milestoneId,
+          t.goalId === entity.id && t.projectId == null && t.milestoneId == null,
         0
       );
+      for (const ms of milestones.filter(
+        (m) =>
+          m.goalId === entity.id && m.projectId == null && m.parentId == null
+      ))
+        pushMilestone(ms, 0);
+      for (const proj of projects.filter(
+        (p) => p.goalId === entity.id && p.parentId == null
+      ))
+        pushProject(proj, 0);
       result.push({
         kind: "add-task",
         key: `add-task-goal-${entity.id}`,
@@ -324,16 +325,17 @@ function FocusModalContent({
 
     if (entityType === "project") {
       const proj = entity as Project;
-      for (const sub of projects.filter((p) => p.parentId === entity.id))
-        pushProject(sub, 0);
-      for (const ms of milestones.filter(
-        (m) => m.projectId === entity.id && !m.parentId
-      ))
-        pushMilestone(ms, 0);
+      // Tasks directly under the project (no milestone)
       pushTasks(
-        (t) => t.projectId === entity.id && !t.milestoneId,
+        (t) => t.projectId === entity.id && t.milestoneId == null,
         0
       );
+      for (const ms of milestones.filter(
+        (m) => m.projectId === entity.id && m.parentId == null
+      ))
+        pushMilestone(ms, 0);
+      for (const sub of projects.filter((p) => p.parentId === entity.id))
+        pushProject(sub, 0);
       result.push({
         kind: "add-task",
         key: `add-task-proj-root-${entity.id}`,
@@ -346,9 +348,10 @@ function FocusModalContent({
 
     if (entityType === "milestone") {
       const ms = entity as Milestone;
+      // Tasks directly under the milestone
+      pushTasks((t) => t.milestoneId === entity.id, 0);
       for (const child of milestones.filter((m) => m.parentId === entity.id))
         pushMilestone(child, 0);
-      pushTasks((t) => t.milestoneId === entity.id, 0);
       result.push({
         kind: "add-task",
         key: `add-task-ms-root-${entity.id}`,
