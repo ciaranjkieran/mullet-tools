@@ -8,8 +8,14 @@ from django.views.decorators.csrf import ensure_csrf_cookie
 from django.utils.decorators import method_decorator
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
+from django.http import HttpResponse
 from rest_framework import serializers, status
+import csv
+import io
+import json
+import zipfile
 import uuid
+from datetime import datetime
 from core.services.create_default_modes_for_user import create_default_modes_for_user
 from billing.models import Subscription
 from .models import Profile
@@ -153,3 +159,140 @@ class ProfileView(APIView):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data)
+
+
+class ExportDataView(APIView):
+    """Download all user data as JSON or CSV (zip)."""
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        fmt = request.query_params.get("format", "json")
+        user = request.user
+
+        from core.models import Mode, Goal, Project, Milestone, Task
+        from timers.models import TimeEntry
+        from comments.models import Comment, CommentAttachment
+        from notes.models import Note
+        from boards.models import Pin
+        from templates.models import Template
+        from django.db.models import Q
+
+        # All modes the user owns or collaborates on
+        mode_ids = list(
+            Mode.objects.filter(
+                Q(user=user) | Q(collaborators__user=user)
+            ).distinct().values_list("id", flat=True)
+        )
+
+        modes = list(Mode.objects.filter(id__in=mode_ids).values(
+            "id", "title", "color", "position",
+        ))
+        goals = list(Goal.objects.filter(mode_id__in=mode_ids).values(
+            "id", "title", "description", "is_completed", "due_date", "due_time",
+            "position", "mode_id", "is_archived", "archived_at",
+        ))
+        projects = list(Project.objects.filter(mode_id__in=mode_ids).values(
+            "id", "title", "description", "is_completed", "due_date", "due_time",
+            "position", "mode_id", "goal_id", "parent_id",
+            "is_archived", "archived_at",
+        ))
+        milestones = list(Milestone.objects.filter(mode_id__in=mode_ids).values(
+            "id", "title", "is_completed", "due_date", "due_time",
+            "position", "mode_id", "goal_id", "project_id", "parent_id",
+            "is_archived", "archived_at",
+        ))
+        tasks = list(Task.objects.filter(mode_id__in=mode_ids).values(
+            "id", "title", "is_completed", "due_date", "due_time",
+            "position", "mode_id", "goal_id", "project_id", "milestone_id",
+            "is_archived", "archived_at",
+        ))
+        time_entries = list(TimeEntry.objects.filter(user=user).values(
+            "id", "kind", "started_at", "ended_at", "seconds", "note",
+            "mode_id", "goal_id", "project_id", "milestone_id", "task_id",
+            "mode_title_snapshot", "goal_title_snapshot",
+            "project_title_snapshot", "milestone_title_snapshot",
+            "task_title_snapshot", "session_id", "planned_seconds",
+        ))
+        notes = list(Note.objects.filter(mode_id__in=mode_ids).values(
+            "id", "body", "mode_id", "entity_title", "created_at",
+            "content_type_id", "object_id",
+        ))
+        comments = list(Comment.objects.filter(
+            mode_id__in=mode_ids, is_deleted=False,
+        ).values(
+            "id", "body", "mode_id", "created_at",
+            "content_type_id", "object_id",
+        ))
+        comment_ids = [c["id"] for c in comments]
+        attachments = list(CommentAttachment.objects.filter(
+            comment_id__in=comment_ids,
+        ).values(
+            "id", "comment_id", "original_name", "mime", "uploaded_at",
+        ))
+        pins = list(Pin.objects.filter(mode_id__in=mode_ids).values(
+            "id", "kind", "title", "description", "url",
+            "mode_id", "entity_title", "mime_type", "file_size",
+            "is_board_item", "created_at",
+            "content_type_id", "object_id",
+        ))
+        templates = list(Template.objects.filter(
+            Q(user=user) | Q(mode_id__in=mode_ids),
+        ).values(
+            "id", "title", "type", "mode_id", "created_at", "tags", "data",
+            "is_public",
+        ))
+
+        def _serialise(obj):
+            """Make values JSON-safe."""
+            if isinstance(obj, (datetime,)):
+                return obj.isoformat()
+            if isinstance(obj, uuid.UUID):
+                return str(obj)
+            if hasattr(obj, "isoformat"):
+                return obj.isoformat()
+            return obj
+
+        datasets = {
+            "modes": modes,
+            "goals": goals,
+            "projects": projects,
+            "milestones": milestones,
+            "tasks": tasks,
+            "time_entries": time_entries,
+            "notes": notes,
+            "comments": comments,
+            "comment_attachments": attachments,
+            "pins": pins,
+            "templates": templates,
+        }
+
+        if fmt == "csv":
+            buf = io.BytesIO()
+            with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+                for name, rows in datasets.items():
+                    if not rows:
+                        continue
+                    csv_buf = io.StringIO()
+                    writer = csv.DictWriter(csv_buf, fieldnames=rows[0].keys())
+                    writer.writeheader()
+                    for row in rows:
+                        writer.writerow({
+                            k: _serialise(v) for k, v in row.items()
+                        })
+                    zf.writestr(f"{name}.csv", csv_buf.getvalue())
+            buf.seek(0)
+            resp = HttpResponse(buf.read(), content_type="application/zip")
+            resp["Content-Disposition"] = 'attachment; filename="mullet-export.zip"'
+            return resp
+
+        # Default: JSON
+        payload = {
+            "exported_at": datetime.utcnow().isoformat() + "Z",
+            "user": user.email,
+            **datasets,
+        }
+        content = json.dumps(payload, default=_serialise, indent=2)
+        resp = HttpResponse(content, content_type="application/json")
+        resp["Content-Disposition"] = 'attachment; filename="mullet-export.json"'
+        return resp

@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useMe } from "@shared/api/hooks/auth/useMe";
 import { useUpdateProfile } from "@shared/api/hooks/auth/useUpdateProfile";
+import api from "@shared/api/axios";
 
 export default function SettingsPage() {
   const me = useMe();
@@ -148,7 +149,70 @@ export default function SettingsPage() {
             )}
           </div>
         </form>
+
+        {/* ── Data Export ── */}
+        <div className="mt-12 border-t border-neutral-200 pt-8">
+          <h2 className="text-lg font-semibold tracking-tight mb-1">
+            Export Your Data
+          </h2>
+          <p className="text-sm text-neutral-500 mb-5">
+            Download a copy of all your data including modes, goals, projects,
+            milestones, tasks, time entries, notes, comments, pins, and
+            templates.
+          </p>
+          <div className="flex gap-3">
+            <ExportButton format="json" label="Download JSON" />
+            <ExportButton format="csv" label="Download CSV (zip)" />
+          </div>
+        </div>
       </div>
     </main>
+  );
+}
+
+function ExportButton({ format, label }: { format: string; label: string }) {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(false);
+
+  async function handleExport() {
+    setLoading(true);
+    setError(false);
+    try {
+      const res = await api.get(`/auth/export/?format=${format}`, {
+        responseType: "blob",
+      });
+      const ext = format === "csv" ? "zip" : "json";
+      const blob = new Blob([res.data]);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `mullet-export.${ext}`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch {
+      setError(true);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="flex flex-col items-start">
+      <button
+        type="button"
+        onClick={handleExport}
+        disabled={loading}
+        className="inline-flex items-center justify-center rounded-md border border-neutral-300 bg-white px-4 py-2.5 text-sm font-medium text-neutral-700 transition hover:bg-neutral-50 disabled:opacity-50"
+      >
+        {loading ? "Exporting..." : label}
+      </button>
+      {error && (
+        <span className="text-xs text-red-600 mt-1">
+          Export failed. Please try again.
+        </span>
+      )}
+    </div>
   );
 }
