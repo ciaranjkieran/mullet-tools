@@ -153,6 +153,17 @@ function ProjectRow({ row }: Props) {
           >
             <Feather name="crosshair" size={20} color={row.modeColor} />
           </TouchableOpacity>
+        ) : (
+          <TouchableOpacity
+            onPress={handleToggleComplete}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Feather
+              name={checked || project.isCompleted ? "check-square" : "square"}
+              size={20}
+              color={row.modeColor}
+            />
+          </TouchableOpacity>
         )}
       </View>
     </Animated.View>
