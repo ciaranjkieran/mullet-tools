@@ -28,7 +28,11 @@ export function useAiBuild() {
         if (isToken) {
           authHeaders = await getTokenHeader();
         } else {
-          const csrfToken = await ensureCsrf();
+          await ensureCsrf();
+          // ensureCsrf() caches the token on the axios instance;
+          // read it back so native fetch() can send it too.
+          const csrfToken =
+            (api.defaults.headers.common["X-CSRFToken"] as string) ?? "";
           if (csrfToken) authHeaders["X-CSRFToken"] = csrfToken;
         }
 

@@ -8,7 +8,17 @@ import { useState, useEffect } from "react";
 import { useGlobalOutsideDeselect } from "../lib/hooks/useGlobalOutsideDeselect";
 
 export function ClientProviders({ children }: { children: React.ReactNode }) {
-  const [client] = useState(() => new QueryClient());
+  const [client] = useState(
+    () =>
+      new QueryClient({
+        defaultOptions: {
+          queries: {
+            staleTime: 30_000,          // 30 s — skip refetch if data is fresh
+            refetchOnWindowFocus: false, // don't refetch every tab switch
+          },
+        },
+      })
+  );
 
   // Mount the outside‑click + ESC deselect globally
   useGlobalOutsideDeselect({

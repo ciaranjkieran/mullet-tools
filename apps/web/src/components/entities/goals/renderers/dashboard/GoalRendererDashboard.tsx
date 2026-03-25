@@ -169,7 +169,7 @@ export default function GoalRendererDashboard({
             )}
           </div>
 
-          {goal.description && !isCollapsed && (
+          {goal.description && typeof goal.description === "string" && !isCollapsed && (
             <p className="text-xs text-gray-600">{goal.description}</p>
           )}
 

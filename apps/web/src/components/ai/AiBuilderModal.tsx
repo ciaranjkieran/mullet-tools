@@ -86,10 +86,15 @@ function buildEntitySnapshot(modeId: number): ExistingEntity[] {
 
 // ─── Tree helpers ────────────────────────────
 
-/** Mark all nodes as included; default `op` to "create" when absent. */
+/** Mark all nodes as included; default `op` to "create" when absent.
+ *  Also coerce fields to expected types to prevent React error #300. */
 function markIncluded(nodes: BuilderNode[]): BuilderNode[] {
-  return nodes.map((n) => ({
+  return (Array.isArray(nodes) ? nodes : []).map((n) => ({
     ...n,
+    title: typeof n.title === "string" ? n.title : String(n.title ?? ""),
+    description: typeof n.description === "string" ? n.description : null,
+    comment: typeof n.comment === "string" ? n.comment : null,
+    dueDate: typeof n.dueDate === "string" ? n.dueDate : null,
     op: n.op || "create",
     included: true,
     children: markIncluded(n.children ?? []),
@@ -496,7 +501,13 @@ export default function AiBuilderModal({ isOpen, onClose }: Props) {
         ]);
         setCommandLog((l) => [
           ...l,
-          { prompt: currentPrompt, summary: data.summary },
+          {
+            prompt: currentPrompt,
+            summary:
+              typeof data.summary === "string"
+                ? data.summary
+                : JSON.stringify(data.summary ?? ""),
+          },
         ]);
         setPrompt("");
       }
