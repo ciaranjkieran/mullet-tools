@@ -183,7 +183,7 @@ export default function GoalRendererDashboard({
       </div>
 
       {/* RIGHT: assignee avatar + checkbox/scope */}
-      {!isCollapsed && hasChildren ? (
+      {!isCollapsed ? (
         <div className="flex items-center gap-2">
           <AssigneeAvatar assignee={goal.assignee} size={20} />
           <button

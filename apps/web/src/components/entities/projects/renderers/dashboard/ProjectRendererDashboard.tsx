@@ -161,7 +161,7 @@ export default function ProjectRenderer({
       </div>
 
       {/* RIGHT: assignee avatar + checkbox/scope */}
-      {!isCollapsed && hasChildren ? (
+      {!isCollapsed ? (
         <div className="flex items-center gap-2">
           <AssigneeAvatar assignee={project.assignee} size={20} />
           <button

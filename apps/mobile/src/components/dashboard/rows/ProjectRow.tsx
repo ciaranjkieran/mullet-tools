@@ -144,7 +144,7 @@ function ProjectRow({ row }: Props) {
       {/* Right: assignee + scope/completion */}
       <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginLeft: 8 }}>
         <AssigneeBadge assignee={project.assignee} />
-        {!collapsed && row.hasChildren ? (
+        {!collapsed ? (
           <TouchableOpacity
             onPress={() =>
               useFocusModalStore.getState().open("project", project, row.modeColor, row.modeId)

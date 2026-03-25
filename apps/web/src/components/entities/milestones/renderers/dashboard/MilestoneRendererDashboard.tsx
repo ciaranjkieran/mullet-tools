@@ -166,7 +166,7 @@ export default function MilestoneRenderer({
       </div>
 
       {/* RIGHT: assignee avatar + checkbox/scope */}
-      {!isCollapsed && hasChildren ? (
+      {!isCollapsed ? (
         <div className="flex items-center gap-2">
           <AssigneeAvatar assignee={milestone.assignee} size={20} />
           <button
