@@ -10,7 +10,6 @@ import ProjectCommentsTab from "./tabs/ProjectCommentsTab";
 import {
   MessageCircle,
   Pencil,
-  Puzzle,
   NotebookPen,
   LayoutGrid,
   BarChart3,
@@ -23,7 +22,7 @@ import EntityWindowShell, {
   Tab,
 } from "@/components/windows/shared/EntityWindowShell";
 import EditProjectForm from "./edit/EditProjectForm";
-import ProjectStructureTab from "./tabs/ProjectStructureTab";
+
 import { Milestone } from "@shared/types/Milestone";
 import { Task } from "@shared/types/Task";
 import { useDialogStore } from "@/lib/dialogs/useDialogStore";
@@ -82,15 +81,13 @@ export default function ProjectWindow({
 
   const tabNameToIndex = {
     edit: 0,
-    structure: 1,
-    comments: 2,
-    notes: 3,
-    boards: 4,
-    stats: 5,
+    comments: 1,
+    notes: 2,
+    boards: 3,
+    stats: 4,
   } as const;
   const indexToTabName = [
     "edit",
-    "structure",
     "comments",
     "notes",
     "boards",
@@ -238,16 +235,6 @@ export default function ProjectWindow({
                     projects={projects}
                   />
                 </div>
-              </Tab>
-
-              <Tab name="Structure" icon={<Puzzle className="w-6 h-6" />}>
-                <ProjectStructureTab
-                  project={project}
-                  mode={selectedMode}
-                  milestones={milestones}
-                  projects={projects}
-                  tasks={tasks}
-                />
               </Tab>
 
               <Tab name="Comments" icon={<MessageCircle className="w-6 h-6" />}>

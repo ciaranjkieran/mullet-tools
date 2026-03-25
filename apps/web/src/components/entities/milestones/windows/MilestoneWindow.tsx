@@ -5,7 +5,6 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { useEffect, useState } from "react";
 import {
   Pencil,
-  Puzzle,
   MessageCircle,
   NotebookPen,
   LayoutGrid,
@@ -33,7 +32,7 @@ import EntityWindowShell, {
   Tab,
 } from "@/components/windows/shared/EntityWindowShell";
 import EditMilestoneForm from "./edit/EditMilestoneForm";
-import MilestoneStructureTab from "./tabs/MilestoneStructureTab";
+
 
 // NEW:
 import { useTemplateWorkbenchStore } from "@shared/store/useTemplateWorkbenchStore";
@@ -84,15 +83,13 @@ export default function MilestoneWindow({
 
   const tabNameToIndex = {
     edit: 0,
-    structure: 1,
-    comments: 2,
-    notes: 3,
-    boards: 4,
-    stats: 5,
+    comments: 1,
+    notes: 2,
+    boards: 3,
+    stats: 4,
   } as const;
   const indexToTabName = [
     "edit",
-    "structure",
     "comments",
     "notes",
     "boards",
@@ -263,17 +260,6 @@ export default function MilestoneWindow({
                     milestones={milestones}
                   />
                 </div>
-              </Tab>
-
-              <Tab name="Structure" icon={<Puzzle className="w-6 h-6" />}>
-                <MilestoneStructureTab
-                  milestones={milestones}
-                  milestone={milestone}
-                  tasks={tasks}
-                  mode={selectedMode!}
-                  goals={goals}
-                  projects={projects}
-                />
               </Tab>
 
               <Tab name="Comments" icon={<MessageCircle className="w-6 h-6" />}>

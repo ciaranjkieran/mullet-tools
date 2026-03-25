@@ -5,7 +5,7 @@ import { Task } from "@shared/types/Task";
 import { Project } from "@shared/types/Project";
 import { Goal } from "@shared/types/Goal";
 
-type Tab = "edit" | "structure" | "comments" | "notes" | "boards" | "stats"; // ← Add this
+type Tab = "edit" | "comments" | "notes" | "boards" | "stats";
 
 // Focus Modal
 export type FocusEntityType = "goal" | "project" | "milestone";

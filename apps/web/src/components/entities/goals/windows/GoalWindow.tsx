@@ -5,7 +5,6 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { useEffect, useState } from "react";
 import {
   Pencil,
-  Puzzle,
   NotebookPen,
   LayoutGrid,
   MessageCircle,
@@ -30,7 +29,7 @@ import EntityWindowShell, {
   Tab,
 } from "@/components/windows/shared/EntityWindowShell";
 import EditGoalForm from "./edit/EditGoalForm";
-import GoalStructureTab from "./tabs/GoalStructureTab";
+
 import { useDialogStore } from "@/lib/dialogs/useDialogStore";
 
 // NEW: circular timer launcher
@@ -75,7 +74,6 @@ export default function GoalWindow({
 
   const tabNames = [
     "edit",
-    "structure",
     "comments",
     "notes",
     "boards",
@@ -195,16 +193,6 @@ export default function GoalWindow({
                     modes={modes}
                   />
                 </div>
-              </Tab>
-
-              <Tab name="Structure" icon={<Puzzle className="w-6 h-6" />}>
-                <GoalStructureTab
-                  goal={goal}
-                  mode={selectedMode!}
-                  projects={projects}
-                  milestones={milestones}
-                  tasks={tasks}
-                />
               </Tab>
 
               <Tab name="Comments" icon={<MessageCircle className="w-6 h-6" />}>
