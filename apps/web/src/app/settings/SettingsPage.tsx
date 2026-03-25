@@ -178,7 +178,7 @@ function ExportButton({ format, label }: { format: string; label: string }) {
     setLoading(true);
     setError(false);
     try {
-      const res = await api.get(`/auth/export/?format=${format}`, {
+      const res = await api.get(`/auth/export/?export_format=${format}`, {
         responseType: "blob",
       });
       const ext = format === "csv" ? "zip" : "json";

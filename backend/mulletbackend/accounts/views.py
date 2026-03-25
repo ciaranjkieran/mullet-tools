@@ -167,7 +167,7 @@ class ExportDataView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        fmt = request.query_params.get("format", "json")
+        fmt = request.query_params.get("export_format", "json")
         user = request.user
 
         from core.models import Mode, Goal, Project, Milestone, Task
