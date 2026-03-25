@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useCallback, useRef } from "react";
+import React, { useMemo, useState, useCallback, useRef, useEffect } from "react";
 import {
   View,
   Text,
@@ -8,7 +8,7 @@ import {
   TextInput,
   ActivityIndicator,
   Animated,
-  KeyboardAvoidingView,
+  Keyboard,
   Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -60,6 +60,7 @@ type AddTaskRow = {
   goalId: number | null;
   projectId: number | null;
   milestoneId: number | null;
+  label?: string;
 };
 
 type FocusRow = EntityRow | AddTaskRow;
@@ -249,14 +250,6 @@ function FocusModalContent({
       if (!collapsed.has(`milestone-${ms.id}`)) {
         for (const child of childMs) pushMilestone(child, depth + 1);
         pushTasks((t) => t.milestoneId === ms.id, depth + 1);
-        result.push({
-          kind: "add-task",
-          key: `add-task-ms-${ms.id}`,
-          depth: depth + 1,
-          goalId: ms.goalId ?? null,
-          projectId: ms.projectId ?? null,
-          milestoneId: ms.id,
-        });
       }
     };
 
@@ -288,14 +281,6 @@ function FocusModalContent({
           (t) => t.projectId === proj.id && t.milestoneId == null,
           depth + 1
         );
-        result.push({
-          kind: "add-task",
-          key: `add-task-proj-${proj.id}`,
-          depth: depth + 1,
-          goalId: proj.goalId ?? null,
-          projectId: proj.id,
-          milestoneId: null,
-        });
       }
     };
 
@@ -437,34 +422,42 @@ function FocusModalContent({
   );
 
   const flatListRef = useRef<FlatList>(null);
+  const [kbHeight, setKbHeight] = useState(0);
+
+  useEffect(() => {
+    const showEvent = Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
+    const hideEvent = Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
+    const onShow = (e: any) => setKbHeight(e.endCoordinates.height);
+    const onHide = () => setKbHeight(0);
+    const sub1 = Keyboard.addListener(showEvent, onShow);
+    const sub2 = Keyboard.addListener(hideEvent, onHide);
+    return () => { sub1.remove(); sub2.remove(); };
+  }, []);
 
   const handleExpandAddTask = useCallback(
     (key: string | null) => {
       setExpandedAddTask(key);
       if (key == null) return;
       setAddTaskTitle("");
-      // Scroll to the add-task row after it renders
+      // Scroll to the add-task row after keyboard appears
       setTimeout(() => {
         const idx = rows.findIndex((r) => r.key === key);
         if (idx >= 0 && flatListRef.current) {
           flatListRef.current.scrollToIndex({ index: idx, animated: true, viewPosition: 0.5 });
         }
-      }, 100);
+      }, 350);
     },
     [rows]
   );
 
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1 }}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-    >
+    <View style={{ flex: 1 }}>
       {header}
       <FlatList
         ref={flatListRef}
         data={rows}
         keyExtractor={(item) => item.key}
-        contentContainerStyle={{ padding: 12, paddingBottom: 120 }}
+        contentContainerStyle={{ padding: 12, paddingBottom: Math.max(120, kbHeight + 40) }}
         keyboardShouldPersistTaps="handled"
         onScrollToIndexFailed={() => {}}
         renderItem={({ item }) => {
@@ -499,7 +492,7 @@ function FocusModalContent({
           );
         }}
       />
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 
