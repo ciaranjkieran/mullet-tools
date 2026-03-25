@@ -101,7 +101,14 @@ export function useAiBuild() {
         }
         jsonText = jsonText.replace(/```\s*$/, "").trimEnd();
 
-        const result: AiBuildResponse = JSON.parse(jsonText);
+        let result: AiBuildResponse;
+        try {
+          result = JSON.parse(jsonText);
+        } catch {
+          throw new Error(
+            "The AI response was too large or incomplete. Try a shorter prompt."
+          );
+        }
         onSuccess(result);
       } catch (err) {
         if ((err as Error).name !== "AbortError") {
