@@ -7,6 +7,7 @@ import {
   FlatList,
   TextInput,
   ActivityIndicator,
+  Animated,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useWhiteNavBar } from "../../lib/hooks/useWhiteNavBar";
@@ -71,7 +72,7 @@ export default function FocusModal() {
   const closeFocus = useFocusModalStore((s) => s.close);
   const openEdit = useEntityFormStore((s) => s.openEdit);
 
-  useWhiteNavBar(visible);
+  useWhiteNavBar(visible, "light");
 
   const frame = stack[stack.length - 1];
 
@@ -456,139 +457,175 @@ function FocusModalContent({
           }
 
           const row = item as EntityRow;
-          const isParent =
-            row.type === "goal" ||
-            row.type === "project" ||
-            row.type === "milestone";
-          const isExpanded = isParent && !collapsed.has(row.key);
-
           return (
-            <View
-              style={{
-                marginLeft: row.depth * 16,
-                marginBottom: 6,
-                borderWidth: 1,
-                borderColor: "#e5e7eb",
-                borderRadius: 8,
-                backgroundColor: "#fff",
-                padding: 12,
-                flexDirection: "row",
-                alignItems: "flex-start",
-                justifyContent: "space-between",
-                ...cardShadow("sm"),
-              }}
-            >
-              {/* Left: icon + title */}
-              <View
-                style={{
-                  flexDirection: "row",
-                  alignItems: "flex-start",
-                  flex: 1,
-                  minWidth: 0,
-                  gap: 10,
-                }}
-              >
-                {/* Collapse toggle / entity icon */}
-                {isParent && row.hasChildren ? (
-                  <TouchableOpacity
-                    onPress={() => toggleCollapse(row.key)}
-                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                    style={{
-                      width: 24,
-                      height: 24,
-                      justifyContent: "center",
-                      alignItems: "center",
-                    }}
-                  >
-                    <EntityIcon
-                      type={row.type}
-                      size={20}
-                      color={modeColor}
-                    />
-                  </TouchableOpacity>
-                ) : (
-                  <View
-                    style={{
-                      width: 24,
-                      height: 24,
-                      justifyContent: "center",
-                      alignItems: "center",
-                    }}
-                  >
-                    <EntityIcon
-                      type={row.type}
-                      size={row.type === "task" ? 16 : 20}
-                      color={modeColor}
-                    />
-                  </View>
-                )}
-
-                {/* Title */}
-                <TouchableOpacity
-                  onPress={() => onOpenEdit(row.type, row.entity)}
-                  style={{ flex: 1, minWidth: 0 }}
-                  activeOpacity={0.6}
-                >
-                  <Text
-                    style={{
-                      ...textLine(row.type === "task" ? 14 : 15),
-                      fontWeight: row.type === "task" ? "400" : "600",
-                      color: row.isCompleted ? "#9ca3af" : "#111",
-                      textDecorationLine: row.isCompleted
-                        ? "line-through"
-                        : "none",
-                    }}
-                  >
-                    {row.title}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-
-              {/* Right: scope icon or checkbox */}
-              <View
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: 8,
-                  marginLeft: 8,
-                }}
-              >
-                {isParent && isExpanded && row.hasChildren ? (
-                  <TouchableOpacity
-                    onPress={() =>
-                      onPushFocus(
-                        row.type as FocusEntityType,
-                        row.entity,
-                        modeColor,
-                        modeId
-                      )
-                    }
-                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                  >
-                    <Feather
-                      name="crosshair"
-                      size={20}
-                      color={modeColor}
-                    />
-                  </TouchableOpacity>
-                ) : (
-                  <TouchableOpacity
-                    onPress={() => toggleCompleted(row)}
-                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                  >
-                    <Feather
-                      name={row.isCompleted ? "check-square" : "square"}
-                      size={20}
-                      color={row.isCompleted ? "#9ca3af" : modeColor}
-                    />
-                  </TouchableOpacity>
-                )}
-              </View>
-            </View>
+            <FocusEntityRow
+              row={row}
+              modeColor={modeColor}
+              modeId={modeId}
+              collapsed={collapsed}
+              toggleCollapse={toggleCollapse}
+              toggleCompleted={toggleCompleted}
+              onPushFocus={onPushFocus}
+              onOpenEdit={onOpenEdit}
+            />
           );
         }}
       />
     </View>
+  );
+}
+
+// ── Add Task Row ──────────────────────────────────────────
+
+// ── Entity Row (with check animation + fade) ─────────────
+
+function FocusEntityRow({
+  row,
+  modeColor,
+  modeId,
+  collapsed,
+  toggleCollapse,
+  toggleCompleted,
+  onPushFocus,
+  onOpenEdit,
+}: {
+  row: EntityRow;
+  modeColor: string;
+  modeId: number;
+  collapsed: Set<string>;
+  toggleCollapse: (key: string) => void;
+  toggleCompleted: (row: EntityRow) => void;
+  onPushFocus: (type: FocusEntityType, entity: any, modeColor: string, modeId: number) => void;
+  onOpenEdit: (type: EntityFormType, entity: any) => void;
+}) {
+  const isParent =
+    row.type === "goal" ||
+    row.type === "project" ||
+    row.type === "milestone";
+  const isExpanded = isParent && !collapsed.has(row.key);
+
+  const [checked, setChecked] = useState(false);
+  const [opacity] = useState(() => new Animated.Value(1));
+
+  const handleCheck = useCallback(() => {
+    if (checked) return;
+    setChecked(true);
+    toggleCompleted(row);
+    Animated.timing(opacity, {
+      toValue: 0,
+      duration: 350,
+      delay: 100,
+      useNativeDriver: true,
+    }).start();
+  }, [checked, opacity, row, toggleCompleted]);
+
+  return (
+    <Animated.View
+      style={{
+        opacity,
+        marginLeft: row.depth * 16,
+        marginBottom: 6,
+        borderWidth: 1,
+        borderColor: "#e5e7eb",
+        borderRadius: 8,
+        backgroundColor: "#fff",
+        padding: 12,
+        flexDirection: "row",
+        alignItems: "flex-start",
+        justifyContent: "space-between",
+        ...cardShadow("sm"),
+      }}
+    >
+      {/* Left: icon + title */}
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "flex-start",
+          flex: 1,
+          minWidth: 0,
+          gap: 10,
+        }}
+      >
+        {isParent && row.hasChildren ? (
+          <TouchableOpacity
+            onPress={() => toggleCollapse(row.key)}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            style={{
+              width: 24,
+              height: 24,
+              justifyContent: "center",
+              alignItems: "center",
+            }}
+          >
+            <EntityIcon type={row.type} size={20} color={modeColor} />
+          </TouchableOpacity>
+        ) : (
+          <View
+            style={{
+              width: 24,
+              height: 24,
+              justifyContent: "center",
+              alignItems: "center",
+            }}
+          >
+            <EntityIcon
+              type={row.type}
+              size={row.type === "task" ? 16 : 20}
+              color={modeColor}
+            />
+          </View>
+        )}
+
+        <TouchableOpacity
+          onPress={() => onOpenEdit(row.type, row.entity)}
+          style={{ flex: 1, minWidth: 0 }}
+          activeOpacity={0.6}
+        >
+          <Text
+            style={{
+              ...textLine(row.type === "task" ? 14 : 15),
+              fontWeight: row.type === "task" ? "400" : "600",
+              color: checked || row.isCompleted ? "#9ca3af" : "#111",
+              textDecorationLine: checked || row.isCompleted ? "line-through" : "none",
+            }}
+          >
+            {row.title}
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Right: scope icon or checkbox */}
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          gap: 8,
+          marginLeft: 8,
+        }}
+      >
+        {isParent && isExpanded && row.hasChildren ? (
+          <TouchableOpacity
+            onPress={() =>
+              onPushFocus(row.type as FocusEntityType, row.entity, modeColor, modeId)
+            }
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Feather name="crosshair" size={20} color={modeColor} />
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity
+            onPress={handleCheck}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Feather
+              name={checked || row.isCompleted ? "check-square" : "square"}
+              size={20}
+              color={checked || row.isCompleted ? modeColor : modeColor}
+            />
+          </TouchableOpacity>
+        )}
+      </View>
+    </Animated.View>
   );
 }
 
