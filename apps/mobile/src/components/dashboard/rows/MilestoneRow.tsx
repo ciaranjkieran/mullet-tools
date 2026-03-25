@@ -1,5 +1,5 @@
-import React from "react";
-import { View, Text, TouchableOpacity, Alert } from "react-native";
+import React, { useState, useCallback } from "react";
+import { View, Text, TouchableOpacity, Alert, Animated } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useQueryClient } from "@tanstack/react-query";
 import { useUpdateMilestone } from "@shared/api/hooks/milestones/useUpdateMilestone";
@@ -29,15 +29,25 @@ function MilestoneRow({ row }: Props) {
 
   const collapseKey = `milestone-${milestone.id}`;
   const collapsed = isCollapsed(collapseKey);
+  const [checked, setChecked] = useState(false);
+  const [opacity] = useState(() => new Animated.Value(1));
 
-  const handleToggleComplete = () => {
+  const handleToggleComplete = useCallback(() => {
+    if (checked) return;
+    setChecked(true);
     deleteMilestone.mutate(milestone.id, {
       onSuccess: () => {
         qc.invalidateQueries({ queryKey: ["activeTimer"], exact: false });
         qc.invalidateQueries({ queryKey: ["timer"], exact: false });
       },
     });
-  };
+    Animated.timing(opacity, {
+      toValue: 0,
+      duration: 350,
+      delay: 100,
+      useNativeDriver: true,
+    }).start();
+  }, [checked, opacity, deleteMilestone, milestone.id, qc]);
 
   const handleDelete = () => {
     Alert.alert(
@@ -69,8 +79,9 @@ function MilestoneRow({ row }: Props) {
   const indent = row.depth * 16;
 
   return (
-    <View
+    <Animated.View
       style={{
+        opacity,
         marginLeft: indent + 12,
         marginRight: 12,
         marginBottom: 6,
@@ -150,9 +161,9 @@ function MilestoneRow({ row }: Props) {
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
             <Feather
-              name={milestone.isCompleted ? "check-square" : "square"}
+              name={checked || milestone.isCompleted ? "check-square" : "square"}
               size={20}
-              color={milestone.isCompleted ? "#9ca3af" : row.modeColor}
+              color={checked || milestone.isCompleted ? row.modeColor : row.modeColor}
             />
           </TouchableOpacity>
         ) : (
@@ -166,7 +177,7 @@ function MilestoneRow({ row }: Props) {
           </TouchableOpacity>
         )}
       </View>
-    </View>
+    </Animated.View>
   );
 }
 

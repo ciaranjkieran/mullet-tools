@@ -1,5 +1,5 @@
-import React from "react";
-import { View, Text, TouchableOpacity, Alert } from "react-native";
+import React, { useState, useCallback } from "react";
+import { View, Text, TouchableOpacity, Alert, Animated } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useQueryClient } from "@tanstack/react-query";
 import { useUpdateGoal } from "@shared/api/hooks/goals/useUpdateGoal";
@@ -29,15 +29,25 @@ function GoalRow({ row }: Props) {
 
   const collapseKey = `goal-${goal.id}`;
   const collapsed = isCollapsed(collapseKey);
+  const [checked, setChecked] = useState(false);
+  const [opacity] = useState(() => new Animated.Value(1));
 
-  const handleToggleComplete = () => {
+  const handleToggleComplete = useCallback(() => {
+    if (checked) return;
+    setChecked(true);
     deleteGoal.mutate(goal.id, {
       onSuccess: () => {
         qc.invalidateQueries({ queryKey: ["activeTimer"], exact: false });
         qc.invalidateQueries({ queryKey: ["timer"], exact: false });
       },
     });
-  };
+    Animated.timing(opacity, {
+      toValue: 0,
+      duration: 350,
+      delay: 100,
+      useNativeDriver: true,
+    }).start();
+  }, [checked, opacity, deleteGoal, goal.id, qc]);
 
   const handleDelete = () => {
     Alert.alert(
@@ -69,8 +79,9 @@ function GoalRow({ row }: Props) {
   const indent = row.depth * 16;
 
   return (
-    <View
+    <Animated.View
       style={{
+        opacity,
         marginLeft: indent + 12,
         marginRight: 12,
         marginBottom: 6,
@@ -159,9 +170,9 @@ function GoalRow({ row }: Props) {
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
             <Feather
-              name={goal.isCompleted ? "check-square" : "square"}
+              name={checked || goal.isCompleted ? "check-square" : "square"}
               size={20}
-              color={goal.isCompleted ? "#9ca3af" : row.modeColor}
+              color={checked || goal.isCompleted ? row.modeColor : row.modeColor}
             />
           </TouchableOpacity>
         ) : (
@@ -175,7 +186,7 @@ function GoalRow({ row }: Props) {
           </TouchableOpacity>
         )}
       </View>
-    </View>
+    </Animated.View>
   );
 }
 
