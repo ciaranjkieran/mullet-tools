@@ -16,6 +16,9 @@ import EntityDragHandle from "../../../../common/EntityDragHandle";
 import AssigneeAvatar from "../../../../common/AssigneeAvatar";
 import CompletionCheckbox from "../../../../common/CompletionCheckbox";
 import { useEntityUIStore } from "@/lib/store/useEntityUIStore";
+import { useProjectStore } from "@shared/store/useProjectStore";
+import { useMilestoneStore } from "@shared/store/useMilestoneStore";
+import { useTaskStore } from "@shared/store/useTaskStore";
 
 interface Props {
   project: Project;
@@ -57,6 +60,11 @@ export default function ProjectRenderer({
 
   const isCollapsed = collapsed ?? storeCollapsed;
   const handleToggleCollapse = onToggleCollapse ?? toggleInStore;
+
+  const hasChildren =
+    useProjectStore((s) => s.projects.some((p) => p.parentId === project.id)) ||
+    useMilestoneStore((s) => s.milestones.some((m) => m.projectId === project.id)) ||
+    useTaskStore((s) => s.tasks.some((t) => t.projectId === project.id && t.milestoneId == null));
 
   const handleEdit = () => {
     setProjectToEdit(project);
@@ -153,17 +161,7 @@ export default function ProjectRenderer({
       </div>
 
       {/* RIGHT: assignee avatar + checkbox/scope */}
-      {isCollapsed === true ? (
-        <div className="flex items-center gap-2">
-          <AssigneeAvatar assignee={project.assignee} size={20} />
-          <CompletionCheckbox
-            modeColor={modeColor}
-            label={`Mark "${project.title}" as complete`}
-            onComplete={handleCompletion}
-            shape="square"
-          />
-        </div>
-      ) : (
+      {!isCollapsed && hasChildren ? (
         <div className="flex items-center gap-2">
           <AssigneeAvatar assignee={project.assignee} size={20} />
           <button
@@ -177,6 +175,16 @@ export default function ProjectRenderer({
           >
             <LocateFixed size={20} strokeWidth={2} style={{ color: modeColor }} />
           </button>
+        </div>
+      ) : (
+        <div className="flex items-center gap-2">
+          <AssigneeAvatar assignee={project.assignee} size={20} />
+          <CompletionCheckbox
+            modeColor={modeColor}
+            label={`Mark "${project.title}" as complete`}
+            onComplete={handleCompletion}
+            shape="square"
+          />
         </div>
       )}
     </div>

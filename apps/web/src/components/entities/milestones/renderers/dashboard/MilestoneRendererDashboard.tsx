@@ -21,6 +21,8 @@ import CompletionCheckbox from "../../../../common/CompletionCheckbox";
 
 // NEW: global collapse store
 import { useEntityUIStore } from "@/lib/store/useEntityUIStore";
+import { useMilestoneStore } from "@shared/store/useMilestoneStore";
+import { useTaskStore } from "@shared/store/useTaskStore";
 
 interface Props {
   milestone: Milestone;
@@ -67,6 +69,10 @@ export default function MilestoneRenderer({
 
   const isCollapsed = collapsed ?? storeCollapsed;
   const handleToggleCollapse = onToggleCollapse ?? toggleInStore;
+
+  const hasChildren =
+    useMilestoneStore((s) => s.milestones.some((m) => m.parentId === milestone.id)) ||
+    useTaskStore((s) => s.tasks.some((t) => t.milestoneId === milestone.id));
 
   // actions
   const handleCompletion = () => {
@@ -160,17 +166,7 @@ export default function MilestoneRenderer({
       </div>
 
       {/* RIGHT: assignee avatar + checkbox/scope */}
-      {isCollapsed === true ? (
-        <div className="flex items-center gap-2">
-          <AssigneeAvatar assignee={milestone.assignee} size={20} />
-          <CompletionCheckbox
-            modeColor={modeColor}
-            label={`Mark "${milestone.title}" as complete`}
-            onComplete={handleCompletion}
-            shape="square"
-          />
-        </div>
-      ) : (
+      {!isCollapsed && hasChildren ? (
         <div className="flex items-center gap-2">
           <AssigneeAvatar assignee={milestone.assignee} size={20} />
           <button
@@ -184,6 +180,16 @@ export default function MilestoneRenderer({
           >
             <LocateFixed size={20} strokeWidth={2} style={{ color: modeColor }} />
           </button>
+        </div>
+      ) : (
+        <div className="flex items-center gap-2">
+          <AssigneeAvatar assignee={milestone.assignee} size={20} />
+          <CompletionCheckbox
+            modeColor={modeColor}
+            label={`Mark "${milestone.title}" as complete`}
+            onComplete={handleCompletion}
+            shape="square"
+          />
         </div>
       )}
     </div>

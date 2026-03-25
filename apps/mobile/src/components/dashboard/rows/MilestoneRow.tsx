@@ -155,18 +155,7 @@ function MilestoneRow({ row }: Props) {
       {/* Right: assignee + scope/completion */}
       <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginLeft: 8 }}>
         <AssigneeBadge assignee={milestone.assignee} />
-        {collapsed ? (
-          <TouchableOpacity
-            onPress={handleToggleComplete}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          >
-            <Feather
-              name={checked || milestone.isCompleted ? "check-square" : "square"}
-              size={20}
-              color={checked || milestone.isCompleted ? row.modeColor : row.modeColor}
-            />
-          </TouchableOpacity>
-        ) : (
+        {!collapsed && row.hasChildren ? (
           <TouchableOpacity
             onPress={() =>
               useFocusModalStore.getState().open("milestone", milestone, row.modeColor, row.modeId)

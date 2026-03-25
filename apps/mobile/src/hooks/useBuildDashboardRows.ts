@@ -23,6 +23,7 @@ export type DashboardRow = {
   depth: number;
   modeColor: string;
   modeId: number;
+  hasChildren?: boolean;
 };
 
 const byPos = (a: { position: number }, b: { position: number }) =>
@@ -45,6 +46,13 @@ function flattenMilestone(
   collapsed: Record<string, boolean>
 ) {
   const key = `milestone-${ms.id}`;
+  const msTasks = allTasks
+    .filter((t) => t.milestoneId === ms.id)
+    .sort(byPos);
+  const children = allMilestones
+    .filter((m) => m.parentId === ms.id)
+    .sort(byPos);
+
   rows.push({
     key,
     entityType: "milestone",
@@ -52,14 +60,11 @@ function flattenMilestone(
     depth,
     modeColor: mode.color,
     modeId: mode.id,
+    hasChildren: msTasks.length + children.length > 0,
   });
 
   if (collapsed[key]) return;
 
-  // Tasks under this milestone
-  const msTasks = allTasks
-    .filter((t) => t.milestoneId === ms.id)
-    .sort(byPos);
   for (const t of msTasks) {
     rows.push({
       key: `task-${t.id}`,
@@ -71,10 +76,6 @@ function flattenMilestone(
     });
   }
 
-  // Child milestones
-  const children = allMilestones
-    .filter((m) => m.parentId === ms.id)
-    .sort(byPos);
   for (const child of children) {
     flattenMilestone(child, depth + 1, mode, rows, allMilestones, allTasks, collapsed);
   }
@@ -91,6 +92,16 @@ function flattenProject(
   collapsed: Record<string, boolean>
 ) {
   const key = `project-${proj.id}`;
+  const projTasks = allTasks
+    .filter((t) => t.projectId === proj.id && !t.milestoneId)
+    .sort(byPos);
+  const projMilestones = allMilestones
+    .filter((m) => m.projectId === proj.id && !m.parentId)
+    .sort(byPos);
+  const childProjects = allProjects
+    .filter((p) => p.parentId === proj.id)
+    .sort(byPos);
+
   rows.push({
     key,
     entityType: "project",
@@ -98,14 +109,11 @@ function flattenProject(
     depth,
     modeColor: mode.color,
     modeId: mode.id,
+    hasChildren: projTasks.length + projMilestones.length + childProjects.length > 0,
   });
 
   if (collapsed[key]) return;
 
-  // Tasks directly under this project (not under a milestone)
-  const projTasks = allTasks
-    .filter((t) => t.projectId === proj.id && !t.milestoneId)
-    .sort(byPos);
   for (const t of projTasks) {
     rows.push({
       key: `task-${t.id}`,
@@ -117,18 +125,10 @@ function flattenProject(
     });
   }
 
-  // Milestones under this project (top-level only, not child milestones)
-  const projMilestones = allMilestones
-    .filter((m) => m.projectId === proj.id && !m.parentId)
-    .sort(byPos);
   for (const ms of projMilestones) {
     flattenMilestone(ms, depth + 1, mode, rows, allMilestones, allTasks, collapsed);
   }
 
-  // Child projects
-  const childProjects = allProjects
-    .filter((p) => p.parentId === proj.id)
-    .sort(byPos);
   for (const child of childProjects) {
     flattenProject(child, depth + 1, mode, rows, allProjects, allMilestones, allTasks, collapsed);
   }
@@ -146,6 +146,24 @@ function flattenGoal(
   collapsed: Record<string, boolean>
 ) {
   const key = `goal-${goal.id}`;
+  const goalTasks = allTasks
+    .filter(
+      (t) =>
+        t.goalId === goal.id && !t.projectId && !t.milestoneId
+    )
+    .sort(byPos);
+  const goalMilestones = allMilestones
+    .filter((m) => m.goalId === goal.id && !m.projectId && !m.parentId)
+    .sort(byPos);
+  const goalProjects = allProjects
+    .filter((p) => {
+      if (p.parentId) return false;
+      const effGoal =
+        p.goalId ?? projectEffectiveGoalId(p.id, projectsById);
+      return effGoal === goal.id;
+    })
+    .sort(byPos);
+
   rows.push({
     key,
     entityType: "goal",
@@ -153,17 +171,10 @@ function flattenGoal(
     depth,
     modeColor: mode.color,
     modeId: mode.id,
+    hasChildren: goalTasks.length + goalMilestones.length + goalProjects.length > 0,
   });
 
   if (collapsed[key]) return;
-
-  // Tasks directly under goal (no project, no milestone)
-  const goalTasks = allTasks
-    .filter(
-      (t) =>
-        t.goalId === goal.id && !t.projectId && !t.milestoneId
-    )
-    .sort(byPos);
   for (const t of goalTasks) {
     rows.push({
       key: `task-${t.id}`,
@@ -175,23 +186,10 @@ function flattenGoal(
     });
   }
 
-  // Milestones under goal (not under a project, top-level only)
-  const goalMilestones = allMilestones
-    .filter((m) => m.goalId === goal.id && !m.projectId && !m.parentId)
-    .sort(byPos);
   for (const ms of goalMilestones) {
     flattenMilestone(ms, depth + 1, mode, rows, allMilestones, allTasks, collapsed);
   }
 
-  // Projects under goal (root projects only — no parentId)
-  const goalProjects = allProjects
-    .filter((p) => {
-      if (p.parentId) return false;
-      const effGoal =
-        p.goalId ?? projectEffectiveGoalId(p.id, projectsById);
-      return effGoal === goal.id;
-    })
-    .sort(byPos);
   for (const proj of goalProjects) {
     flattenProject(
       proj,

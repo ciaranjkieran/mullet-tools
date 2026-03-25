@@ -20,6 +20,9 @@ import EntityDragHandle from "../../../../common/EntityDragHandle";
 import AssigneeAvatar from "../../../../common/AssigneeAvatar";
 import CompletionCheckbox from "../../../../common/CompletionCheckbox";
 import { useEntityUIStore } from "@/lib/store/useEntityUIStore";
+import { useProjectStore } from "@shared/store/useProjectStore";
+import { useMilestoneStore } from "@shared/store/useMilestoneStore";
+import { useTaskStore } from "@shared/store/useTaskStore";
 
 type Props = {
   goal: Goal;
@@ -57,6 +60,12 @@ export default function GoalRendererDashboard({
   const storeCollapsed = useEntityUIStore((s) => !!s.collapsed.goal?.[goal.id]);
   const toggleInStore = () =>
     useEntityUIStore.getState().toggleCollapsed("goal", goal.id);
+
+  // hasChildren check
+  const hasChildren =
+    useProjectStore((s) => s.projects.some((p) => p.goalId === goal.id)) ||
+    useMilestoneStore((s) => s.milestones.some((m) => m.goalId === goal.id)) ||
+    useTaskStore((s) => s.tasks.some((t) => t.goalId === goal.id && t.projectId == null && t.milestoneId == null));
 
   const isCollapsed = collapsed ?? storeCollapsed;
   const handleToggleCollapse = onToggleCollapse ?? toggleInStore;
@@ -174,17 +183,7 @@ export default function GoalRendererDashboard({
       </div>
 
       {/* RIGHT: assignee avatar + checkbox/scope */}
-      {isCollapsed === true ? (
-        <div className="flex items-center gap-2">
-          <AssigneeAvatar assignee={goal.assignee} size={20} />
-          <CompletionCheckbox
-            modeColor={modeColor}
-            label={`Mark "${goal.title}" as complete`}
-            onComplete={handleCompletion}
-            shape="square"
-          />
-        </div>
-      ) : (
+      {!isCollapsed && hasChildren ? (
         <div className="flex items-center gap-2">
           <AssigneeAvatar assignee={goal.assignee} size={20} />
           <button
@@ -198,6 +197,16 @@ export default function GoalRendererDashboard({
           >
             <LocateFixed size={20} strokeWidth={2} style={{ color: modeColor }} />
           </button>
+        </div>
+      ) : (
+        <div className="flex items-center gap-2">
+          <AssigneeAvatar assignee={goal.assignee} size={20} />
+          <CompletionCheckbox
+            modeColor={modeColor}
+            label={`Mark "${goal.title}" as complete`}
+            onComplete={handleCompletion}
+            shape="square"
+          />
         </div>
       )}
     </div>
