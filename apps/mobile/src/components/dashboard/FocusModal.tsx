@@ -250,6 +250,14 @@ function FocusModalContent({
       if (!collapsed.has(`milestone-${ms.id}`)) {
         for (const child of childMs) pushMilestone(child, depth + 1);
         pushTasks((t) => t.milestoneId === ms.id, depth + 1);
+        result.push({
+          kind: "add-task",
+          key: `add-task-ms-${ms.id}`,
+          depth: depth + 1,
+          goalId: ms.goalId ?? null,
+          projectId: ms.projectId ?? null,
+          milestoneId: ms.id,
+        });
       }
     };
 
@@ -281,6 +289,14 @@ function FocusModalContent({
           (t) => t.projectId === proj.id && t.milestoneId == null,
           depth + 1
         );
+        result.push({
+          kind: "add-task",
+          key: `add-task-proj-${proj.id}`,
+          depth: depth + 1,
+          goalId: proj.goalId ?? null,
+          projectId: proj.id,
+          milestoneId: null,
+        });
       }
     };
 
