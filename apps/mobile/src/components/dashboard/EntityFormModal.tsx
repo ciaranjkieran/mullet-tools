@@ -58,12 +58,12 @@ import { useEntityFormStore, type EntityFormType } from "../../lib/store/useEnti
 import DropdownPicker from "./DropdownPicker";
 import CommentsTab from "./CommentsTab";
 import NotesTab from "./NotesTab";
-import StructureTab from "./StructureTab";
+
 import BoardsTab from "./BoardsTab";
 import StatsTab from "./StatsTab";
 import AssigneePicker from "../collaboration/AssigneePicker";
 
-type ActiveTab = "details" | "structure" | "comments" | "notes" | "boards" | "stats";
+type ActiveTab = "details" | "comments" | "notes" | "boards" | "stats";
 
 type TabDef = {
   key: ActiveTab;
@@ -72,7 +72,6 @@ type TabDef = {
 
 const ALL_TABS: TabDef[] = [
   { key: "details", icon: "edit-3" },
-  { key: "structure", icon: "git-branch" },
   { key: "comments", icon: "message-square" },
   { key: "notes", icon: "edit" },
   { key: "boards", icon: "grid" },
@@ -132,11 +131,8 @@ export default function EntityFormModal({
   // Tabs available for current entity type
   const visibleTabs = useMemo(() => {
     if (!isEdit) return [];
-    return ALL_TABS.filter((t) => {
-      if (t.key === "structure" && entityType === "task") return false;
-      return true;
-    });
-  }, [isEdit, entityType]);
+    return ALL_TABS;
+  }, [isEdit]);
 
   // Build selection object matching web's per-entity-type mapping:
   // - Milestone form: parentMilestoneId → sel.milestoneId, projectId → sel.projectId
@@ -569,35 +565,6 @@ export default function EntityFormModal({
     navigation.navigate("Home");
   }, [editEntity, entityType, defaultModeId, projects, milestones, tasks, onClose, navigation]);
 
-  // Structure tab navigation handler
-  const handleStructureNavigate = useCallback(
-    (type: EntityFormType, navEntityId: number) => {
-      // Find the entity in stores and open it for editing
-      let entity: Goal | Project | Milestone | Task | undefined;
-      switch (type) {
-        case "goal":
-          entity = goals.find((g) => g.id === navEntityId);
-          break;
-        case "project":
-          entity = projects.find((p) => p.id === navEntityId);
-          break;
-        case "milestone":
-          entity = milestones.find((m) => m.id === navEntityId);
-          break;
-        case "task":
-          entity = tasks.find((t) => t.id === navEntityId);
-          break;
-      }
-      if (entity) {
-        onClose();
-        setTimeout(() => {
-          useEntityFormStore.getState().openEdit(type, entity!);
-        }, 350);
-      }
-    },
-    [goals, projects, milestones, tasks, onClose]
-  );
-
   const insets = useSafeAreaInsets();
   const showGoalPicker = entityType !== "goal";
   const showParentProjectPicker = entityType === "project";
@@ -760,23 +727,12 @@ export default function EntityFormModal({
           </View>
         )}
 
-        {/* Structure tab */}
-        {isEdit && activeTab === "structure" && editEntity && entityType !== "task" && (
-          <StructureTab
-            entityType={entityType as "goal" | "project" | "milestone"}
-            entityId={editEntity.id}
-            entityTitle={editEntity.title}
-            modeId={defaultModeId}
-            onNavigate={handleStructureNavigate}
-          />
-        )}
-
         {/* Comments tab */}
         {isEdit && activeTab === "comments" && editEntity && (
           <CommentsTab
             entityType={entityType}
             entityId={editEntity.id}
-            modeId={defaultModeId}
+            modeId={formModeId}
           />
         )}
 
@@ -785,9 +741,9 @@ export default function EntityFormModal({
           <NotesTab
             entityType={entityType}
             entityId={editEntity.id}
-            modeId={defaultModeId}
+            modeId={formModeId}
             entityTitle={editEntity.title}
-            isCollab={(modes.find((m) => m.id === defaultModeId)?.collaboratorCount ?? 0) > 0}
+            isCollab={(modes.find((m) => m.id === formModeId)?.collaboratorCount ?? 0) > 0}
           />
         )}
 
@@ -796,7 +752,7 @@ export default function EntityFormModal({
           <BoardsTab
             entityType={entityType}
             entityId={editEntity.id}
-            modeId={defaultModeId}
+            modeId={formModeId}
             modeColor={modeColor}
           />
         )}
@@ -806,7 +762,7 @@ export default function EntityFormModal({
           <StatsTab
             entityType={entityType}
             entityId={editEntity.id}
-            modeId={defaultModeId}
+            modeId={formModeId}
             modeColor={modeColor}
           />
         )}
