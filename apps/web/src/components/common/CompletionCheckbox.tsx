@@ -46,7 +46,7 @@ export default function CompletionCheckbox({
         e.stopPropagation();
         if (checked) return;
         setChecked(true);
-        setTimeout(onComplete, 500);
+        onComplete();
       }}
     >
       {checked && (
