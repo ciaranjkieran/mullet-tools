@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useCallback } from "react";
+import React, { useMemo, useState, useCallback, useRef } from "react";
 import {
   View,
   Text,
@@ -8,6 +8,8 @@ import {
   TextInput,
   ActivityIndicator,
   Animated,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useWhiteNavBar } from "../../lib/hooks/useWhiteNavBar";
@@ -434,21 +436,44 @@ function FocusModalContent({
     </View>
   );
 
+  const flatListRef = useRef<FlatList>(null);
+
+  const handleExpandAddTask = useCallback(
+    (key: string | null) => {
+      setExpandedAddTask(key);
+      if (key == null) return;
+      setAddTaskTitle("");
+      // Scroll to the add-task row after it renders
+      setTimeout(() => {
+        const idx = rows.findIndex((r) => r.key === key);
+        if (idx >= 0 && flatListRef.current) {
+          flatListRef.current.scrollToIndex({ index: idx, animated: true, viewPosition: 0.5 });
+        }
+      }, 100);
+    },
+    [rows]
+  );
+
   return (
-    <View style={{ flex: 1 }}>
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+    >
       {header}
       <FlatList
+        ref={flatListRef}
         data={rows}
         keyExtractor={(item) => item.key}
-        contentContainerStyle={{ padding: 12, paddingBottom: 40 }}
+        contentContainerStyle={{ padding: 12, paddingBottom: 120 }}
         keyboardShouldPersistTaps="handled"
+        onScrollToIndexFailed={() => {}}
         renderItem={({ item }) => {
           if (item.kind === "add-task") {
             return (
               <AddTaskRowView
                 row={item}
                 expandedAddTask={expandedAddTask}
-                setExpandedAddTask={setExpandedAddTask}
+                setExpandedAddTask={handleExpandAddTask}
                 addTaskTitle={addTaskTitle}
                 setAddTaskTitle={setAddTaskTitle}
                 handleAddTask={handleAddTask}
@@ -474,7 +499,7 @@ function FocusModalContent({
           );
         }}
       />
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
