@@ -39,21 +39,21 @@ export function useCompleteNextTimer() {
       return data;
     },
     onSuccess: async (_data) => {
-      // ✅ Optimistically reflect stop (most complete-next flows stop the session)
+      // Optimistically reflect stop so UI unblocks immediately
       qc.setQueryData(["activeTimer"], null);
       qc.setQueryData(["timer", "active"], null);
 
-      // then refetch
-      await qc.invalidateQueries({ queryKey: ["timer"] });
-      await qc.invalidateQueries({ queryKey: ["activeTimer"] });
-      await qc.invalidateQueries({ queryKey: ["time-entries"] });
-      await qc.invalidateQueries({ queryKey: ["timeEntries"] });
-
-      await qc.invalidateQueries({ queryKey: ["activeTimer"], exact: false });
-      await qc.invalidateQueries({ queryKey: ["tasks"], exact: false });
-      await qc.invalidateQueries({ queryKey: ["milestones"], exact: false });
-      await qc.invalidateQueries({ queryKey: ["projects"], exact: false });
-      await qc.invalidateQueries({ queryKey: ["goals"], exact: false });
+      // Refetch all in parallel (not sequentially)
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["timer"] }),
+        qc.invalidateQueries({ queryKey: ["activeTimer"], exact: false }),
+        qc.invalidateQueries({ queryKey: ["time-entries"] }),
+        qc.invalidateQueries({ queryKey: ["timeEntries"] }),
+        qc.invalidateQueries({ queryKey: ["tasks"], exact: false }),
+        qc.invalidateQueries({ queryKey: ["milestones"], exact: false }),
+        qc.invalidateQueries({ queryKey: ["projects"], exact: false }),
+        qc.invalidateQueries({ queryKey: ["goals"], exact: false }),
+      ]);
     },
   });
 }
