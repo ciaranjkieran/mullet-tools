@@ -46,12 +46,12 @@ export default function CompletionCheckbox({
         e.stopPropagation();
         if (checked) return;
         setChecked(true);
-        onComplete();
+        setTimeout(onComplete, 350);
       }}
     >
       {checked && (
         <Check
-          className="animate-[scale-in_0.15s_ease-out]"
+          className="animate-[scale-in_0.2s_ease-out]"
           style={{ color: checkColor }}
           size={13}
           strokeWidth={3}
