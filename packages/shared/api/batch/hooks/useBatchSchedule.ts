@@ -168,11 +168,13 @@ export function useBatchSchedule() {
     },
 
     onSettled: async (_data, _error, vars) => {
-      if (vars?.skipInvalidate) return; // orchestrator will do one final invalidate
-      await qc.invalidateQueries({ queryKey: ["tasks"] });
-      await qc.invalidateQueries({ queryKey: ["milestones"] });
-      await qc.invalidateQueries({ queryKey: ["projects"] });
-      await qc.invalidateQueries({ queryKey: ["goals"] });
+      if (vars?.skipInvalidate) return;
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["tasks"] }),
+        qc.invalidateQueries({ queryKey: ["milestones"] }),
+        qc.invalidateQueries({ queryKey: ["projects"] }),
+        qc.invalidateQueries({ queryKey: ["goals"] }),
+      ]);
     },
   });
 }

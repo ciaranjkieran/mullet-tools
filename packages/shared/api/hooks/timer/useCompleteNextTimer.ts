@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "../../axios";
 import { ensureCsrf } from "../auth/ensureCsrf";
 import type { TimeEntryDTO } from "@shared/types/Timer";
+import { TIME_ENTRIES_QK } from "./useTimeEntries";
 
 type EntityType = "task" | "milestone" | "project" | "goal";
 
@@ -36,18 +37,30 @@ export function useCompleteNextTimer() {
       const { data } = await api.post<Resp>("/timer/complete-next", body);
       return data;
     },
-    onSuccess: async () => {
+    onSuccess: async (data) => {
       qc.setQueryData(["activeTimer"], null);
       qc.setQueryData(["timer", "active"], null);
 
-      await qc.invalidateQueries({ queryKey: ["timer"] });
-      await qc.invalidateQueries({ queryKey: ["activeTimer"], exact: false });
-      await qc.invalidateQueries({ queryKey: ["time-entries"] });
-      await qc.invalidateQueries({ queryKey: ["timeEntries"] });
-      await qc.invalidateQueries({ queryKey: ["tasks"], exact: false });
-      await qc.invalidateQueries({ queryKey: ["milestones"], exact: false });
-      await qc.invalidateQueries({ queryKey: ["projects"], exact: false });
-      await qc.invalidateQueries({ queryKey: ["goals"], exact: false });
+      // Optimistically insert stopped entry into today's entries
+      if (data.stoppedEntry) {
+        const entry = data.stoppedEntry;
+        qc.setQueryData<TimeEntryDTO[] | undefined>(TIME_ENTRIES_QK(), (prev) => {
+          const list = prev ?? [];
+          const withoutDup = list.filter((e) => e.id !== entry.id);
+          const ts = (e: TimeEntryDTO) =>
+            e.endedAt ? Date.parse(e.endedAt) : Date.parse(e.startedAt);
+          return [entry, ...withoutDup].sort((a, b) => ts(b) - ts(a));
+        });
+      }
+
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["timer"] }),
+        qc.invalidateQueries({ queryKey: ["activeTimer"], exact: false }),
+        qc.invalidateQueries({ queryKey: ["tasks"], exact: false }),
+        qc.invalidateQueries({ queryKey: ["milestones"], exact: false }),
+        qc.invalidateQueries({ queryKey: ["projects"], exact: false }),
+        qc.invalidateQueries({ queryKey: ["goals"], exact: false }),
+      ]);
     },
   });
 }

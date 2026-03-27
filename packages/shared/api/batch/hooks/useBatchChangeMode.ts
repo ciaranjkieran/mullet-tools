@@ -201,10 +201,12 @@ export function useBatchChangeMode() {
 
     onSettled: async (_data, _error, vars) => {
       if (vars?.skipInvalidate) return;
-      await qc.invalidateQueries({ queryKey: ["tasks"] });
-      await qc.invalidateQueries({ queryKey: ["milestones"] });
-      await qc.invalidateQueries({ queryKey: ["projects"] });
-      await qc.invalidateQueries({ queryKey: ["goals"] });
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["tasks"] }),
+        qc.invalidateQueries({ queryKey: ["milestones"] }),
+        qc.invalidateQueries({ queryKey: ["projects"] }),
+        qc.invalidateQueries({ queryKey: ["goals"] }),
+      ]);
     },
   });
 }
