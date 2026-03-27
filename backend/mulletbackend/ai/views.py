@@ -55,7 +55,7 @@ class AiBuildView(APIView):
     def post(self, request):
         prompt = (request.data.get("prompt") or "").strip()
         mode_id = request.data.get("modeId")
-        history = request.data.get("history") or []
+        current_nodes = request.data.get("currentNodes") or []
         entities = request.data.get("entities") or []
 
         if not prompt:
@@ -97,11 +97,15 @@ class AiBuildView(APIView):
                 {"role": "assistant", "content": "Understood. I have the current entity snapshot and will reference it when needed."}
             )
 
-        for entry in history:
-            role = entry.get("role", "user")
-            content = entry.get("content", "")
-            if role in ("user", "assistant") and content:
-                messages.append({"role": role, "content": content})
+        # If there's a current tree from a previous build, include it as context
+        if current_nodes:
+            tree_json = json.dumps(current_nodes, default=str)
+            messages.append(
+                {"role": "user", "content": f"CURRENT TREE (from previous build in this session):\n{tree_json}"}
+            )
+            messages.append(
+                {"role": "assistant", "content": "Understood. I have the current tree and will modify it based on your next instruction."}
+            )
 
         messages.append({"role": "user", "content": prompt})
 

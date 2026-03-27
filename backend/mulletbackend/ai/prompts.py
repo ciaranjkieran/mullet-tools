@@ -98,9 +98,9 @@ child entities sensibly.
 - Omit (set to null) for simple/obvious items like "Deploy to production".
 
 # Refinement
-- When the user sends a follow-up message, modify the PREVIOUS tree — do not \
-start from scratch. Add, remove, rename, reschedule, or restructure nodes as \
-requested.
+- When a CURRENT TREE is provided, it represents the working tree from this \
+session. Modify it based on the user's new instruction — do not start from scratch.
+- Add, remove, rename, reschedule, or restructure nodes as requested.
 - Always return the FULL updated tree, not just the changed parts.
 
 # Constraints

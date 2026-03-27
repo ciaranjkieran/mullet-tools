@@ -273,9 +273,6 @@ export default function AiBuilderModal({
   useWhiteNavBar(visible);
   const [prompt, setPrompt] = useState("");
   const [nodes, setNodes] = useState<BuilderNode[]>([]);
-  const [history, setHistory] = useState<
-    { role: "user" | "assistant"; content: string }[]
-  >([]);
   const [commandLog, setCommandLog] = useState<
     { role: "user" | "assistant"; text: string }[]
   >([]);
@@ -358,14 +355,9 @@ export default function AiBuilderModal({
 
     const entities = buildEntitySnapshot();
     build(
-      { prompt: text, modeId, history, entities },
+      { prompt: text, modeId, currentNodes: nodes.length > 0 ? nodes : undefined, entities },
       (result) => {
         setNodes(result.nodes);
-        setHistory((prev) => [
-          ...prev,
-          { role: "user", content: text },
-          { role: "assistant", content: result.summary },
-        ]);
         setCommandLog((prev) => [
           ...prev,
           { role: "assistant", text: result.summary },
@@ -465,6 +457,7 @@ export default function AiBuilderModal({
       visible={visible}
       animationType="slide"
       presentationStyle="fullScreen"
+      statusBarTranslucent
       onRequestClose={handleClose}
     >
       <KeyboardAvoidingView

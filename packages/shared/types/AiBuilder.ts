@@ -29,7 +29,7 @@ export type ExistingEntity = {
 export type AiBuildRequest = {
   prompt: string;
   modeId: number;
-  history: { role: "user" | "assistant"; content: string }[];
+  currentNodes?: BuilderNode[];
   entities?: ExistingEntity[];
 };
 

@@ -49,36 +49,24 @@ function buildEntitySnapshot(modeId: number): ExistingEntity[] {
     entities.push({ id: g.id, type: "goal", title: g.title, dueDate: g.dueDate ?? null });
   }
   for (const p of projects) {
-    entities.push({
-      id: p.id,
-      type: "project",
-      title: p.title,
-      dueDate: p.dueDate ?? null,
-      parentId: p.parentId ?? null,
-      goalId: p.goalId ?? null,
-    });
+    const e: ExistingEntity = { id: p.id, type: "project", title: p.title, dueDate: p.dueDate ?? null };
+    if (p.parentId) e.parentId = p.parentId;
+    if (p.goalId) e.goalId = p.goalId;
+    entities.push(e);
   }
   for (const m of milestones) {
-    entities.push({
-      id: m.id,
-      type: "milestone",
-      title: m.title,
-      dueDate: m.dueDate ?? null,
-      parentId: m.parentId ?? null,
-      projectId: m.projectId ?? null,
-      goalId: m.goalId ?? null,
-    });
+    const e: ExistingEntity = { id: m.id, type: "milestone", title: m.title, dueDate: m.dueDate ?? null };
+    if (m.parentId) e.parentId = m.parentId;
+    if (m.projectId) e.projectId = m.projectId;
+    if (m.goalId) e.goalId = m.goalId;
+    entities.push(e);
   }
   for (const t of tasks) {
-    entities.push({
-      id: t.id,
-      type: "task",
-      title: t.title,
-      dueDate: t.dueDate ?? null,
-      milestoneId: t.milestoneId ?? null,
-      projectId: t.projectId ?? null,
-      goalId: t.goalId ?? null,
-    });
+    const e: ExistingEntity = { id: t.id, type: "task", title: t.title, dueDate: t.dueDate ?? null };
+    if (t.milestoneId) e.milestoneId = t.milestoneId;
+    if (t.projectId) e.projectId = t.projectId;
+    if (t.goalId) e.goalId = t.goalId;
+    entities.push(e);
   }
 
   return entities;
@@ -451,9 +439,6 @@ function TreeNode({
 export default function AiBuilderModal({ isOpen, onClose }: Props) {
   const [prompt, setPrompt] = useState("");
   const [nodes, setNodes] = useState<BuilderNode[]>([]);
-  const [history, setHistory] = useState<
-    { role: "user" | "assistant"; content: string }[]
-  >([]);
   const [commandLog, setCommandLog] = useState<CommandEntry[]>([]);
   const [commitSuccess, setCommitSuccess] = useState(false);
 
@@ -490,15 +475,10 @@ export default function AiBuilderModal({ isOpen, onClose }: Props) {
     const currentPrompt = prompt.trim();
 
     build(
-      { prompt: currentPrompt, modeId: mode.id, history, entities },
+      { prompt: currentPrompt, modeId: mode.id, currentNodes: nodes.length > 0 ? nodes : undefined, entities },
       (data) => {
         const markedNodes = markIncluded(data.nodes ?? []);
         setNodes(markedNodes);
-        setHistory((h) => [
-          ...h,
-          { role: "user", content: currentPrompt },
-          { role: "assistant", content: JSON.stringify(data) },
-        ]);
         setCommandLog((l) => [
           ...l,
           {
@@ -512,7 +492,7 @@ export default function AiBuilderModal({ isOpen, onClose }: Props) {
         setPrompt("");
       }
     );
-  }, [prompt, mode, history, build]);
+  }, [prompt, mode, nodes, build]);
 
   const handleCommit = useCallback(async () => {
     if (!mode || totalActionable === 0) return;
@@ -528,7 +508,6 @@ export default function AiBuilderModal({ isOpen, onClose }: Props) {
             // Reset state after close animation
             setTimeout(() => {
               setNodes([]);
-              setHistory([]);
               setCommandLog([]);
               setCommitSuccess(false);
               setPrompt("");
@@ -543,7 +522,6 @@ export default function AiBuilderModal({ isOpen, onClose }: Props) {
   useEffect(() => {
     if (isOpen) {
       setNodes([]);
-      setHistory([]);
       setCommandLog([]);
       setPrompt("");
       setCommitSuccess(false);
@@ -661,19 +639,19 @@ export default function AiBuilderModal({ isOpen, onClose }: Props) {
             </p>
           )}
           <div className="flex gap-2">
-            <input
-              type="text"
+            <textarea
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
+                if (e.key === "Enter" && e.metaKey) {
                   e.preventDefault();
                   handleBuild();
                 }
               }}
-              placeholder="Describe what you want to build or change..."
+              placeholder="Describe what you want to build or change... (⌘+Enter to send)"
               disabled={!mode || buildPending}
-              className="flex-1 border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 disabled:opacity-50"
+              rows={2}
+              className="flex-1 border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 disabled:opacity-50 resize-none"
               style={
                 { "--tw-ring-color": modeColor } as React.CSSProperties
               }
