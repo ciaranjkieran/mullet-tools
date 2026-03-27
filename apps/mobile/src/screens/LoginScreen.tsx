@@ -8,9 +8,11 @@ import {
   Platform,
   ActivityIndicator,
   Image,
+  Alert,
 } from "react-native";
 import { useLogin } from "@shared/api/hooks/auth/useLogin";
 import { useRegister } from "@shared/api/hooks/auth/useRegister";
+import { useForgotPassword } from "@shared/api/hooks/auth/useForgotPassword";
 import { useAuthStore } from "../lib/store/useAuthStore";
 
 type Mode = "login" | "signup";
@@ -18,11 +20,13 @@ type Mode = "login" | "signup";
 export default function LoginScreen() {
   const login = useLogin();
   const register = useRegister();
+  const forgot = useForgotPassword();
   const setAuthenticated = useAuthStore((s) => s.setAuthenticated);
 
   const [mode, setMode] = useState<Mode>("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [forgotSent, setForgotSent] = useState(false);
 
   const busy = login.isPending || register.isPending;
 
@@ -176,6 +180,38 @@ export default function LoginScreen() {
           </Text>
         )}
       </TouchableOpacity>
+
+      {mode === "login" && !forgotSent && (
+        <TouchableOpacity
+          onPress={async () => {
+            if (!email.trim()) {
+              Alert.alert("Enter your email", "Type your email above first, then tap Forgot password.");
+              return;
+            }
+            await forgot.mutateAsync(email.trim());
+            setForgotSent(true);
+          }}
+          disabled={forgot.isPending}
+          style={{ marginTop: 12, alignSelf: "center" }}
+        >
+          <Text style={{ color: "#6b7280", fontSize: 14, fontWeight: "500" }}>
+            {forgot.isPending ? "Sending..." : "Forgot password?"}
+          </Text>
+        </TouchableOpacity>
+      )}
+
+      {forgotSent && (
+        <Text
+          style={{
+            marginTop: 12,
+            textAlign: "center",
+            color: "#16a34a",
+            fontSize: 14,
+          }}
+        >
+          Reset link sent! Check your email.
+        </Text>
+      )}
     </KeyboardAvoidingView>
   );
 }

@@ -168,12 +168,23 @@ export default function LoginSignupPage() {
               </button>
             </form>
 
+            {mode === "login" && (
+              <div className="mt-3 text-right">
+                <Link
+                  href="/forgot-password"
+                  className="text-sm font-medium text-gray-500 hover:text-gray-800 transition"
+                >
+                  Forgot password?
+                </Link>
+              </div>
+            )}
+
             <div className="mt-4 flex items-center justify-between">
               <Link
                 href="/"
                 className="text-sm font-medium text-gray-500 hover:text-gray-800 transition"
               >
-                ← Back to home
+                &larr; Back to home
               </Link>
 
               <Link

@@ -8,11 +8,17 @@ from django.views.decorators.csrf import ensure_csrf_cookie
 from django.utils.decorators import method_decorator
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
+from django.contrib.auth.tokens import default_token_generator
+from django.core.mail import send_mail
+from django.conf import settings as django_settings
 from django.http import HttpResponse
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.utils.encoding import force_bytes, force_str
 from rest_framework import serializers, status
 import csv
 import io
 import json
+import logging
 import zipfile
 import uuid
 from datetime import datetime
@@ -21,6 +27,8 @@ from billing.models import Subscription
 from .models import Profile
 from .serializers import UserSerializer, ProfileSerializer
 from django.db import transaction
+
+logger = logging.getLogger(__name__)
 
 
 class AuthRateThrottle(AnonRateThrottle):
@@ -296,3 +304,141 @@ class ExportDataView(APIView):
         resp = HttpResponse(content, content_type="application/json")
         resp["Content-Disposition"] = 'attachment; filename="mullet-export.json"'
         return resp
+
+
+class ForgotPasswordView(APIView):
+    """POST /api/auth/forgot-password/ — send a password reset email."""
+
+    authentication_classes = []
+    permission_classes = [AllowAny]
+    throttle_classes = [AuthRateThrottle]
+
+    def post(self, request):
+        email = (request.data.get("email") or "").strip().lower()
+        # Always return 200 to avoid email enumeration
+        success_msg = {
+            "detail": "If an account with that email exists, a reset link has been sent."
+        }
+
+        if not email:
+            return Response(success_msg)
+
+        user = User.objects.filter(email__iexact=email).first()
+        if not user:
+            return Response(success_msg)
+
+        token = default_token_generator.make_token(user)
+        uid = urlsafe_base64_encode(force_bytes(user.pk))
+        reset_url = (
+            f"{django_settings.MULLET_FRONTEND_URL}"
+            f"/reset-password?uid={uid}&token={token}"
+        )
+
+        try:
+            send_mail(
+                subject="Reset your Mullet password",
+                message=(
+                    f"Hi,\n\n"
+                    f"We received a request to reset your password. "
+                    f"Click the link below to set a new one:\n\n"
+                    f"{reset_url}\n\n"
+                    f"This link expires in 1 hour. If you didn't request "
+                    f"this, you can safely ignore this email.\n\n"
+                    f"— Mullet"
+                ),
+                from_email=django_settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[user.email],
+                fail_silently=False,
+            )
+        except Exception:
+            logger.exception("Failed to send password reset email to %s", email)
+
+        return Response(success_msg)
+
+
+class ResetPasswordView(APIView):
+    """POST /api/auth/reset-password/ — reset password with uid + token."""
+
+    authentication_classes = []
+    permission_classes = [AllowAny]
+    throttle_classes = [AuthRateThrottle]
+
+    def post(self, request):
+        uid = request.data.get("uid", "")
+        token = request.data.get("token", "")
+        new_password = request.data.get("password", "")
+
+        if not uid or not token or not new_password:
+            return Response(
+                {"detail": "uid, token, and password are required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            user_id = force_str(urlsafe_base64_decode(uid))
+            user = User.objects.get(pk=user_id)
+        except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+            return Response(
+                {"detail": "Invalid or expired reset link."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if not default_token_generator.check_token(user, token):
+            return Response(
+                {"detail": "Invalid or expired reset link."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        user.set_password(new_password)
+        user.save()
+
+        # Invalidate all existing tokens so old sessions are logged out
+        Token.objects.filter(user=user).delete()
+
+        return Response({"detail": "Password has been reset successfully."})
+
+
+class DeleteAccountView(APIView):
+    """POST /api/auth/delete-account/ — permanently delete user account."""
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        password = request.data.get("password", "")
+
+        if not password:
+            return Response(
+                {"detail": "Password is required to confirm account deletion."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if not request.user.check_password(password):
+            return Response(
+                {"detail": "Incorrect password."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        user = request.user
+
+        # Cancel Stripe subscription if active
+        try:
+            sub = user.subscription
+            if sub.stripe_subscription_id:
+                import stripe
+                stripe.api_key = django_settings.STRIPE_SECRET_KEY
+                try:
+                    stripe.Subscription.cancel(sub.stripe_subscription_id)
+                except Exception:
+                    logger.exception(
+                        "Failed to cancel Stripe subscription for user %s", user.id
+                    )
+        except Subscription.DoesNotExist:
+            pass
+
+        # Delete user — cascades to Profile, Subscription, and all related data
+        user.delete()
+
+        return Response(
+            {"detail": "Your account has been permanently deleted."},
+            status=status.HTTP_200_OK,
+        )

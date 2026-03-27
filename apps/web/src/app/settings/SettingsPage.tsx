@@ -1,18 +1,27 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useMe } from "@shared/api/hooks/auth/useMe";
 import { useUpdateProfile } from "@shared/api/hooks/auth/useUpdateProfile";
+import { useDeleteAccount } from "@shared/api/hooks/auth/useDeleteAccount";
 import api from "@shared/api/axios";
 
 export default function SettingsPage() {
+  const router = useRouter();
   const me = useMe();
   const updateProfile = useUpdateProfile();
+  const deleteAccount = useDeleteAccount();
 
   const [displayName, setDisplayName] = useState("");
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [saved, setSaved] = useState(false);
+
+  // Delete account state
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deletePassword, setDeletePassword] = useState("");
+  const [deleteTyped, setDeleteTyped] = useState("");
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -164,6 +173,104 @@ export default function SettingsPage() {
             <ExportButton format="json" label="Download JSON" />
             <ExportButton format="csv" label="Download CSV (zip)" />
           </div>
+        </div>
+
+        {/* ── Delete Account ── */}
+        <div className="mt-12 border-t border-red-200 pt-8 pb-12">
+          <h2 className="text-lg font-semibold tracking-tight text-red-700 mb-1">
+            Delete Account
+          </h2>
+          <p className="text-sm text-neutral-500 mb-5">
+            Permanently delete your account and all associated data. This action
+            cannot be undone.
+          </p>
+
+          {!showDeleteConfirm ? (
+            <button
+              type="button"
+              onClick={() => setShowDeleteConfirm(true)}
+              className="rounded-md border border-red-300 bg-white px-4 py-2.5 text-sm font-medium text-red-700 transition hover:bg-red-50"
+            >
+              Delete my account
+            </button>
+          ) : (
+            <div className="rounded-lg border border-red-200 bg-red-50 p-5 space-y-4">
+              <p className="text-sm font-medium text-red-800">
+                This will permanently delete your account, all modes, entities,
+                time entries, and cancel any active subscription. This cannot be
+                undone.
+              </p>
+
+              <div>
+                <label className="block text-sm font-medium text-red-700 mb-1">
+                  Enter your password to confirm
+                </label>
+                <input
+                  type="password"
+                  value={deletePassword}
+                  onChange={(e) => setDeletePassword(e.target.value)}
+                  placeholder="Password"
+                  className="w-full border border-red-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-red-500"
+                  autoComplete="current-password"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-red-700 mb-1">
+                  Type <span className="font-bold">DELETE</span> to confirm
+                </label>
+                <input
+                  type="text"
+                  value={deleteTyped}
+                  onChange={(e) => setDeleteTyped(e.target.value)}
+                  placeholder="DELETE"
+                  className="w-full border border-red-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-red-500"
+                />
+              </div>
+
+              {deleteAccount.isError && (
+                <p className="text-sm text-red-600">
+                  {(deleteAccount.error as any)?.response?.data?.detail ??
+                    "Failed to delete account."}
+                </p>
+              )}
+
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowDeleteConfirm(false);
+                    setDeletePassword("");
+                    setDeleteTyped("");
+                  }}
+                  className="rounded-md border border-neutral-300 bg-white px-4 py-2 text-sm font-medium text-neutral-700 transition hover:bg-neutral-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={
+                    deleteTyped !== "DELETE" ||
+                    !deletePassword ||
+                    deleteAccount.isPending
+                  }
+                  onClick={async () => {
+                    try {
+                      await deleteAccount.mutateAsync(deletePassword);
+                      router.replace("/login");
+                    } catch {
+                      // error shown in UI
+                    }
+                  }}
+                  className="rounded-md bg-red-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-800 disabled:opacity-50"
+                >
+                  {deleteAccount.isPending
+                    ? "Deleting..."
+                    : "Permanently delete account"}
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </main>
