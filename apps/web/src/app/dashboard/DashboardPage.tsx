@@ -384,7 +384,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Main Section */}
-      <section className="max-w-4xl mx-auto p-8">
+      <section className="max-w-4xl mx-auto p-4 sm:p-6 md:p-8">
         <div className="flex justify-between items-center mb-14">
           <PageTitle />
           <div className="flex items-center gap-2">

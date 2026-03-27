@@ -102,7 +102,7 @@ export default function GoalWindow({
     setDueDate(goal.dueDate ?? "");
     setDueTime(goal.dueTime ?? "");
     setAssignedToId(goal.assignedToId ?? null);
-  }, [goal]);
+  }, [goal?.id]);
 
   const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();

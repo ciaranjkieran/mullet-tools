@@ -127,20 +127,20 @@ export default function ProjectRendererCalendar({
               <PencilSquareIcon className="h-4 w-4 text-gray-400 opacity-0 group-hover/edit:opacity-100 transition-opacity" />
             </div>
             {project.dueTime && (
-              <p className="text-xs text-black-500">
+              <p className="text-xs sm:text-sm text-black-500">
                 Due: {`at ${project.dueTime.slice(0, 5)}`}
               </p>
             )}
 
             {breadcrumb && (
-              <p className="text-xs text-gray-700 font-medium mt-1">
+              <p className="text-xs sm:text-sm text-gray-700 font-medium mt-1">
                 {breadcrumb}
               </p>
             )}
 
             {showModeTitle && mode?.title && (
               <p
-                className="text-xs font-medium mt-1"
+                className="text-xs sm:text-sm font-medium mt-1"
                 style={{ color: modeColor }}
               >
                 {mode.title}
@@ -148,7 +148,7 @@ export default function ProjectRendererCalendar({
             )}
 
             {computedOverdueLabel && (
-              <p className="text-xs text-red-900 font-medium">
+              <p className="text-xs sm:text-sm text-red-900 font-medium">
                 {computedOverdueLabel}
               </p>
             )}

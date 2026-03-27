@@ -101,7 +101,7 @@ export default function TaskWindow({
     setProjectId(task.projectId ?? null);
     setGoalId(task.goalId ?? null);
     setAssignedToId(task.assignedToId ?? null);
-  }, [task]);
+  }, [task?.id]);
 
   function normalizeTaskAncestors(
     mid: number | null | undefined,

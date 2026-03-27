@@ -114,7 +114,7 @@ export default function MilestoneWindow({
     setDueDate(milestone.dueDate ?? "");
     setDueTime(milestone.dueTime ?? "");
     setAssignedToId(milestone.assignedToId ?? null);
-  }, [milestone]);
+  }, [milestone?.id]);
 
   function normalizeAncestors(
     parentIdIn: number | null | undefined,

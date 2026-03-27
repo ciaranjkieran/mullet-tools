@@ -3,6 +3,12 @@ import "../styles/globals.css";
 import { ClientProviders } from "./ClientProviders";
 import NavGate from "@/components/common/NavGate";
 
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+};
+
 export const metadata = {
   title: "Mullet",
   description: "Compartmentalize your life with modes.",

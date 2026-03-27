@@ -102,7 +102,7 @@ export default function EditProjectTemplateWindow({
             e.preventDefault();
             contentRef.current?.focus();
           }}
-          className="fixed z-50 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[95vw] max-w-3xl bg-white rounded-xl shadow-lg p-8 max-h-[90vh] overflow-y-auto"
+          className="fixed z-50 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[95vw] max-w-3xl bg-white rounded-xl shadow-lg p-4 sm:p-6 md:p-8 max-h-[90vh] overflow-y-auto"
         >
           {/* Header */}
           <div className="flex items-start gap-3 mb-6">
