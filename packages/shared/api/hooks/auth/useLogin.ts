@@ -23,7 +23,6 @@ export function useLogin() {
       }
       const { token, ...user } = data;
       qc.setQueryData(["me"], user);
-      qc.invalidateQueries({ queryKey: ["me"] });
     },
   });
 }
