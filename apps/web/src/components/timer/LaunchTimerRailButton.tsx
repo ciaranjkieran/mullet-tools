@@ -122,22 +122,16 @@ export default function LaunchTimerRailButton(props: Props) {
       }
     }
 
-    // Set store immediately so the timer view renders
-    setViewType("timer");
-
-    queueMicrotask(() => {
-      useTimerUIStore.getState().setLaunchSelectionIntent({
-        modeId: norm.modeId!,
-        goalId: norm.goalId ?? null,
-        projectId: norm.projectId ?? null,
-        milestoneId: norm.milestoneId ?? null,
-        taskId: norm.taskId ?? null,
-      });
-
-      const ui2 = useTimerUIStore.getState();
-      ui2.setClockType(desiredClock);
-      if (ui2.setClockTypeIntent) ui2.setClockTypeIntent(desiredClock);
+    // Set intent BEFORE switching view so TimerView sees it on mount
+    useTimerUIStore.getState().setLaunchSelectionIntent({
+      modeId: norm.modeId!,
+      goalId: norm.goalId ?? null,
+      projectId: norm.projectId ?? null,
+      milestoneId: norm.milestoneId ?? null,
+      taskId: norm.taskId ?? null,
     });
+
+    setViewType("timer");
 
     onAfterLaunch?.();
 
