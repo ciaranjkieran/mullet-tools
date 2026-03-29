@@ -140,7 +140,6 @@ export default function LaunchTimerRailButton(props: Props) {
       const params = new URLSearchParams(window.location.search);
       params.set("view", "timer");
       window.history.replaceState(window.history.state, "", `/dashboard?${params.toString()}`);
-      console.log("[LaunchTimer] deferred URL update:", window.location.search);
     }, 0);
   };
 

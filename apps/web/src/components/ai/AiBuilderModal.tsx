@@ -433,6 +433,96 @@ function TreeNode({
 }
 
 // ─────────────────────────────────────────────
+// Building animation (matches mobile)
+// ─────────────────────────────────────────────
+
+const BUILD_PHASES = [
+  "Understanding your request...",
+  "Analysing structure...",
+  "Structuring changes...",
+  "Finalizing plan...",
+];
+
+function BuildingIndicator({
+  modeColor,
+  streamingText,
+}: {
+  modeColor: string;
+  streamingText?: string;
+}) {
+  const [phase, setPhase] = useState(0);
+  const [activeIcon, setActiveIcon] = useState(0);
+
+  useEffect(() => {
+    const phaseInterval = setInterval(
+      () => setPhase((p) => (p + 1) % BUILD_PHASES.length),
+      3000
+    );
+    const iconInterval = setInterval(
+      () => setActiveIcon((i) => (i + 1) % 4),
+      600
+    );
+    return () => {
+      clearInterval(phaseInterval);
+      clearInterval(iconInterval);
+    };
+  }, []);
+
+  const icons = [
+    <svg key="goal" width={20} height={20} viewBox="0 0 24 24" style={{ color: modeColor }}><GoalTarget /></svg>,
+    <Folder key="project" size={20} style={{ color: modeColor }} />,
+    <span
+      key="milestone"
+      style={{
+        display: "inline-block",
+        width: 0,
+        height: 0,
+        borderLeft: "8px solid transparent",
+        borderRight: "8px solid transparent",
+        borderBottom: `14px solid ${modeColor}`,
+      }}
+    />,
+    <svg key="task" width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={modeColor} strokeWidth={2}>
+      <rect x="3" y="3" width="18" height="18" rx="2" />
+      <path d="M9 12l2 2 4-4" />
+    </svg>,
+  ];
+
+  return (
+    <div className="flex flex-col items-center justify-center h-full text-gray-400 gap-3">
+      <div
+        className="flex items-center justify-center gap-4 rounded-xl px-6 py-4"
+        style={{ backgroundColor: modeColor + "08", border: `1px solid ${modeColor}20` }}
+      >
+        {icons.map((icon, i) => (
+          <div
+            key={i}
+            className="transition-all duration-300"
+            style={{
+              opacity: i === activeIcon ? 1 : 0.3,
+              transform: i === activeIcon ? "scale(1.3)" : "scale(0.85)",
+            }}
+          >
+            {icon}
+          </div>
+        ))}
+      </div>
+      <p
+        className="text-sm font-medium transition-opacity duration-150"
+        style={{ color: "#6b7280" }}
+      >
+        {BUILD_PHASES[phase]}
+      </p>
+      {streamingText && (
+        <pre className="mt-2 text-xs text-gray-400 max-h-32 overflow-y-auto w-full px-4 whitespace-pre-wrap break-words font-mono">
+          {streamingText}
+        </pre>
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
 // Main modal
 // ─────────────────────────────────────────────
 
@@ -592,18 +682,7 @@ export default function AiBuilderModal({ isOpen, onClose }: Props) {
           )}
 
           {buildPending && (
-            <div className="flex flex-col items-center justify-center h-full text-gray-400 gap-2">
-              <Loader2
-                className="w-6 h-6 animate-spin"
-                style={{ color: modeColor }}
-              />
-              <p className="text-sm">Generating...</p>
-              {streamingText && (
-                <pre className="mt-2 text-xs text-gray-400 max-h-32 overflow-y-auto w-full px-4 whitespace-pre-wrap break-words font-mono">
-                  {streamingText}
-                </pre>
-              )}
-            </div>
+            <BuildingIndicator modeColor={modeColor} streamingText={streamingText} />
           )}
 
           {buildError && (

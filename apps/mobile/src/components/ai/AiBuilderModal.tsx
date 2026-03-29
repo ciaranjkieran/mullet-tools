@@ -48,7 +48,7 @@ const OP_COLORS: Record<string, { bg: string; text: string; label: string }> = {
 
 const BUILD_PHASES = [
   "Understanding your request...",
-  "Analyzing mode structure...",
+  "Analysing structure...",
   "Structuring changes...",
   "Finalizing plan...",
 ];

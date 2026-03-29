@@ -108,9 +108,6 @@ export default function DashboardPage() {
       const mapped: View =
         view === "dashboard" ? "home" : (view as View);
 
-      console.log("[DashboardPage goView] called with:", view, "→ mapped:", mapped);
-      console.log("[DashboardPage goView] current URL:", window.location.search);
-
       try {
         setViewType(mapped as any);
       } catch {
@@ -120,7 +117,6 @@ export default function DashboardPage() {
       const params = new URLSearchParams(window.location.search);
       params.set("view", mapped);
       const nextUrl = `/dashboard?${params.toString()}`;
-      console.log("[DashboardPage goView] replaceState →", nextUrl);
       window.history.replaceState(window.history.state, "", nextUrl);
     },
     [searchParams, router, setViewType]
@@ -129,7 +125,6 @@ export default function DashboardPage() {
   // Register goView on the store so external components (e.g. LaunchTimerRailButton) can navigate
   const setGoView = useViewStore((s) => s.setGoView);
   useEffect(() => {
-    console.log("[DashboardPage] registering goView on store");
     setGoView(goView as (view: ViewType) => void);
     return () => setGoView(null);
   }, [goView, setGoView]);
