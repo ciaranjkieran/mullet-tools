@@ -1,13 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
-import { useGoalStore } from "../../../store/useGoalStore";
 import { Goal } from "../../../types/Goal";
 import { mapGoalFromApi } from "../../mappers/goalMapper";
-import { useEffect } from "react";
-import api from "../../axios"; // ✅ same api instance as useMe/useLogin
+import api from "../../axios";
 
 export const useGoals = () => {
-  const setGoals = useGoalStore((s) => s.setGoals);
-
   const query = useQuery<Goal[]>({
     queryKey: ["goals"],
     queryFn: async () => {
@@ -15,10 +11,6 @@ export const useGoals = () => {
       return res.data.map(mapGoalFromApi);
     },
   });
-
-  useEffect(() => {
-    if (query.data) setTimeout(() => setGoals(query.data!), 0);
-  }, [query.data, setGoals]);
 
   return query;
 };

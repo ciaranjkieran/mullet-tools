@@ -8,6 +8,7 @@ import { StatusBar } from "expo-status-bar";
 import * as NavigationBar from "expo-navigation-bar";
 import AppNavigator from "./src/navigation/AppNavigator";
 import ErrorBoundary from "./src/components/ErrorBoundary";
+import { setupCacheSync } from "@shared/api/hooks/syncStoresToCache";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -17,6 +18,8 @@ const queryClient = new QueryClient({
     },
   },
 });
+
+setupCacheSync(queryClient);
 
 export default function App() {
   useEffect(() => {

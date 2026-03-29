@@ -3,13 +3,10 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { mapTaskFromApi } from "@shared/api/mappers/taskMapper";
 import { createTask } from "./tasks";
-import { useEffect } from "react";
-import { useTaskStore } from "@shared/store/useTaskStore";
 import { Task } from "../../../types/Task";
 import api from "../../axios";
 
 export const useTasks = () => {
-  const setTasks = useTaskStore((s) => s.setTasks);
   const queryClient = useQueryClient();
 
   const query = useQuery<Task[], Error>({
@@ -20,12 +17,8 @@ export const useTasks = () => {
     },
   });
 
-  useEffect(() => {
-    if (query.data) setTimeout(() => setTasks(query.data!), 0);
-  }, [query.data, setTasks]);
-
   const mutation = useMutation({
-    mutationFn: createTask, // ensure createTask uses `api` with credentials
+    mutationFn: createTask,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["tasks"] }),
   });
 
