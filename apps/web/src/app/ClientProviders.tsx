@@ -4,8 +4,56 @@
 import "../lib/api/initApi"; // configures shared axios for web — must run before any API calls
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useGlobalOutsideDeselect } from "../lib/hooks/useGlobalOutsideDeselect";
+
+// Error boundary prevents blank screen on React errors (#300, #310)
+class AppErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { hasError: boolean }
+> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: Error) {
+    console.error("[AppErrorBoundary]", error.message);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "100vh", gap: 16 }}>
+          <p style={{ fontSize: 16, color: "#6b7280" }}>Something went wrong.</p>
+          <button
+            onClick={() => {
+              this.setState({ hasError: false });
+              window.location.reload();
+            }}
+            style={{
+              padding: "8px 20px",
+              borderRadius: 8,
+              backgroundColor: "#3b82f6",
+              color: "white",
+              border: "none",
+              cursor: "pointer",
+              fontSize: 14,
+              fontWeight: 600,
+            }}
+          >
+            Reload
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 export function ClientProviders({ children }: { children: React.ReactNode }) {
   const [client] = useState(
@@ -57,5 +105,9 @@ export function ClientProviders({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  return <QueryClientProvider client={client}>{children}</QueryClientProvider>;
+  return (
+    <AppErrorBoundary>
+      <QueryClientProvider client={client}>{children}</QueryClientProvider>
+    </AppErrorBoundary>
+  );
 }
