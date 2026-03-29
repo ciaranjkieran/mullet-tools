@@ -3,10 +3,15 @@
 
 import "../lib/api/initApi"; // configures shared axios for web — must run before any API calls
 
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider, notifyManager } from "@tanstack/react-query";
 import React, { useState, useEffect, useRef } from "react";
+import ReactDOM from "react-dom";
 import { useGlobalOutsideDeselect } from "../lib/hooks/useGlobalOutsideDeselect";
 import { setupCacheSync } from "@shared/api/hooks/syncStoresToCache";
+
+// Tell React Query to batch state updates through React's scheduler
+// This prevents #300 errors when query updates trigger store syncs
+notifyManager.setScheduler(requestAnimationFrame);
 
 // Error boundary prevents blank screen on React errors (#300, #310)
 class AppErrorBoundary extends React.Component<
