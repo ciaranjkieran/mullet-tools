@@ -11,7 +11,9 @@ import { setupCacheSync } from "@shared/api/hooks/syncStoresToCache";
 
 // Tell React Query to batch state updates through React's scheduler
 // This prevents #300 errors when query updates trigger store syncs
-notifyManager.setScheduler(requestAnimationFrame);
+if (typeof window !== "undefined") {
+  notifyManager.setScheduler(requestAnimationFrame);
+}
 
 // Error boundary prevents blank screen on React errors (#300, #310)
 class AppErrorBoundary extends React.Component<
