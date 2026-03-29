@@ -13,7 +13,6 @@ export function ClientProviders({ children }: { children: React.ReactNode }) {
       new QueryClient({
         defaultOptions: {
           queries: {
-            staleTime: 30_000,          // 30 s — skip refetch if data is fresh
             refetchOnWindowFocus: false, // don't refetch every tab switch
           },
         },
