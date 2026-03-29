@@ -33,10 +33,6 @@ import { useHomeFocusStore } from "@/lib/store/useNavFocusStore";
 
 import { useViewStore, type ViewType } from "@shared/store/useViewStore";
 import { useModeStore } from "@shared/store/useModeStore";
-import { useTaskStore } from "@shared/store/useTaskStore";
-import { useMilestoneStore } from "@shared/store/useMilestoneStore";
-import { useProjectStore } from "@shared/store/useProjectStore";
-import { useGoalStore } from "@shared/store/useGoalStore";
 
 import { useGoals } from "@shared/api/hooks/goals/useGoals";
 import { useMilestones } from "@shared/api/hooks/milestones/useMilestones";
@@ -72,12 +68,13 @@ function isView(v: string | null): v is View {
 }
 
 export default function DashboardPage() {
-  // Load data
-  useModes();
-  useTasks();
-  useMilestones();
-  useProjects();
-  useGoals();
+  // Read data directly from React Query — avoids double-subscription with
+  // Zustand stores that caused React error #300 under React 19 concurrent rendering.
+  const { data: modes = [] } = useModes();
+  const { data: tasks = [] } = useTasks();
+  const { data: milestones = [] } = useMilestones();
+  const { data: projects = [] } = useProjects();
+  const { data: goals = [] } = useGoals();
 
   // Router + URL state
   const router = useRouter();
@@ -137,11 +134,6 @@ export default function DashboardPage() {
   const setSelectedMode = useModeStore((s) => s.setSelectedMode);
 
   const activeMode = selectedMode === "All" ? null : selectedMode;
-  const modes = useModeStore((s) => s.modes);
-  const tasks = useTaskStore((s) => s.tasks);
-  const milestones = useMilestoneStore((s) => s.milestones);
-  const projects = useProjectStore((s) => s.projects);
-  const goals = useGoalStore((s) => s.goals);
 
   const {
     setIsTaskDialogOpen,
