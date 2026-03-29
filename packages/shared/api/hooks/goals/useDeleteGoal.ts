@@ -8,9 +8,13 @@ export function useDeleteGoal() {
 
   return useMutation({
     mutationFn: async (goalId: number) => {
-      useGoalStore.getState().deleteGoal(goalId);
       await ensureCsrf();
       await api.delete(`/goals/${goalId}/`);
+    },
+    onMutate: (goalId) => {
+      const prev = useGoalStore.getState().goals;
+      useGoalStore.getState().deleteGoal(goalId);
+      return { prev };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["goals"] });
@@ -18,7 +22,8 @@ export function useDeleteGoal() {
       queryClient.invalidateQueries({ queryKey: ["milestones"] });
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
     },
-    onError: () => {
+    onError: (_err, _goalId, ctx) => {
+      if (ctx?.prev) useGoalStore.setState({ goals: ctx.prev });
       queryClient.invalidateQueries({ queryKey: ["goals"] });
     },
   });

@@ -8,15 +8,20 @@ export function useDeleteMilestone() {
 
   return useMutation({
     mutationFn: async (milestoneId: number) => {
-      useMilestoneStore.getState().deleteMilestone(milestoneId);
       await ensureCsrf();
       await api.delete(`/milestones/${milestoneId}/`);
+    },
+    onMutate: (milestoneId) => {
+      const prev = useMilestoneStore.getState().milestones;
+      useMilestoneStore.getState().deleteMilestone(milestoneId);
+      return { prev };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["milestones"] });
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
     },
-    onError: () => {
+    onError: (_err, _milestoneId, ctx) => {
+      if (ctx?.prev) useMilestoneStore.setState({ milestones: ctx.prev });
       queryClient.invalidateQueries({ queryKey: ["milestones"] });
     },
   });

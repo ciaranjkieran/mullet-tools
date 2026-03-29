@@ -8,14 +8,17 @@ export function useDeleteTask() {
 
   return useMutation({
     mutationFn: async (taskId: number) => {
-      // Optimistically remove from store immediately
-      useTaskStore.getState().deleteTask(taskId);
       await ensureCsrf();
       await api.delete(`/tasks/${taskId}/`);
     },
+    onMutate: (taskId) => {
+      const prev = useTaskStore.getState().tasks;
+      useTaskStore.getState().deleteTask(taskId);
+      return { prev };
+    },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["tasks"] }),
-    onError: () => {
-      // Refetch on failure to restore state
+    onError: (_err, _taskId, ctx) => {
+      if (ctx?.prev) useTaskStore.setState({ tasks: ctx.prev });
       qc.invalidateQueries({ queryKey: ["tasks"] });
     },
   });
