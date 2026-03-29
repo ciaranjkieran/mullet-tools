@@ -11,19 +11,22 @@ export function buildMilestoneTree(
 ): NestedMilestone[] {
   return milestones
     .filter((m) => {
-      const matchesParent = m.parentId === parentId;
-      const matchesMode = m.modeId === modeId;
+      if (m.parentId !== parentId) return false;
+      if (m.modeId !== modeId) return false;
 
-      const matchesProject =
-        projectId === undefined || m.projectId === projectId;
+      // Only filter by projectId/goalId at the root level.
+      // Children inherit lineage from their parent milestone.
+      if (parentId === null || parentId === undefined) {
+        if (projectId !== undefined && m.projectId !== projectId) return false;
+        if (goalId !== undefined && m.goalId !== goalId) return false;
+      }
 
-      const matchesGoal = goalId === undefined || m.goalId === goalId;
-
-      return matchesParent && matchesMode && matchesProject && matchesGoal;
+      return true;
     })
     .sort((a, b) => a.position - b.position)
     .map((m) => ({
       ...m,
-      children: buildMilestoneTree(milestones, modeId, projectId, goalId, m.id),
+      // Children are found by parentId only — no project/goal filter
+      children: buildMilestoneTree(milestones, modeId, undefined, undefined, m.id),
     }));
 }

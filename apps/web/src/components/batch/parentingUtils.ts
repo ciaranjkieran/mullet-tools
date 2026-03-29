@@ -4,8 +4,8 @@ import type { Project } from "@shared/types/Project";
 import type { Goal } from "@shared/types/Goal";
 
 /* ---------------- Configurable limits ---------------- */
-const MILESTONE_MAX_DEPTH = 3;
-const PROJECT_MAX_DEPTH = 3;
+const MILESTONE_MAX_DEPTH = 5;
+const PROJECT_MAX_DEPTH = 5;
 
 /* ---------------- Types ---------------- */
 type ParentOption = { id: number; type: ParentType; title: string };

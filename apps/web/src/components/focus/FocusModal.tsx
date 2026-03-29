@@ -16,11 +16,7 @@ import { buildMilestoneTree } from "@/components/entities/milestones/utils/Miles
 import ProjectList from "@/components/entities/projects/containers/dashboard/ProjectList";
 import { buildProjectTree } from "@/components/entities/projects/utils/buildProjectTree";
 
-import {
-  projectEffectiveGoalId,
-  milestoneEffectiveGoalId,
-  milestoneEffectiveProjectId,
-} from "@shared/lineage/effective";
+import { projectEffectiveGoalId } from "@shared/lineage/effective";
 
 import type { Goal } from "@shared/types/Goal";
 import type { Project } from "@shared/types/Project";
@@ -82,11 +78,6 @@ function FocusModalContent({
     () => new Map<number, Project>(projects.map((p) => [p.id, p])),
     [projects]
   );
-  const milestonesById = useMemo(
-    () => new Map<number, Milestone>(milestones.map((m) => [m.id, m])),
-    [milestones]
-  );
-
   // Build children based on entity type
   const { childTasks, milestoneTree, projectTree } = useMemo(() => {
     if (entityType === "goal") {
@@ -96,14 +87,7 @@ function FocusModalContent({
         (t) => t.goalId === goal.id && t.milestoneId == null && t.projectId == null
       );
 
-      const rootMs = milestones.filter((m) => {
-        if (m.parentId != null) return false;
-        const effProj = milestoneEffectiveProjectId(m.id, milestonesById);
-        if (effProj != null) return false;
-        const effGoal = milestoneEffectiveGoalId(m.id, milestonesById, projectsById);
-        return effGoal === goal.id;
-      });
-      const mt = buildMilestoneTree(rootMs, modeId, undefined, goal.id);
+      const mt = buildMilestoneTree(milestones, modeId, undefined, goal.id);
 
       const childProjects = projects.filter(
         (p) => projectEffectiveGoalId(p.id, projectsById) === goal.id
@@ -120,10 +104,7 @@ function FocusModalContent({
         (t) => t.projectId === proj.id && !t.milestoneId
       );
 
-      const projMs = milestones.filter(
-        (m) => m.projectId === proj.id && !m.parentId
-      );
-      const mt = buildMilestoneTree(projMs, modeId, proj.id);
+      const mt = buildMilestoneTree(milestones, modeId, proj.id);
 
       const childProjects = projects.filter((p) => p.parentId === proj.id);
       const pt = buildProjectTree(childProjects, proj.id);
@@ -136,11 +117,10 @@ function FocusModalContent({
 
     const ct = tasks.filter((t) => t.milestoneId === ms.id);
 
-    const childMs = milestones.filter((m) => m.parentId === ms.id);
-    const mt = buildMilestoneTree(childMs, modeId, ms.projectId ?? undefined, ms.goalId ?? undefined, ms.id);
+    const mt = buildMilestoneTree(milestones, modeId, ms.projectId ?? undefined, ms.goalId ?? undefined, ms.id);
 
     return { childTasks: ct, milestoneTree: mt, projectTree: [] as ReturnType<typeof buildProjectTree> };
-  }, [entityType, entity, tasks, milestones, projects, modeId, projectsById, milestonesById]);
+  }, [entityType, entity, tasks, milestones, projects, modeId, projectsById]);
 
   // Entity type icon
   const entityIcon = entityType === "goal" ? (
