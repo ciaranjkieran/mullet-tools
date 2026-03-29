@@ -9,10 +9,11 @@ import ReactDOM from "react-dom";
 import { useGlobalOutsideDeselect } from "../lib/hooks/useGlobalOutsideDeselect";
 import { setupCacheSync } from "@shared/api/hooks/syncStoresToCache";
 
-// Tell React Query to batch state updates through React's scheduler
-// This prevents #300 errors when query updates trigger store syncs
+// Tell React Query to batch state updates via setTimeout instead of
+// synchronously — requestAnimationFrame can fire in the same frame as
+// React's scheduler, so use setTimeout(0) to guarantee a separate macrotask.
 if (typeof window !== "undefined") {
-  notifyManager.setScheduler(requestAnimationFrame);
+  notifyManager.setScheduler((cb) => setTimeout(cb, 0));
 }
 
 // Error boundary prevents blank screen on React errors (#300, #310)
@@ -77,10 +78,12 @@ export function ClientProviders({ children }: { children: React.ReactNode }) {
 
   // Sync RQ cache → Zustand stores outside React's render cycle
   const syncSetup = useRef(false);
-  if (!syncSetup.current) {
-    setupCacheSync(client);
-    syncSetup.current = true;
-  }
+  useEffect(() => {
+    if (!syncSetup.current) {
+      setupCacheSync(client);
+      syncSetup.current = true;
+    }
+  }, [client]);
 
   // Mount the outside‑click + ESC deselect globally
   useGlobalOutsideDeselect({

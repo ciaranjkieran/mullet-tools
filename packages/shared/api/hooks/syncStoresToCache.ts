@@ -40,14 +40,17 @@ export function setupCacheSync(queryClient: QueryClient) {
 
     if (!pending) {
       pending = true;
-      requestAnimationFrame(() => {
+      // Use setTimeout(0) instead of requestAnimationFrame — rAF can fire
+      // in the same frame as React's scheduler work, but setTimeout(0)
+      // guarantees a separate macrotask that can't overlap with rendering.
+      setTimeout(() => {
         const batch = queued;
         queued = new Map();
         pending = false;
         for (const [k, data] of batch) {
           SYNC_MAP[k](data);
         }
-      });
+      }, 0);
     }
   });
 }
