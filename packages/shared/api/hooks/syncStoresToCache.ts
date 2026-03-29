@@ -24,6 +24,8 @@ const SYNC_MAP: Record<string, (data: any) => void> = {
 
 export function setupCacheSync(queryClient: QueryClient) {
   const cache = queryClient.getQueryCache();
+  let pending = false;
+  let queued = new Map<string, any>();
 
   cache.subscribe((event) => {
     if (event.type !== "updated" || event.action.type !== "success") return;
@@ -31,9 +33,21 @@ export function setupCacheSync(queryClient: QueryClient) {
     const key = event.query.queryKey;
     if (!Array.isArray(key) || key.length !== 1) return;
 
-    const syncFn = SYNC_MAP[key[0] as string];
-    if (syncFn && event.query.state.data) {
-      syncFn(event.query.state.data);
+    const name = key[0] as string;
+    if (!(name in SYNC_MAP) || !event.query.state.data) return;
+
+    queued.set(name, event.query.state.data);
+
+    if (!pending) {
+      pending = true;
+      requestAnimationFrame(() => {
+        const batch = queued;
+        queued = new Map();
+        pending = false;
+        for (const [k, data] of batch) {
+          SYNC_MAP[k](data);
+        }
+      });
     }
   });
 }
