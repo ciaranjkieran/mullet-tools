@@ -22,7 +22,7 @@ export function useLogin() {
         await handleTokenReceived(data.token);
       }
       const { token, ...user } = data;
-      qc.setQueryData(["me"], user);
+      setTimeout(() => qc.setQueryData(["me"], user), 0);
     },
   });
 }

@@ -17,7 +17,7 @@ export const useGoals = () => {
   });
 
   useEffect(() => {
-    if (query.data) setGoals(query.data);
+    if (query.data) setTimeout(() => setGoals(query.data!), 0);
   }, [query.data, setGoals]);
 
   return query;

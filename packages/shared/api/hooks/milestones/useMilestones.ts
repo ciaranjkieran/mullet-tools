@@ -17,7 +17,7 @@ export function useMilestones() {
   });
 
   useEffect(() => {
-    if (query.data) setMilestones(query.data);
+    if (query.data) setTimeout(() => setMilestones(query.data!), 0);
   }, [query.data, setMilestones]);
 
   return query;

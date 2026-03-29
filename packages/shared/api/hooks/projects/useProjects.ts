@@ -17,7 +17,7 @@ export function useProjects() {
   });
 
   useEffect(() => {
-    if (query.data) setProjects(query.data);
+    if (query.data) setTimeout(() => setProjects(query.data!), 0);
   }, [query.data, setProjects]);
 
   return query;

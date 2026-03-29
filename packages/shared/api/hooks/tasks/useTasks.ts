@@ -21,7 +21,7 @@ export const useTasks = () => {
   });
 
   useEffect(() => {
-    if (query.data) setTasks(query.data);
+    if (query.data) setTimeout(() => setTasks(query.data!), 0);
   }, [query.data, setTasks]);
 
   const mutation = useMutation({

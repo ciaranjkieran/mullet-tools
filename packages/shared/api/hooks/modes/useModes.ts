@@ -20,7 +20,7 @@ export function useModes() {
   });
 
   useEffect(() => {
-    if (query.data) setModes(query.data);
+    if (query.data) setTimeout(() => setModes(query.data!), 0);
   }, [query.data, setModes]);
 
   return query;
