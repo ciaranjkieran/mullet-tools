@@ -48,6 +48,15 @@ export default function GoalRendererDashboard({
   // avoid unused-var lint without changing the public API
   void mode;
 
+  // DEBUG: detect which field is the offending object causing React #300
+  if (goal) {
+    for (const [k, v] of Object.entries(goal)) {
+      if (v !== null && typeof v === "object" && !Array.isArray(v)) {
+        console.error(`[GoalRenderer] field "${k}" is an object:`, JSON.stringify(v));
+      }
+    }
+  }
+
   const { setGoalToEdit, setIsGoalDialogOpen } = useDialogStore();
   const { mutate: deleteGoal } = useDeleteGoal();
   const isTitle = variant === "title";
