@@ -568,22 +568,40 @@ function TreeNode({
 // Speech recognition hook
 // ─────────────────────────────────────────────
 
-type SpeechRecognitionInstance = InstanceType<
-  typeof window extends { SpeechRecognition: infer T }
-    ? T extends abstract new (...args: unknown[]) => unknown ? T : never
-    : never
-> & { continuous: boolean; interimResults: boolean; lang: string; start(): void; stop(): void; abort(): void; onresult: ((e: SpeechRecognitionEvent) => void) | null; onerror: ((e: Event & { error: string }) => void) | null; onend: (() => void) | null };
+interface SpeechRecognitionResult {
+  readonly isFinal: boolean;
+  readonly length: number;
+  [index: number]: { transcript: string };
+}
 
-type SpeechRecognitionEvent = Event & {
-  results: { [index: number]: { [index: number]: { transcript: string }; isFinal: boolean }; length: number };
-  resultIndex: number;
-};
+interface SpeechRecognitionResultList {
+  readonly length: number;
+  [index: number]: SpeechRecognitionResult;
+}
+
+interface SpeechRecognitionEvent extends Event {
+  readonly results: SpeechRecognitionResultList;
+  readonly resultIndex: number;
+}
+
+interface SpeechRecognitionInstance extends EventTarget {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  start(): void;
+  stop(): void;
+  abort(): void;
+  onresult: ((e: SpeechRecognitionEvent) => void) | null;
+  onerror: ((e: Event) => void) | null;
+  onend: (() => void) | null;
+}
 
 function getSpeechRecognition(): (new () => SpeechRecognitionInstance) | null {
   if (typeof window === "undefined") return null;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const w = window as any;
-  return w.SpeechRecognition || w.webkitSpeechRecognition || null;
+  return (w.SpeechRecognition || w.webkitSpeechRecognition || null) as
+    (new () => SpeechRecognitionInstance) | null;
 }
 
 function useSpeechToText(onTranscript: (text: string) => void) {
