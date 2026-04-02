@@ -162,7 +162,7 @@ export default function GoalRendererDashboard({
                 isTitle ? "text-lg md:text-2xl" : "text-base md:text-xl",
               )}
             >
-              {goal.title}
+              {typeof goal.title === "string" ? goal.title : String(goal.title ?? "")}
             </h3>
             {!isTitle && (
               <PencilSquareIcon className="h-4 w-4 text-gray-400 opacity-0 group-hover/edit:opacity-100 transition-opacity" />

@@ -149,7 +149,7 @@ export default function MilestoneRenderer({
                 isTitle ? "text-lg md:text-xl" : "text-sm md:text-base",
               )}
             >
-              {milestone.title}
+              {typeof milestone.title === "string" ? milestone.title : String(milestone.title ?? "")}
             </h3>
             {!isTitle && (
               <PencilSquareIcon className="h-4 w-4 text-gray-400 opacity-0 group-hover/edit:opacity-100 transition-opacity" />

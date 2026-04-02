@@ -78,7 +78,7 @@ export default function TaskRendererDashboard({
               }}
             >
               <span className="block w-full text-left text-[13px] md:text-sm font-semibold leading-tight break-words whitespace-normal">
-                {task.title}
+                {typeof task.title === "string" ? task.title : String(task.title ?? "")}
               </span>
               <PencilSquareIcon className="h-4 w-4 text-gray-400 opacity-0 group-hover/edit:opacity-100 transition-opacity flex-shrink-0" />
             </button>

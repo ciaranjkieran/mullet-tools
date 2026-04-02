@@ -41,6 +41,9 @@ export default function ProjectRenderer({
   variant,
   dragHandleProps,
 }: Props) {
+  if (typeof project?.title !== "string") {
+    console.error("[ProjectRenderer] non-string title detected:", JSON.stringify(project));
+  }
   const { setProjectToEdit, setIsProjectDialogOpen } = useDialogStore();
   const { mutate: deleteProject } = useDeleteProject();
   const isTitle = variant === "title";
@@ -144,7 +147,7 @@ export default function ProjectRenderer({
                 isTitle ? "text-lg md:text-xl" : "text-base md:text-lg",
               )}
             >
-              {project.title}
+              {typeof project.title === "string" ? project.title : String(project.title ?? "")}
             </h3>
             {!isTitle && (
               <PencilSquareIcon className="h-4 w-4 text-gray-400 opacity-0 group-hover/edit:opacity-100 transition-opacity" />
