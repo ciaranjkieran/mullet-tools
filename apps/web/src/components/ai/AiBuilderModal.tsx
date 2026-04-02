@@ -10,6 +10,8 @@ import {
   Loader2,
   ChevronRight,
   ChevronDown,
+  Mic,
+  MicOff,
 } from "lucide-react";
 import GoalIcon from "../entities/goals/UI/GoalIcon";
 import GoalTarget from "../entities/goals/UI/GoalTarget";
@@ -563,6 +565,90 @@ function TreeNode({
 }
 
 // ─────────────────────────────────────────────
+// Speech recognition hook
+// ─────────────────────────────────────────────
+
+type SpeechRecognitionInstance = InstanceType<
+  typeof window extends { SpeechRecognition: infer T }
+    ? T extends abstract new (...args: unknown[]) => unknown ? T : never
+    : never
+> & { continuous: boolean; interimResults: boolean; lang: string; start(): void; stop(): void; abort(): void; onresult: ((e: SpeechRecognitionEvent) => void) | null; onerror: ((e: Event & { error: string }) => void) | null; onend: (() => void) | null };
+
+type SpeechRecognitionEvent = Event & {
+  results: { [index: number]: { [index: number]: { transcript: string }; isFinal: boolean }; length: number };
+  resultIndex: number;
+};
+
+function getSpeechRecognition(): (new () => SpeechRecognitionInstance) | null {
+  if (typeof window === "undefined") return null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const w = window as any;
+  return w.SpeechRecognition || w.webkitSpeechRecognition || null;
+}
+
+function useSpeechToText(onTranscript: (text: string) => void) {
+  const [isListening, setIsListening] = useState(false);
+  const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
+  const supported = typeof window !== "undefined" && getSpeechRecognition() !== null;
+
+  const start = useCallback(() => {
+    const Ctor = getSpeechRecognition();
+    if (!Ctor) return;
+
+    const recognition = new Ctor();
+    recognition.continuous = true;
+    recognition.interimResults = false;
+    recognition.lang = "en-US";
+
+    recognition.onresult = (e: SpeechRecognitionEvent) => {
+      let transcript = "";
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        if (e.results[i].isFinal) {
+          transcript += e.results[i][0].transcript;
+        }
+      }
+      if (transcript.trim()) {
+        onTranscript(transcript);
+      }
+    };
+
+    recognition.onerror = () => {
+      setIsListening(false);
+      recognitionRef.current = null;
+    };
+
+    recognition.onend = () => {
+      setIsListening(false);
+      recognitionRef.current = null;
+    };
+
+    recognitionRef.current = recognition;
+    recognition.start();
+    setIsListening(true);
+  }, [onTranscript]);
+
+  const stop = useCallback(() => {
+    recognitionRef.current?.stop();
+    recognitionRef.current = null;
+    setIsListening(false);
+  }, []);
+
+  const toggle = useCallback(() => {
+    if (isListening) stop();
+    else start();
+  }, [isListening, start, stop]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      recognitionRef.current?.abort();
+    };
+  }, []);
+
+  return { isListening, supported, toggle, stop };
+}
+
+// ─────────────────────────────────────────────
 // Building animation (matches mobile)
 // ─────────────────────────────────────────────
 
@@ -669,6 +755,15 @@ export default function AiBuilderModal({ isOpen, onClose }: Props) {
   const modeColor = mode?.color || "#6366f1";
 
   const { build, streamingText, isPending: buildPending, isError: buildError, abort: abortBuild } = useAiBuild();
+
+  const handleSpeechTranscript = useCallback((text: string) => {
+    setPrompt((prev) => {
+      const separator = prev.trim() ? " " : "";
+      return prev + separator + text;
+    });
+  }, []);
+
+  const { isListening, supported: speechSupported, toggle: toggleSpeech, stop: stopSpeech } = useSpeechToText(handleSpeechTranscript);
   const commitMutation = useAiCommit();
 
   const treeRef = useRef<HTMLDivElement>(null);
@@ -759,8 +854,9 @@ export default function AiBuilderModal({ isOpen, onClose }: Props) {
       setCommitSuccess(false);
     } else {
       abortBuild();
+      stopSpeech();
     }
-  }, [isOpen, abortBuild]);
+  }, [isOpen, abortBuild, stopSpeech]);
 
   if (!isOpen) return null;
 
@@ -884,6 +980,22 @@ export default function AiBuilderModal({ isOpen, onClose }: Props) {
                 { "--tw-ring-color": modeColor } as React.CSSProperties
               }
             />
+            {speechSupported && (
+              <button
+                onClick={toggleSpeech}
+                disabled={buildPending}
+                className={clsx(
+                  "px-3 py-2 rounded-lg text-sm font-medium transition hover:opacity-90 disabled:opacity-40",
+                  isListening
+                    ? "bg-red-500 text-white animate-pulse"
+                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                )}
+                title={isListening ? "Stop recording" : "Speak your plans"}
+                type="button"
+              >
+                {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+              </button>
+            )}
             <button
               onClick={handleBuild}
               disabled={!prompt.trim() || buildPending}
