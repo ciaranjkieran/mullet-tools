@@ -1,5 +1,6 @@
-// app/how-it-works/page.tsx
+// app/features/page.tsx
 import React from "react";
+import Link from "next/link";
 
 const VIDEOS = {
   modes: "/videos/Modes Video 2.mp4",
@@ -7,7 +8,7 @@ const VIDEOS = {
   comments: "/videos/Comments Video.mp4",
   notes: "/videos/Notes Video.mp4",
   boards: "/videos/Boards Video.mp4",
-  stats: "/videos/Stats Video.mp4",
+  timer: "/videos/Stats Video.mp4",
   coherentSystem: "/videos/Coherent System.mp4",
 };
 
@@ -16,182 +17,326 @@ export default function HowItWorksPage() {
     <main className="min-h-screen bg-white text-neutral-900">
       <div className="mx-auto max-w-6xl px-6 py-10 sm:py-14">
         <article className="mx-auto max-w-4xl space-y-24">
-          {/* MODES */}
+          {/* INTRO */}
           <Section>
-            <TextBlock title="One app. Many contexts.">
+            <div className="mx-auto max-w-2xl space-y-6 text-lg leading-relaxed text-neutral-800">
+              <h1 className="text-3xl font-semibold tracking-tight text-neutral-900 sm:text-4xl">
+                How Mullet Works
+              </h1>
               <p>
-                Life pulls you in different directions.
-                <br />
-                Work. Fitness. Side projects. Hobbies. Rest.
+                Mullet is built around one idea: everything in your life
+                deserves its own space.
               </p>
-
               <p>
-                Mullet starts with{" "}
-                <strong className="font-semibold text-neutral-900">
-                  Modes
-                </strong>{" "}
-                —
-                <br />
-                distinct contexts that help you focus on what matters in the
-                moment, without losing flexibility.
+                Most productivity apps give you one big list. Work tasks sit
+                next to grocery reminders. Client deadlines compete with
+                personal goals. Everything bleeds into everything else, and
+                instead of feeling organised you just feel overwhelmed.
+              </p>
+              <p>
+                Mullet works differently. It gives every area of your life its
+                own compartment — and keeps them completely separate, so you can
+                focus on one thing at a time without the rest of the noise
+                getting in the way.
+              </p>
+            </div>
+          </Section>
+
+          {/* MODES */}
+          <Section id="modes">
+            <TextBlock title="Modes">
+              <p>
+                A Mode is a compartment. It&apos;s a dedicated space for one
+                area of your life — and everything inside it stays there.
+              </p>
+              <p>
+                You might have a Mode for Work, one for Personal, one for a
+                Side Project, one for Fitness. Or something completely different
+                — Mullet doesn&apos;t tell you how to organise your life, it
+                just gives you the structure to do it your way.
+              </p>
+              <p>
+                When you&apos;re in Work mode, you see Work. When you switch to
+                Personal, you see Personal. Nothing crosses over unless you want
+                it to.
+              </p>
+              <p>
+                Modes are the foundation of everything in Mullet. Every goal,
+                every project, every task lives inside one.
+              </p>
+              <p className="text-base text-neutral-500">
+                Examples of Modes people use: Work · Personal · Side Project ·
+                Finance · Health · Travel · Learning · Family · Creative ·
+                Business
               </p>
             </TextBlock>
 
             <VideoCard src={VIDEOS.modes} />
           </Section>
 
-          {/* HIERARCHY */}
-          <Section>
-            <TextBlock title="Structure that adapts.">
+          {/* GOALS, PROJECTS, MILESTONES AND TASKS */}
+          <Section id="hierarchy">
+            <TextBlock title="Goals, Projects, Milestones and Tasks">
               <p>
-                Life isn’t flat — and your work rarely is either.
-                <br />
-                <br />
-                Goals give direction.
-                <br />
-                Projects break things down.
-                <br />
-                Milestones mark progress.
-                <br />
-                Tasks handle the details.
+                Inside each Mode, Mullet gives you four building blocks for
+                organising your work. What makes Mullet different is how
+                flexible these building blocks are — you can keep things simple
+                with a flat list of tasks, or build out as much structure as
+                your work demands. There&apos;s no single right way to use them.
               </p>
 
+              <h3 className="text-xl font-semibold text-neutral-900 !mt-8">
+                Goals
+              </h3>
               <p>
-                Mullet lets you organize your work in a clear hierarchy —
-                <br />
-                so structure supports your thinking, instead of getting in the
-                way.
+                A Goal is the big picture. It&apos;s an outcome you&apos;re
+                working toward — something meaningful enough that it will take
+                real time and effort to achieve. Launch a business. Get fit.
+                Ship a product. Learn a language.
+              </p>
+              <p>
+                Goals give your work direction. Everything you put inside a Goal
+                is connected to that bigger outcome.
               </p>
 
+              <h3 className="text-xl font-semibold text-neutral-900 !mt-8">
+                Projects
+              </h3>
               <p>
-                And when you find a structure that works, you can reuse it
-                through templates.
+                A Project is a defined piece of work. It might live inside a
+                Goal, or it can stand on its own inside a Mode — whatever makes
+                sense for how you work.
+              </p>
+              <p>
+                Projects are flexible. A Project can contain other Projects
+                inside it, which is useful when a piece of work is big enough to
+                have distinct parts that each deserve their own space. A Project
+                can also contain Milestones and Tasks directly.
+              </p>
+              <p>
+                For example — if your Goal is to launch a business, you might
+                have a Project called Build the website. Inside that, you might
+                have smaller Projects for Design, Content, and Development, each
+                with their own tasks and checkpoints.
               </p>
 
+              <h3 className="text-xl font-semibold text-neutral-900 !mt-8">
+                Milestones
+              </h3>
               <p>
-                With structure in place, you have space to think — not just move
-                forward.
+                A Milestone is a significant checkpoint — a moment where you can
+                say one phase is done and the next begins. Milestones give your
+                work shape and make progress feel real and visible.
+              </p>
+              <p>
+                Like Projects, Milestones are flexible. They can live inside a
+                Project, inside a Goal, or stand-alone inside a Mode. A
+                Milestone can contain other Milestones inside it, breaking a big
+                checkpoint down into smaller ones. Tasks can live directly
+                inside a Milestone too.
+              </p>
+
+              <h3 className="text-xl font-semibold text-neutral-900 !mt-8">
+                Tasks
+              </h3>
+              <p>
+                A Task is the actual work — the specific, actionable thing you
+                sit down and do. Tasks are the most flexible element in Mullet.
+                They can live anywhere: inside a Milestone, inside a Project,
+                inside a Goal, or just loose inside a Mode on their own.
+              </p>
+              <p>
+                If you just need a quick to-do without any structure around it,
+                add a Task directly to your Mode. If it&apos;s part of something
+                bigger, place it wherever it belongs in Mullet.
+              </p>
+
+              <h3 className="text-xl font-semibold text-neutral-900 !mt-8">
+                You don&apos;t have to use all of this
+              </h3>
+              <p>
+                Most people start simple — a Mode and a handful of Tasks. The
+                structure is there when your work grows complex enough to need
+                it, and out of the way when it doesn&apos;t. Mullet adapts to
+                how you think, not the other way around.
               </p>
             </TextBlock>
 
             <VideoCard src={VIDEOS.hierarchy} />
           </Section>
 
-          {/* COMMENTS */}
-          <Section>
-            <TextBlock title="Space to think.">
+          {/* FEATURES */}
+          <Section id="features">
+            <TextBlock title="Features">
               <p>
-                Some thoughts are quick.
-                <br />
-                Others need time and room to unfold.
-              </p>
-
-              <p>
-                Use{" "}
-                <strong className="font-semibold text-neutral-900">
-                  Comments
-                </strong>{" "}
-                to capture ideas as they happen —
-                <br />
-                loose thoughts, questions, decisions in motion.
+                Beyond the core structure, Mullet comes with a set of tools that
+                live inside any element of Mullet — giving you everything you
+                need to work the way you actually work.
               </p>
             </TextBlock>
 
-            <VideoCard src={VIDEOS.comments} />
+            <FeatureCard title="Notes" video={VIDEOS.notes}>
+              A clean, distraction-free space for writing inside any element of
+              Mullet. Use it for thinking out loud, capturing ideas, drafting
+              plans, or keeping reference material close to the work it relates
+              to. Notes stay inside the element they belong to, so your Work
+              notes never get mixed up with your Personal ones.
+            </FeatureCard>
+
+            <FeatureCard title="Comments" video={VIDEOS.comments}>
+              Every Goal, Project, Milestone, and Task in Mullet can have its
+              own comment thread. Leave yourself a note, track a decision,
+              record why something changed. Comments keep the context attached
+              to the work — so you never have to remember why you did something,
+              because it&apos;s already written down.
+            </FeatureCard>
+
+            <FeatureCard title="Boards" video={VIDEOS.boards}>
+              Boards give you a visual space inside any element of Mullet for
+              images, files, links, and references. If you&apos;re working on a
+              creative project and need a mood board, or a business project and
+              need to keep key documents close, Boards is where that lives.
+              Everything is visible at a glance, attached to whatever it belongs
+              to.
+            </FeatureCard>
+
+            <FeatureCard title="Timer" video={VIDEOS.timer}>
+              A focused work timer built directly into Mullet. When you&apos;re
+              ready to work, start the timer and go. No context switching to a
+              separate app, no losing track of what you were doing. The Timer
+              keeps your focused work connected to whatever you&apos;re working
+              on.
+            </FeatureCard>
           </Section>
 
-          {/* NOTES */}
-          <Section>
-            <TextBlock title="Use Notes when you need more space.">
+          {/* COLLABORATION */}
+          <Section id="collaboration">
+            <TextBlock title="Collaboration">
               <p>
-                Use{" "}
-                <strong className="font-semibold text-neutral-900">
-                  Notes
-                </strong>{" "}
-                when you need more space —
-                <br />
-                to reflect, explore ideas, or think things through properly.
+                Mullet is great for solo workers — but often work involves other
+                people. Collaboration in Mullet is built around Modes, which
+                means you share exactly what&apos;s relevant and nothing else.
               </p>
-
               <p>
-                Mullet gives your thinking a place to live,
-                <br />
-                so nothing important gets lost in the rush to move on.
+                Every Mode in Mullet can be shared with other people. As the
+                owner of a Mode, if your collaborator is a Mullet subscriber,
+                you can invite them in the app and choose what level of access
+                they have — an Editor can contribute and make changes, while a
+                Viewer can see everything but can&apos;t edit. You stay in
+                control at all times.
+              </p>
+              <p>
+                Pending invitations are tracked inside the Mode until accepted,
+                and collaborators can be removed at any point. Everything
+                outside the shared Mode stays completely private — your other
+                Modes, your other work, none of it is visible to anyone you
+                haven&apos;t explicitly invited.
+              </p>
+              <p>
+                Collaboration in Mullet is intentional, not accidental. You
+                decide what gets shared, with whom, and when.
               </p>
             </TextBlock>
 
-            <VideoCard src={VIDEOS.notes} />
+            <VideoPlaceholder label="Collaboration video coming soon" />
           </Section>
 
-          {/* BOARDS */}
-          <Section>
-            <TextBlock title="Stay inspired.">
+          {/* AI BUILDER */}
+          <Section id="ai">
+            <TextBlock title="AI Builder">
               <p>
-                Boards give you a place to keep what inspires you —
-                <br />
-                links, images, references, ideas — right alongside your work.
+                The AI Builder is one of the most powerful tools in Mullet. It
+                lets you describe what you want to build in plain language — and
+                generates a complete, structured plan inside your current Mode.
               </p>
-
               <p>
-                Pin things as they catch your eye.
-                <br />
-                Revisit them when you need perspective, motivation, or
-                direction.
+                Tell it something like &ldquo;plan a product launch for next
+                month&rdquo; or &ldquo;break down my website project into
+                tasks&rdquo; and the AI Builder produces the appropriate tree of
+                elements that maps directly onto Mullet&apos;s structure. You
+                can review everything it generates before anything is saved —
+                toggling items in or out, renaming them, adjusting dates, or
+                removing anything that doesn&apos;t fit.
               </p>
-
               <p>
-                Then, when inspiration turns into intention, it’s time to focus.
+                Nothing is committed to your Mode until you&apos;re ready. Once
+                you&apos;re happy with the plan, you apply it in one step and
+                everything appears exactly where it belongs.
+              </p>
+              <p>
+                The AI Builder also works iteratively. You can prompt it
+                multiple times — refining, expanding, or restructuring — and it
+                understands the existing content of your Mode so it can suggest
+                changes and additions that make sense in context, not just in
+                isolation.
+              </p>
+              <p>
+                It&apos;s the fastest way to go from a blank Mode to a
+                structured, actionable plan.
               </p>
             </TextBlock>
 
-            <VideoCard src={VIDEOS.boards} />
+            <VideoPlaceholder label="AI Builder video coming soon" />
           </Section>
 
-          {/* STATS */}
+          {/* PUTTING IT ALL TOGETHER */}
           <Section>
-            <TextBlock title="Focus and keep track.">
+            <TextBlock title="Putting It All Together">
               <p>
-                Start a timer and know exactly what you’re focusing on —
-                <br />a task, a project, or simply time well spent.
+                Here&apos;s what Mullet looks like in practice for a freelancer
+                juggling multiple things at once:
               </p>
-
               <p>
-                As you work, Mullet keeps track quietly in the background,
-                <br />
-                turning focused sessions into clear, meaningful data.
+                You have three Modes — Work, Personal, and Side Project.
               </p>
-
               <p>
-                Over time, that data becomes insight —
-                <br />
-                helping you see where your time goes, and how you actually work.
+                Inside Work, you have a Goal: Land three new clients this
+                quarter. Inside that Goal, a Project: Outreach campaign, which
+                contains two smaller Projects — Email outreach and LinkedIn
+                outreach — each with their own Tasks. You also have a handful of
+                loose Tasks sitting directly in your Work Mode for quick things
+                that don&apos;t belong anywhere specific.
               </p>
-            </TextBlock>
-
-            <VideoCard src={VIDEOS.stats} />
-          </Section>
-
-          {/* COHERENT SYSTEM */}
-          <Section>
-            <TextBlock title="A system that fits together.">
               <p>
-                Mullet isn’t a collection of features.
-                <br />
-                It’s a coherent system — designed to adapt to how you think,
-                plan, and work.
+                Meanwhile inside Side Project, everything related to that is
+                completely separate. Different Goals, different Projects,
+                different Tasks. No crossover, no noise.
               </p>
-
               <p>
-                Each part supports the others,
-                <br />
-                so you can move from ideas to action without friction.
+                When you sit down to work on client outreach, you open Work mode
+                and that&apos;s all you see. When you switch to your side
+                project in the evening, Work disappears and Side Project is all
+                that&apos;s there.
               </p>
-
-              <p>Try Mullet and see how it feels to work with more clarity.</p>
+              <p>
+                Compartmentalisation, versatility, and focus. These are the
+                pillars Mullet is built on.
+              </p>
             </TextBlock>
 
             <VideoCard src={VIDEOS.coherentSystem} />
           </Section>
+
+          {/* CTA */}
+          <section className="mx-auto max-w-2xl text-center space-y-6 pb-8">
+            <h2 className="text-2xl font-semibold tracking-tight text-neutral-900 sm:text-3xl">
+              Ready to get started?
+            </h2>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <Link
+                href="/login?signup=true"
+                className="inline-flex items-center justify-center rounded-md bg-blue-700 px-6 py-3 text-base font-semibold text-white hover:bg-blue-800 transition"
+              >
+                Create your account
+              </Link>
+              <Link
+                href="/login"
+                className="inline-flex items-center justify-center rounded-md border border-neutral-300 bg-white px-6 py-3 text-base font-semibold text-neutral-900 hover:bg-neutral-50 transition"
+              >
+                Log in
+              </Link>
+            </div>
+          </section>
         </article>
       </div>
     </main>
@@ -200,8 +345,18 @@ export default function HowItWorksPage() {
 
 /* ---------- components ---------- */
 
-function Section({ children }: { children: React.ReactNode }) {
-  return <section className="space-y-10">{children}</section>;
+function Section({
+  id,
+  children,
+}: {
+  id?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section id={id} className="space-y-10">
+      {children}
+    </section>
+  );
 }
 
 function TextBlock({
@@ -220,6 +375,7 @@ function TextBlock({
     </div>
   );
 }
+
 function VideoCard({ src }: { src: string }) {
   return (
     <div className="overflow-hidden rounded-3xl border border-neutral-200 bg-neutral-50 shadow-md">
@@ -233,6 +389,34 @@ function VideoCard({ src }: { src: string }) {
         preload="metadata"
         controls={false}
       />
+    </div>
+  );
+}
+
+function FeatureCard({
+  title,
+  video,
+  children,
+}: {
+  title: string;
+  video: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="mx-auto max-w-2xl space-y-6">
+      <h3 className="text-xl font-semibold text-neutral-900">{title}</h3>
+      <p className="text-lg leading-relaxed text-neutral-800">{children}</p>
+      <VideoCard src={video} />
+    </div>
+  );
+}
+
+function VideoPlaceholder({ label }: { label: string }) {
+  return (
+    <div className="mx-auto max-w-2xl overflow-hidden rounded-3xl border border-dashed border-neutral-300 bg-neutral-50 shadow-sm">
+      <div className="flex items-center justify-center py-32">
+        <span className="text-base text-neutral-400">{label}</span>
+      </div>
     </div>
   );
 }
