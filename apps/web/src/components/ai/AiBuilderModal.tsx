@@ -28,6 +28,7 @@ import type {
   BuilderNodeOp,
   ExistingEntity,
 } from "@shared/types/AiBuilder";
+import type { Mode } from "@shared/types/Mode";
 
 type Props = {
   isOpen: boolean;
@@ -72,6 +73,34 @@ function buildEntitySnapshot(modeId: number): ExistingEntity[] {
   return entities;
 }
 
+/** Summarised snapshot for All-mode: goals + projects only, with modeId. */
+function buildAllModeEntitySnapshot(): ExistingEntity[] {
+  const modes = useModeStore.getState().modes;
+  const modeIds = new Set(modes.map((m) => m.id));
+  const goals = useGoalStore.getState().goals.filter((g) => modeIds.has(g.modeId));
+  const projects = useProjectStore.getState().projects.filter((p) => modeIds.has(p.modeId));
+
+  const entities: ExistingEntity[] = [];
+
+  for (const g of goals) {
+    entities.push({
+      id: g.id, type: "goal", title: g.title,
+      dueDate: g.dueDate ?? null, modeId: g.modeId,
+    });
+  }
+  for (const p of projects) {
+    const e: ExistingEntity = {
+      id: p.id, type: "project", title: p.title,
+      dueDate: p.dueDate ?? null, modeId: p.modeId,
+    };
+    if (p.parentId) e.parentId = p.parentId;
+    if (p.goalId) e.goalId = p.goalId;
+    entities.push(e);
+  }
+
+  return entities;
+}
+
 // ─── Tree helpers ────────────────────────────
 
 /** Coerce a value to string-or-null safely (prevents objects reaching JSX). */
@@ -99,6 +128,7 @@ function markIncluded(nodes: unknown): BuilderNode[] {
     parentTempId: str(n.parentTempId),
     children: markIncluded(n.children),
     included: true,
+    modeId: typeof n.modeId === "number" ? n.modeId : null,
   }));
 }
 
@@ -151,6 +181,28 @@ function removeNode(nodes: BuilderNode[], tempId: string): BuilderNode[] {
   return nodes
     .filter((n) => n.tempId !== tempId)
     .map((n) => ({ ...n, children: removeNode(n.children, tempId) }));
+}
+
+/** Set modeId on a node and cascade to children. */
+function setNodeMode(
+  nodes: BuilderNode[],
+  tempId: string,
+  modeId: number
+): BuilderNode[] {
+  return nodes.map((n) => {
+    if (n.tempId === tempId) {
+      return { ...n, modeId, children: setAllMode(n.children, modeId) };
+    }
+    return { ...n, children: setNodeMode(n.children, tempId, modeId) };
+  });
+}
+
+function setAllMode(nodes: BuilderNode[], modeId: number): BuilderNode[] {
+  return nodes.map((n) => ({
+    ...n,
+    modeId,
+    children: setAllMode(n.children, modeId),
+  }));
 }
 
 /** Count included nodes by operation. */
@@ -217,24 +269,50 @@ function TreeNode({
   node,
   depth,
   modeColor,
+  modes,
+  isAllMode,
   onToggle,
   onRename,
   onDateChange,
   onRemove,
+  onModeChange,
 }: {
   node: BuilderNode;
   depth: number;
   modeColor: string;
+  modes: Mode[];
+  isAllMode: boolean;
   onToggle: (id: string) => void;
   onRename: (id: string, title: string) => void;
   onDateChange: (id: string, date: string | null) => void;
   onRemove: (id: string) => void;
+  onModeChange: (id: string, modeId: number) => void;
 }) {
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(node.title);
   const [showComment, setShowComment] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
+  const [showModeDropdown, setShowModeDropdown] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const modeDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Resolve node-specific mode color in All mode
+  const nodeMode = isAllMode && node.modeId
+    ? modes.find((m) => m.id === node.modeId)
+    : null;
+  const nodeColor = nodeMode?.color || modeColor;
+
+  // Close mode dropdown on outside click
+  useEffect(() => {
+    if (!showModeDropdown) return;
+    const handler = (e: MouseEvent) => {
+      if (modeDropdownRef.current && !modeDropdownRef.current.contains(e.target as Node)) {
+        setShowModeDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [showModeDropdown]);
 
   const hasChildren = node.children.length > 0;
   const op = node.op || "create";
@@ -291,13 +369,13 @@ function TreeNode({
 
         {/* Type icon */}
         {node.type === "goal" ? (
-          <span className="flex-shrink-0" style={{ color: modeColor }}>
+          <span className="flex-shrink-0" style={{ color: nodeColor }}>
             <GoalIcon size={16}>
               <GoalTarget />
             </GoalIcon>
           </span>
         ) : node.type === "project" ? (
-          <Folder className="w-4 h-4 flex-shrink-0" style={{ color: modeColor }} />
+          <Folder className="w-4 h-4 flex-shrink-0" style={{ color: nodeColor }} />
         ) : node.type === "milestone" ? (
           <span
             className="flex-shrink-0"
@@ -306,13 +384,13 @@ function TreeNode({
               height: 0,
               borderLeft: "5px solid transparent",
               borderRight: "5px solid transparent",
-              borderTop: `9px solid ${modeColor}`,
+              borderTop: `9px solid ${nodeColor}`,
             }}
           />
         ) : (
           <span
             className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-            style={{ backgroundColor: modeColor }}
+            style={{ backgroundColor: nodeColor }}
           />
         )}
 
@@ -327,6 +405,42 @@ function TreeNode({
           >
             {style.label}
           </span>
+        )}
+
+        {/* Mode badge (All mode only) */}
+        {isAllMode && nodeMode && (
+          <div className="relative flex-shrink-0" ref={modeDropdownRef}>
+            <button
+              onClick={() => setShowModeDropdown(!showModeDropdown)}
+              className="text-[10px] font-medium px-1.5 py-0.5 rounded cursor-pointer hover:opacity-80 transition"
+              style={{ backgroundColor: nodeMode.color + "20", color: nodeMode.color }}
+            >
+              {nodeMode.title}
+            </button>
+            {showModeDropdown && (
+              <div className="absolute z-[200] top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[140px]">
+                {modes.map((m) => (
+                  <button
+                    key={m.id}
+                    onClick={() => {
+                      onModeChange(node.tempId, m.id);
+                      setShowModeDropdown(false);
+                    }}
+                    className={clsx(
+                      "w-full text-left px-3 py-1.5 text-xs flex items-center gap-2 hover:bg-gray-50",
+                      m.id === node.modeId && "font-semibold"
+                    )}
+                  >
+                    <span
+                      className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                      style={{ backgroundColor: m.color }}
+                    />
+                    {m.title}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         )}
 
         {/* Title */}
@@ -435,10 +549,13 @@ function TreeNode({
             node={child}
             depth={depth + 1}
             modeColor={modeColor}
+            modes={modes}
+            isAllMode={isAllMode}
             onToggle={onToggle}
             onRename={onRename}
             onDateChange={onDateChange}
             onRemove={onRemove}
+            onModeChange={onModeChange}
           />
         ))}
     </div>
@@ -546,7 +663,9 @@ export default function AiBuilderModal({ isOpen, onClose }: Props) {
   const [commitSuccess, setCommitSuccess] = useState(false);
 
   const selectedMode = useModeStore((s) => s.selectedMode);
-  const mode = selectedMode === "All" ? null : selectedMode;
+  const allModes = useModeStore((s) => s.modes);
+  const isAllMode = selectedMode === "All";
+  const mode = isAllMode ? null : selectedMode;
   const modeColor = mode?.color || "#6366f1";
 
   const { build, streamingText, isPending: buildPending, isError: buildError, abort: abortBuild } = useAiBuild();
@@ -572,37 +691,47 @@ export default function AiBuilderModal({ isOpen, onClose }: Props) {
     opCounts.create > 0 && opCounts.update === 0 && opCounts.delete === 0;
 
   const handleBuild = useCallback(async () => {
-    if (!prompt.trim() || !mode) return;
+    if (!prompt.trim() || (!mode && !isAllMode)) return;
 
-    const entities = buildEntitySnapshot(mode.id);
+    const entities = isAllMode
+      ? buildAllModeEntitySnapshot()
+      : buildEntitySnapshot(mode!.id);
     const currentPrompt = prompt.trim();
 
-    build(
-      { prompt: currentPrompt, modeId: mode.id, currentNodes: nodes.length > 0 ? nodes : undefined, entities },
-      (data) => {
-        const markedNodes = markIncluded(data.nodes);
-        setNodes(markedNodes);
-        setCommandLog((l) => [
-          ...l,
-          {
-            prompt: currentPrompt,
-            summary:
-              typeof data.summary === "string"
-                ? data.summary
-                : JSON.stringify(data.summary ?? ""),
-          },
-        ]);
-        setPrompt("");
-      }
-    );
-  }, [prompt, mode, nodes, build]);
+    const payload: Parameters<typeof build>[0] = {
+      prompt: currentPrompt,
+      modeId: isAllMode ? "all" : mode!.id,
+      currentNodes: nodes.length > 0 ? nodes : undefined,
+      entities,
+    };
+
+    if (isAllMode) {
+      payload.modes = allModes.map((m) => ({ id: m.id, title: m.title, color: m.color }));
+    }
+
+    build(payload, (data) => {
+      const markedNodes = markIncluded(data.nodes);
+      setNodes(markedNodes);
+      setCommandLog((l) => [
+        ...l,
+        {
+          prompt: currentPrompt,
+          summary:
+            typeof data.summary === "string"
+              ? data.summary
+              : JSON.stringify(data.summary ?? ""),
+        },
+      ]);
+      setPrompt("");
+    });
+  }, [prompt, mode, isAllMode, allModes, nodes, build]);
 
   const handleCommit = useCallback(async () => {
-    if (!mode || totalActionable === 0) return;
+    if ((!mode && !isAllMode) || totalActionable === 0) return;
 
     const included = filterIncluded(nodes);
     commitMutation.mutate(
-      { modeId: mode.id, nodes: included },
+      { modeId: isAllMode ? "all" : mode!.id, nodes: included },
       {
         onSuccess: () => {
           setCommitSuccess(true);
@@ -619,7 +748,7 @@ export default function AiBuilderModal({ isOpen, onClose }: Props) {
         },
       }
     );
-  }, [mode, nodes, totalActionable, commitMutation, onClose]);
+  }, [mode, isAllMode, nodes, totalActionable, commitMutation, onClose]);
 
   // Reset on open, abort stream on close
   useEffect(() => {
@@ -647,14 +776,18 @@ export default function AiBuilderModal({ isOpen, onClose }: Props) {
             <Sparkles className="w-5 h-5" style={{ color: modeColor }} />
             <h2 className="font-semibold text-gray-900">
               AI Assistant
-              {mode && (
+              {isAllMode ? (
+                <span className="ml-2 text-sm font-normal text-gray-500">
+                  All Modes
+                </span>
+              ) : mode ? (
                 <span
                   className="ml-2 text-sm font-normal"
                   style={{ color: modeColor }}
                 >
                   {mode.title}
                 </span>
-              )}
+              ) : null}
             </h2>
           </div>
           <button
@@ -711,6 +844,8 @@ export default function AiBuilderModal({ isOpen, onClose }: Props) {
                 node={node}
                 depth={0}
                 modeColor={modeColor}
+                modes={allModes}
+                isAllMode={isAllMode}
                 onToggle={(id) => setNodes((n) => toggleNode(n, id))}
                 onRename={(id, title) =>
                   setNodes((n) => renameNode(n, id, title))
@@ -719,17 +854,15 @@ export default function AiBuilderModal({ isOpen, onClose }: Props) {
                   setNodes((n) => setNodeDate(n, id, date))
                 }
                 onRemove={(id) => setNodes((n) => removeNode(n, id))}
+                onModeChange={(id, modeId) =>
+                  setNodes((n) => setNodeMode(n, id, modeId))
+                }
               />
             ))}
         </div>
 
         {/* Input area */}
         <div className="border-t px-5 py-3">
-          {!mode && (
-            <p className="text-xs text-amber-600 mb-2">
-              Select a mode first to use the AI Assistant.
-            </p>
-          )}
           <div className="flex gap-2">
             <textarea
               value={prompt}
@@ -740,8 +873,11 @@ export default function AiBuilderModal({ isOpen, onClose }: Props) {
                   handleBuild();
                 }
               }}
-              placeholder="Describe what you want to build or change... (⌘+Enter to send)"
-              disabled={!mode || buildPending}
+              placeholder={isAllMode
+                ? "Describe your plans and the AI will sort them into your modes... (⌘+Enter to send)"
+                : "Describe what you want to build or change... (⌘+Enter to send)"
+              }
+              disabled={buildPending}
               rows={2}
               className="flex-1 border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 disabled:opacity-50 resize-none"
               style={
@@ -750,9 +886,7 @@ export default function AiBuilderModal({ isOpen, onClose }: Props) {
             />
             <button
               onClick={handleBuild}
-              disabled={
-                !prompt.trim() || !mode || buildPending
-              }
+              disabled={!prompt.trim() || buildPending}
               className="px-3 py-2 rounded-lg text-white text-sm font-medium disabled:opacity-40 transition hover:opacity-90"
               style={{ backgroundColor: modeColor }}
             >

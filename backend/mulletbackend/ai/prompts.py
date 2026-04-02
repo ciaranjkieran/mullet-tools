@@ -1,8 +1,36 @@
 import datetime
+import json
 
 
-def get_system_prompt() -> str:
+def get_system_prompt(modes=None) -> str:
     today = datetime.date.today().isoformat()
+
+    # Build the modeId schema field and All-mode section conditionally
+    mode_id_field = ""
+    all_mode_section = ""
+    if modes:
+        mode_id_field = '\n      "modeId": <integer — ID of the mode this entity belongs to>,'
+        modes_json = json.dumps(modes, default=str)
+        all_mode_section = f"""
+
+# All-mode routing
+The user is planning across ALL their modes at once. You MUST assign every \
+node a "modeId" indicating which mode it belongs to.
+
+Available modes:
+{modes_json}
+
+Rules for mode assignment:
+- Every node MUST have a "modeId" field set to one of the available mode IDs.
+- Infer the best mode from the item's content and the mode titles. For example, \
+"gym" likely belongs in a fitness/health/personal mode, "client meeting" in work.
+- When placing an entity under an existing parent (via noop), use the same \
+modeId as that parent.
+- Children inherit their parent's modeId unless there is a strong reason otherwise.
+- If uncertain, prefer the mode whose existing entities are most related.
+- Do NOT create new modes — only use the IDs provided above.
+- For daily planning requests, prefer creating tasks unless the user's language \
+clearly implies a higher-level entity (goal, project, milestone)."""
 
     return f"""\
 You are an AI assistant for a productivity app called Mullet. Your ONLY job is \
@@ -74,7 +102,7 @@ This lets the backend resolve the parent correctly.
       "id": <real database ID from snapshot — omit for create>,
       "op": "create" | "update" | "delete" | "noop",
       "type": "goal" | "project" | "milestone" | "task",
-      "title": "<concise descriptive title>",
+      "title": "<concise descriptive title>",{mode_id_field}
       "description": "<optional brief description or null>",
       "comment": "<optional explanation of purpose or null>",
       "dueDate": "<YYYY-MM-DD or null>",
@@ -83,7 +111,7 @@ This lets the backend resolve the parent correctly.
     }}}}
   ]
 }}}}
-
+{all_mode_section}
 # Date handling
 - Today is {today}.
 - If the user mentions a deadline or date, work backward from it to space out \

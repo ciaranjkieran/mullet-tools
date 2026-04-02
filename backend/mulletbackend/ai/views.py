@@ -57,6 +57,7 @@ class AiBuildView(APIView):
         mode_id = request.data.get("modeId")
         current_nodes = request.data.get("currentNodes") or []
         entities = request.data.get("entities") or []
+        modes_payload = request.data.get("modes") or []
 
         if not prompt:
             return Response(
@@ -70,12 +71,45 @@ class AiBuildView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # Validate mode access
-        if int(mode_id) not in writable_mode_ids(request.user):
-            return Response(
-                {"error": "You do not have write access to this mode."},
-                status=status.HTTP_403_FORBIDDEN,
-            )
+        allowed_ids = writable_mode_ids(request.user)
+        is_all_mode = str(mode_id) == "all"
+
+        if is_all_mode:
+            if not allowed_ids:
+                return Response(
+                    {"error": "No writable modes available."},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+            # Build modes list for the prompt
+            writable_modes = Mode.objects.filter(id__in=allowed_ids)
+            modes_list = [
+                {"id": m.id, "title": m.title}
+                for m in writable_modes
+            ]
+            # Build summarised entity snapshot (goals + projects only) if none sent
+            if not entities:
+                entities = []
+                for goal in Goal.objects.filter(mode_id__in=allowed_ids, user=request.user):
+                    entities.append({
+                        "id": goal.id, "type": "goal", "title": goal.title,
+                        "dueDate": str(goal.due_date) if goal.due_date else None,
+                        "modeId": goal.mode_id,
+                    })
+                for proj in Project.objects.filter(mode_id__in=allowed_ids, user=request.user):
+                    entities.append({
+                        "id": proj.id, "type": "project", "title": proj.title,
+                        "dueDate": str(proj.due_date) if proj.due_date else None,
+                        "modeId": proj.mode_id,
+                        "parentId": proj.parent_id,
+                        "goalId": proj.goal_id,
+                    })
+        else:
+            if int(mode_id) not in allowed_ids:
+                return Response(
+                    {"error": "You do not have write access to this mode."},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+            modes_list = None
 
         api_key = getattr(settings, "ANTHROPIC_API_KEY", "")
         if not api_key:
@@ -90,8 +124,9 @@ class AiBuildView(APIView):
         # Inject existing entity snapshot as context (if provided)
         if entities:
             entity_json = json.dumps(entities, default=str)
+            label = "EXISTING ENTITIES ACROSS ALL MODES" if is_all_mode else "EXISTING ENTITIES IN THIS MODE"
             messages.append(
-                {"role": "user", "content": f"EXISTING ENTITIES IN THIS MODE:\n{entity_json}"}
+                {"role": "user", "content": f"{label}:\n{entity_json}"}
             )
             messages.append(
                 {"role": "assistant", "content": "Understood. I have the current entity snapshot and will reference it when needed."}
@@ -120,7 +155,7 @@ class AiBuildView(APIView):
                     max_tokens=16384,
                     system=[{
                         "type": "text",
-                        "text": get_system_prompt(),
+                        "text": get_system_prompt(modes=modes_list),
                         "cache_control": {"type": "ephemeral"},
                     }],
                     messages=messages,
@@ -160,20 +195,40 @@ class AiCommitView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # Validate mode access
-        try:
-            mode = Mode.objects.get(id=int(mode_id))
-        except Mode.DoesNotExist:
-            return Response(
-                {"error": "Mode not found."},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+        allowed_ids = set(writable_mode_ids(request.user))
+        is_all_mode = str(mode_id) == "all"
 
-        if mode.id not in writable_mode_ids(request.user):
-            return Response(
-                {"error": "You do not have write access to this mode."},
-                status=status.HTTP_403_FORBIDDEN,
-            )
+        if is_all_mode:
+            if not allowed_ids:
+                return Response(
+                    {"error": "No writable modes available."},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+            mode_cache = {m.id: m for m in Mode.objects.filter(id__in=allowed_ids)}
+            single_mode = None
+        else:
+            try:
+                single_mode = Mode.objects.get(id=int(mode_id))
+            except Mode.DoesNotExist:
+                return Response(
+                    {"error": "Mode not found."},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+            if single_mode.id not in allowed_ids:
+                return Response(
+                    {"error": "You do not have write access to this mode."},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+            mode_cache = {single_mode.id: single_mode}
+
+        def resolve_mode(node):
+            """Resolve the Mode object for a node."""
+            if single_mode:
+                return single_mode
+            node_mode_id = node.get("modeId")
+            if node_mode_id and int(node_mode_id) in mode_cache:
+                return mode_cache[int(node_mode_id)]
+            return None
 
         # Flatten tree into ordered list (parents before children)
         flat_nodes = []
@@ -201,6 +256,9 @@ class AiCommitView(APIView):
                     entity_id = node.get("id")
                     if entity_type not in ENTITY_MODELS or not entity_id:
                         continue
+                    mode = resolve_mode(node)
+                    if not mode:
+                        continue
                     Model = ENTITY_MODELS[entity_type]
                     try:
                         entity = Model.objects.get(
@@ -216,6 +274,9 @@ class AiCommitView(APIView):
                     entity_type = node.get("type")
                     entity_id = node.get("id")
                     if entity_type not in ENTITY_MODELS or not entity_id:
+                        continue
+                    mode = resolve_mode(node)
+                    if not mode:
                         continue
                     Model = ENTITY_MODELS[entity_type]
                     try:
@@ -252,7 +313,7 @@ class AiCommitView(APIView):
                     if temp_id and entity_id:
                         temp_id_map[temp_id] = (entity_id, entity_type)
 
-                # --- CREATES (existing logic) ---
+                # --- CREATES ---
                 for node in creates:
                     entity_type = node.get("type")
                     raw_title = node.get("title")
@@ -267,6 +328,10 @@ class AiCommitView(APIView):
                     comment_text = str(raw_comment) if isinstance(raw_comment, str) else ""
 
                     if entity_type not in ENTITY_MODELS or not title:
+                        continue
+
+                    mode = resolve_mode(node)
+                    if not mode:
                         continue
 
                     Model = ENTITY_MODELS[entity_type]

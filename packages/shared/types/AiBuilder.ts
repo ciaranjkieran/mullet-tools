@@ -13,6 +13,7 @@ export type BuilderNode = {
   parentTempId: string | null;
   children: BuilderNode[];
   included: boolean; // frontend-only: checkbox state for commit
+  modeId?: number | null; // populated by Claude in All-mode
 };
 
 export type ExistingEntity = {
@@ -24,13 +25,21 @@ export type ExistingEntity = {
   goalId?: number | null;
   projectId?: number | null;
   milestoneId?: number | null;
+  modeId?: number | null; // included in All-mode snapshots
+};
+
+export type ModeDescriptor = {
+  id: number;
+  title: string;
+  color: string;
 };
 
 export type AiBuildRequest = {
   prompt: string;
-  modeId: number;
+  modeId: number | "all";
   currentNodes?: BuilderNode[];
   entities?: ExistingEntity[];
+  modes?: ModeDescriptor[]; // sent in All-mode so Claude knows available modes
 };
 
 export type AiBuildResponse = {
@@ -39,7 +48,7 @@ export type AiBuildResponse = {
 };
 
 export type AiCommitRequest = {
-  modeId: number;
+  modeId: number | "all";
   nodes: BuilderNode[];
 };
 

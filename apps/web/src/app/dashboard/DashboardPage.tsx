@@ -564,7 +564,7 @@ export default function DashboardPage() {
                 setMilestoneToEdit(null);
                 setIsMilestoneDialogOpen(true);
               }}
-              onOpenAiBuilder={activeMode ? () => setIsAiBuilderOpen(true) : undefined}
+              onOpenAiBuilder={() => setIsAiBuilderOpen(true)}
             />
 
             {/* Desktop: full stack */}
@@ -603,7 +603,7 @@ export default function DashboardPage() {
       </section>
 
       {/* AI Builder — fixed bottom-left (desktop only, hidden on mobile where FAB handles it) */}
-      {activeMode && !viewerOpen && (
+      {!viewerOpen && (
         <button
           onClick={() => setIsAiBuilderOpen(true)}
           className="fixed bottom-10 left-12 z-50 hidden lg:flex w-14 h-14 rounded-full shadow-lg items-center justify-center transition cursor-pointer hover:scale-105"
