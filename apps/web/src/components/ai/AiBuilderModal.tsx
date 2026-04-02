@@ -609,9 +609,20 @@ function useSpeechToText(onTranscript: (text: string) => void) {
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
   const supported = typeof window !== "undefined" && getSpeechRecognition() !== null;
 
-  const start = useCallback(() => {
+  const start = useCallback(async () => {
     const Ctor = getSpeechRecognition();
     if (!Ctor) return;
+
+    // Request microphone permission first — some browsers need this
+    // before SpeechRecognition will work
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      // Release the stream immediately — we just needed the permission
+      stream.getTracks().forEach((t) => t.stop());
+    } catch {
+      // Permission denied or no mic available
+      return;
+    }
 
     const recognition = new Ctor();
     recognition.continuous = true;
@@ -641,8 +652,12 @@ function useSpeechToText(onTranscript: (text: string) => void) {
     };
 
     recognitionRef.current = recognition;
-    recognition.start();
-    setIsListening(true);
+    try {
+      recognition.start();
+      setIsListening(true);
+    } catch {
+      recognitionRef.current = null;
+    }
   }, [onTranscript]);
 
   const stop = useCallback(() => {
