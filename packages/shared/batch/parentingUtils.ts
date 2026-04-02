@@ -3,10 +3,6 @@ import type { Milestone } from "@shared/types/Milestone";
 import type { Project } from "@shared/types/Project";
 import type { Goal } from "@shared/types/Goal";
 
-/* ---------------- Configurable limits ---------------- */
-const MILESTONE_MAX_DEPTH = 3;
-const PROJECT_MAX_DEPTH = 3;
-
 /* ---------------- Types ---------------- */
 type ParentOption = { id: number; type: ParentType; title: string };
 
@@ -24,26 +20,6 @@ function indexById<T extends { id: number }>(arr: T[]): ById<T> {
   const out: ById<T> = {};
   for (const item of arr) out[item.id] = item;
   return out;
-}
-
-function depthOfMilestone(id: number, milestonesById: ById<Milestone>): number {
-  let d = 1;
-  let cur = milestonesById[id];
-  while (cur?.parentId) {
-    d++;
-    cur = milestonesById[cur.parentId];
-  }
-  return d;
-}
-
-function depthOfProject(id: number, projectsById: ById<Project>): number {
-  let d = 1;
-  let cur = projectsById[id];
-  while (cur?.parentId) {
-    d++;
-    cur = projectsById[cur.parentId];
-  }
-  return d;
 }
 
 function isMilestoneDescendant(
@@ -156,9 +132,6 @@ export function computeParentOptions({
       }
       if (unsafe) continue;
 
-      const parentDepth = depthOfMilestone(m.id, msById);
-      if (selMsIds.size > 0 && parentDepth + 1 > MILESTONE_MAX_DEPTH) continue;
-
       candidates.push({ id: m.id, type: "milestone", title: m.title });
     }
   }
@@ -176,9 +149,6 @@ export function computeParentOptions({
         }
       }
       if (unsafe) continue;
-
-      const parentDepth = depthOfProject(p.id, pjById);
-      if (selPjIds.size > 0 && parentDepth + 1 > PROJECT_MAX_DEPTH) continue;
 
       candidates.push({ id: p.id, type: "project", title: p.title });
     }
