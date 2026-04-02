@@ -225,13 +225,16 @@ class AiCommitView(APIView):
                     except Model.DoesNotExist:
                         continue
 
-                    title = (node.get("title") or "").strip()
+                    raw_t = node.get("title")
+                    title = (str(raw_t) if raw_t else "").strip()
                     if title:
                         entity.title = title
                     if "dueDate" in node:
-                        entity.due_date = node["dueDate"] or None
+                        raw_d = node["dueDate"]
+                        entity.due_date = raw_d if isinstance(raw_d, str) else None
                     if "description" in node and hasattr(Model, "description"):
-                        entity.description = node["description"] or ""
+                        raw_desc = node["description"]
+                        entity.description = str(raw_desc) if isinstance(raw_desc, str) else ""
 
                     entity.save()
 
@@ -252,12 +255,16 @@ class AiCommitView(APIView):
                 # --- CREATES (existing logic) ---
                 for node in creates:
                     entity_type = node.get("type")
-                    title = (node.get("title") or "").strip()
+                    raw_title = node.get("title")
+                    title = (str(raw_title) if raw_title else "").strip()
                     temp_id = node.get("tempId")
                     parent_temp_id = node.get("parentTempId")
-                    due_date = node.get("dueDate") or None
-                    description = node.get("description") or ""
-                    comment_text = node.get("comment") or ""
+                    raw_due = node.get("dueDate")
+                    due_date = raw_due if isinstance(raw_due, str) else None
+                    raw_desc = node.get("description")
+                    description = str(raw_desc) if isinstance(raw_desc, str) else ""
+                    raw_comment = node.get("comment")
+                    comment_text = str(raw_comment) if isinstance(raw_comment, str) else ""
 
                     if entity_type not in ENTITY_MODELS or not title:
                         continue

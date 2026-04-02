@@ -74,18 +74,31 @@ function buildEntitySnapshot(modeId: number): ExistingEntity[] {
 
 // ─── Tree helpers ────────────────────────────
 
+/** Coerce a value to string-or-null safely (prevents objects reaching JSX). */
+const str = (v: unknown): string | null =>
+  typeof v === "string" ? v : v != null ? String(v) : null;
+
 /** Mark all nodes as included; default `op` to "create" when absent.
- *  Also coerce fields to expected types to prevent React error #300. */
-function markIncluded(nodes: BuilderNode[]): BuilderNode[] {
-  return (Array.isArray(nodes) ? nodes : []).map((n) => ({
-    ...n,
-    title: typeof n.title === "string" ? n.title : String(n.title ?? ""),
-    description: typeof n.description === "string" ? n.description : null,
-    comment: typeof n.comment === "string" ? n.comment : null,
-    dueDate: typeof n.dueDate === "string" ? n.dueDate : null,
-    op: n.op || "create",
+ *  Uses a strict whitelist — only known fields are kept so stray objects
+ *  from the AI response never reach React rendering (error #300). */
+function markIncluded(nodes: unknown): BuilderNode[] {
+  if (!Array.isArray(nodes)) return [];
+  return nodes.map((n: Record<string, unknown>) => ({
+    tempId: str(n.tempId) ?? `tmp_${Math.random().toString(36).slice(2)}`,
+    id: typeof n.id === "number" ? n.id : null,
+    op: (["create", "update", "delete", "noop"].includes(n.op as string)
+      ? (n.op as BuilderNodeOp)
+      : "create"),
+    type: (["goal", "project", "milestone", "task"].includes(n.type as string)
+      ? (n.type as BuilderNodeType)
+      : "task"),
+    title: str(n.title) || "(untitled)",
+    description: str(n.description),
+    comment: str(n.comment),
+    dueDate: str(n.dueDate),
+    parentTempId: str(n.parentTempId),
+    children: markIncluded(n.children),
     included: true,
-    children: markIncluded(n.children ?? []),
   }));
 }
 
@@ -567,7 +580,7 @@ export default function AiBuilderModal({ isOpen, onClose }: Props) {
     build(
       { prompt: currentPrompt, modeId: mode.id, currentNodes: nodes.length > 0 ? nodes : undefined, entities },
       (data) => {
-        const markedNodes = markIncluded(data.nodes ?? []);
+        const markedNodes = markIncluded(data.nodes);
         setNodes(markedNodes);
         setCommandLog((l) => [
           ...l,
