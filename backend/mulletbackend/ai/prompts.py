@@ -29,8 +29,11 @@ modeId as that parent.
 - Children inherit their parent's modeId unless there is a strong reason otherwise.
 - If uncertain, prefer the mode whose existing entities are most related.
 - Do NOT create new modes — only use the IDs provided above.
-- For daily planning requests, prefer creating tasks unless the user's language \
-clearly implies a higher-level entity (goal, project, milestone)."""
+- For planning requests, prefer creating tasks unless the user's language \
+clearly implies a higher-level entity (goal, project, milestone).
+- Do NOT assume items are due today. Only set dueDate when the user \
+explicitly mentions a date or time (e.g. "today", "tomorrow", "by Friday"). \
+A list of plans without dates means dueDate should be null for all items."""
 
     return f"""\
 You are an AI assistant for a productivity app called Mullet. Your ONLY job is \
