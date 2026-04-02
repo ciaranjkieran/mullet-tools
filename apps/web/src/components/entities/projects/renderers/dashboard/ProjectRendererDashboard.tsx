@@ -41,9 +41,6 @@ export default function ProjectRenderer({
   variant,
   dragHandleProps,
 }: Props) {
-  if (typeof project?.title !== "string") {
-    console.error("[ProjectRenderer] non-string title detected:", JSON.stringify(project));
-  }
   const { setProjectToEdit, setIsProjectDialogOpen } = useDialogStore();
   const { mutate: deleteProject } = useDeleteProject();
   const isTitle = variant === "title";
@@ -64,10 +61,11 @@ export default function ProjectRenderer({
   const isCollapsed = collapsed ?? storeCollapsed;
   const handleToggleCollapse = onToggleCollapse ?? toggleInStore;
 
-  const hasChildren =
-    useProjectStore((s) => s.projects.some((p) => p.parentId === project.id)) ||
-    useMilestoneStore((s) => s.milestones.some((m) => m.projectId === project.id)) ||
-    useTaskStore((s) => s.tasks.some((t) => t.projectId === project.id && t.milestoneId == null));
+  // Each hook MUST be called unconditionally (Rules of Hooks — no short-circuit)
+  const hasChildProjects = useProjectStore((s) => s.projects.some((p) => p.parentId === project.id));
+  const hasChildMilestones = useMilestoneStore((s) => s.milestones.some((m) => m.projectId === project.id));
+  const hasChildTasks = useTaskStore((s) => s.tasks.some((t) => t.projectId === project.id && t.milestoneId == null));
+  const hasChildren = hasChildProjects || hasChildMilestones || hasChildTasks;
 
   const handleEdit = () => {
     setProjectToEdit(project);

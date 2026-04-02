@@ -48,14 +48,7 @@ export default function GoalRendererDashboard({
   // avoid unused-var lint without changing the public API
   void mode;
 
-  // DEBUG: detect which field is the offending object causing React #300
-  if (goal) {
-    for (const [k, v] of Object.entries(goal)) {
-      if (v !== null && typeof v === "object" && !Array.isArray(v)) {
-        console.error(`[GoalRenderer] field "${k}" is an object:`, JSON.stringify(v));
-      }
-    }
-  }
+
 
   const { setGoalToEdit, setIsGoalDialogOpen } = useDialogStore();
   const { mutate: deleteGoal } = useDeleteGoal();
@@ -70,11 +63,11 @@ export default function GoalRendererDashboard({
   const toggleInStore = () =>
     useEntityUIStore.getState().toggleCollapsed("goal", goal.id);
 
-  // hasChildren check
-  const hasChildren =
-    useProjectStore((s) => s.projects.some((p) => p.goalId === goal.id)) ||
-    useMilestoneStore((s) => s.milestones.some((m) => m.goalId === goal.id)) ||
-    useTaskStore((s) => s.tasks.some((t) => t.goalId === goal.id && t.projectId == null && t.milestoneId == null));
+  // hasChildren check — each hook MUST be called unconditionally (Rules of Hooks)
+  const hasChildProjects = useProjectStore((s) => s.projects.some((p) => p.goalId === goal.id));
+  const hasChildMilestones = useMilestoneStore((s) => s.milestones.some((m) => m.goalId === goal.id));
+  const hasChildTasks = useTaskStore((s) => s.tasks.some((t) => t.goalId === goal.id && t.projectId == null && t.milestoneId == null));
+  const hasChildren = hasChildProjects || hasChildMilestones || hasChildTasks;
 
   const isCollapsed = collapsed ?? storeCollapsed;
   const handleToggleCollapse = onToggleCollapse ?? toggleInStore;
