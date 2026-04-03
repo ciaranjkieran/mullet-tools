@@ -70,9 +70,10 @@ export default function MilestoneRenderer({
   const isCollapsed = collapsed ?? storeCollapsed;
   const handleToggleCollapse = onToggleCollapse ?? toggleInStore;
 
-  const hasChildren =
-    useMilestoneStore((s) => s.milestones.some((m) => m.parentId === milestone.id)) ||
-    useTaskStore((s) => s.tasks.some((t) => t.milestoneId === milestone.id));
+  // Each hook MUST be called unconditionally (Rules of Hooks — no short-circuit)
+  const hasChildMilestones = useMilestoneStore((s) => s.milestones.some((m) => m.parentId === milestone.id));
+  const hasChildTasks = useTaskStore((s) => s.tasks.some((t) => t.milestoneId === milestone.id));
+  const hasChildren = hasChildMilestones || hasChildTasks;
 
   // actions
   const handleCompletion = () => {
