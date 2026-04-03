@@ -29,7 +29,14 @@ export default function SettingsPage() {
   useEffect(() => {
     if (me.data?.profile) {
       setDisplayName(me.data.profile.displayName || "");
-      setAvatarPreview(me.data.profile.avatar || null);
+      const raw = me.data.profile.avatar || null;
+      // Avatar URL from API is relative (/media/...) — prefix with backend origin
+      if (raw && !raw.startsWith("http") && !raw.startsWith("blob:")) {
+        const origin = (process.env.NEXT_PUBLIC_API_URL || "").replace(/\/+$/, "");
+        setAvatarPreview(`${origin}${raw}`);
+      } else {
+        setAvatarPreview(raw);
+      }
     }
   }, [me.data]);
 
