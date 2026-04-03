@@ -1,4 +1,4 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useMilestoneStore } from "@shared/store/useMilestoneStore";
 import { Milestone } from "@shared/types/Milestone";
 import { mapMilestoneFromApi } from "@shared/api/mappers/milestoneMapper";
@@ -6,6 +6,8 @@ import api from "../../axios";
 import { ensureCsrf } from "../auth/ensureCsrf";
 
 export function useBulkMoveMilestones() {
+  const queryClient = useQueryClient();
+
   return useMutation({
     mutationFn: async ({
       milestoneIds,
@@ -35,6 +37,7 @@ export function useBulkMoveMilestones() {
       });
 
       setMilestones(merged);
+      queryClient.invalidateQueries({ queryKey: ["milestones"] });
     },
   });
 }

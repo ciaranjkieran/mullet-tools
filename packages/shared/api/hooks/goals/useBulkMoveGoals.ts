@@ -1,4 +1,4 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useGoalStore } from "../../../store/useGoalStore";
 import { Goal } from "../../../types/Goal";
 import { mapGoalFromApi } from "../../mappers/goalMapper";
@@ -6,6 +6,8 @@ import api from "../../axios";
 import { ensureCsrf } from "../auth/ensureCsrf";
 
 export function useBulkMoveGoals() {
+  const queryClient = useQueryClient();
+
   return useMutation({
     mutationFn: async ({
       goalIds,
@@ -31,6 +33,7 @@ export function useBulkMoveGoals() {
       });
 
       setGoals(merged);
+      queryClient.invalidateQueries({ queryKey: ["goals"] });
     },
   });
 }

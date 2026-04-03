@@ -1,4 +1,4 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTaskStore } from "@shared/store/useTaskStore";
 import { Task } from "../../../types/Task";
 import { mapTaskFromApi } from "@shared/api/mappers/taskMapper";
@@ -6,6 +6,8 @@ import api from "../../axios";
 import { ensureCsrf } from "../auth/ensureCsrf";
 
 export function useBulkMoveTasks() {
+  const queryClient = useQueryClient();
+
   return useMutation({
     mutationFn: async ({
       taskIds,
@@ -31,6 +33,7 @@ export function useBulkMoveTasks() {
       });
 
       setTasks(merged);
+      queryClient.invalidateQueries({ queryKey: ["tasks"] });
     },
   });
 }

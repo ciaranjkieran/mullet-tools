@@ -1,4 +1,4 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useProjectStore } from "../../../../shared/store/useProjectStore";
 import { Project } from "../../../types/Project";
 import { mapProjectFromApi } from "../../../../shared/api/mappers/projectMapper";
@@ -6,6 +6,8 @@ import api from "../../axios";
 import { ensureCsrf } from "../auth/ensureCsrf";
 
 export function useBulkMoveProjects() {
+  const queryClient = useQueryClient();
+
   return useMutation({
     mutationFn: async ({
       projectIds,
@@ -36,6 +38,7 @@ export function useBulkMoveProjects() {
       });
 
       setProjects(merged);
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
     },
   });
 }

@@ -33,11 +33,11 @@ export default function ConfirmDialog({
   return (
     <Dialog.Root open={open} onOpenChange={(open) => !open && onClose()}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 bg-black/30 backdrop-blur-sm z-40" />
+        <Dialog.Overlay className="fixed inset-0 bg-black/30 backdrop-blur-sm z-[130]" />
         <Dialog.Content
-          className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 
-             bg-neutral-50 border border-red-500 rounded-lg shadow-lg 
-             p-6 md:p-7 max-w-sm w-full z-50"
+          className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2
+             bg-neutral-50 border border-red-500 rounded-lg shadow-lg
+             p-6 md:p-7 max-w-sm w-full z-[140]"
           onOpenAutoFocus={(e) => e.preventDefault()}
         >
           <div className="flex gap-4">
