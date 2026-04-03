@@ -1,16 +1,38 @@
 // app/features/page.tsx
 import React from "react";
-import Link from "next/link";
 
 const VIDEOS = {
   modes: "/videos/Modes Video.mp4",
-  hierarchy: "/videos/Hierarchy Image.png",
   comments: "/videos/Comments.mp4",
   notes: "/videos/Notes Video.mp4",
   boards: "/videos/Boards Video.mp4",
   timer: "/videos/Stats Video.mp4",
   coherentSystem: "/videos/Coherent System.mp4",
 };
+
+const IMAGES = {
+  hierarchy: "/Images/Hierarchy Image.png",
+  collaboration: "/Images/Collaboration.png",
+};
+
+const ICONS: { src: string; label: string }[] = [
+  { src: "/Images/Goal.png", label: "Goal" },
+  { src: "/Images/Project.png", label: "Project" },
+  { src: "/Images/Milestone.png", label: "Milestone" },
+  { src: "/Images/Add Task.png", label: "Add Task" },
+  { src: "/Images/Home Img.png", label: "Home" },
+  { src: "/Images/Focus Img.png", label: "Focus" },
+  { src: "/Images/Calendar Img.png", label: "Calendar" },
+  { src: "/Images/Notes Img.png", label: "Notes" },
+  { src: "/Images/Comments Img.png", label: "Comments" },
+  { src: "/Images/Boards Img.png", label: "Boards" },
+  { src: "/Images/Stats Img.png", label: "Stats" },
+  { src: "/Images/Timer Img.png", label: "Timer" },
+  { src: "/Images/Stopwatch Img.png", label: "Stopwatch" },
+  { src: "/Images/Ai Builder Img.png", label: "AI Builder" },
+  { src: "/Images/Collaboration Img.png", label: "Collaboration" },
+  { src: "/Images/Templates Img.png", label: "Templates" },
+];
 
 export default function HowItWorksPage() {
   return (
@@ -162,7 +184,7 @@ export default function HowItWorksPage() {
               </p>
             </TextBlock>
 
-            <ImageCard src={VIDEOS.hierarchy} alt="Hierarchy of Goals, Projects, Milestones and Tasks" />
+            <ImageCard src={IMAGES.hierarchy} alt="Hierarchy of Goals, Projects, Milestones and Tasks" />
           </Section>
 
           {/* FEATURES */}
@@ -238,7 +260,7 @@ export default function HowItWorksPage() {
               </p>
             </TextBlock>
 
-            <VideoPlaceholder label="Collaboration video coming soon" />
+            <ImageCard src={IMAGES.collaboration} alt="Collaboration in Mullet" />
           </Section>
 
           {/* AI BUILDER */}
@@ -317,26 +339,36 @@ export default function HowItWorksPage() {
             <VideoCard src={VIDEOS.coherentSystem} />
           </Section>
 
-          {/* CTA */}
-          <section className="mx-auto max-w-2xl text-center space-y-6 pb-8">
-            <h2 className="text-2xl font-semibold tracking-tight text-neutral-900 sm:text-3xl">
-              Ready to get started?
-            </h2>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link
-                href="/login?signup=true"
-                className="inline-flex items-center justify-center rounded-md bg-blue-700 px-6 py-3 text-base font-semibold text-white hover:bg-blue-800 transition"
-              >
-                Create your account
-              </Link>
-              <Link
-                href="/login"
-                className="inline-flex items-center justify-center rounded-md border border-neutral-300 bg-white px-6 py-3 text-base font-semibold text-neutral-900 hover:bg-neutral-50 transition"
-              >
-                Log in
-              </Link>
+          {/* ICON GLOSSARY */}
+          <Section id="icon-glossary">
+            <TextBlock title="Icon Glossary">
+              <p>
+                A quick reference for the icons you&apos;ll see throughout
+                Mullet.
+              </p>
+            </TextBlock>
+
+            <div className="mx-auto max-w-2xl">
+              <div className="grid grid-cols-2 gap-x-8 gap-y-6 sm:grid-cols-3 md:grid-cols-4">
+                {ICONS.map((icon) => (
+                  <div
+                    key={icon.label}
+                    className="flex flex-col items-center gap-2 text-center"
+                  >
+                    <img
+                      src={icon.src}
+                      alt={icon.label}
+                      className="h-12 w-12 object-contain"
+                    />
+                    <span className="text-sm font-medium text-neutral-700">
+                      {icon.label}
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
-          </section>
+          </Section>
+
         </article>
       </div>
     </main>
