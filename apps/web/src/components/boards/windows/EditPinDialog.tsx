@@ -224,9 +224,9 @@ export default function EditPinDialog({ modes, modeColor }: Props) {
     <>
       <Dialog.Root open={isOpen} onOpenChange={(v) => !v && handleClose()}>
         <Dialog.Portal>
-          <Dialog.Overlay className="fixed inset-0 z-40 bg-black/40 backdrop-blur-[2px]" />
+          <Dialog.Overlay className="fixed inset-0 z-[130] bg-black/40 backdrop-blur-[2px]" />
 
-          <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-full max-w-3xl h-[85vh] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-xl bg-white shadow-2xl flex flex-col">
+          <Dialog.Content className="fixed left-1/2 top-1/2 z-[140] w-full max-w-3xl h-[85vh] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-xl bg-white shadow-2xl flex flex-col">
             <div
               className="h-1.5 md:h-4 w-full"
               style={{ backgroundColor: resolvedModeColor, opacity: 0.3 }}
