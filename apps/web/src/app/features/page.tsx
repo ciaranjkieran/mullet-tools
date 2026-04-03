@@ -2,12 +2,13 @@
 import React from "react";
 
 const VIDEOS = {
-  modes: "/videos/Modes Video.mp4",
-  comments: "/videos/Comments.mp4",
-  notes: "/videos/Notes Video.mp4",
-  boards: "/videos/Boards Video.mp4",
-  timer: "/videos/Stats Video.mp4",
-  coherentSystem: "/videos/Coherent System.mp4",
+  modes: "/videos/Modes Video Real.mp4",
+  comments: "/videos/Comments Real.mp4",
+  notes: "/videos/Notes Video Real.mp4",
+  boards: "/videos/Boards Real.mp4",
+  timer: "/videos/Timer & Stats Real.mp4",
+  aiBuilder: "/videos/AI Builder video Real.mp4",
+  coherentSystem: "/videos/Putting it all together video Real.mp4",
 };
 
 const IMAGES = {
@@ -298,7 +299,7 @@ export default function HowItWorksPage() {
               </p>
             </TextBlock>
 
-            <VideoPlaceholder label="AI Builder video coming soon" />
+            <VideoCard src={VIDEOS.aiBuilder} />
           </Section>
 
           {/* PUTTING IT ALL TOGETHER */}
@@ -447,16 +448,6 @@ function FeatureCard({
       <h3 className="text-xl font-semibold text-neutral-900">{title}</h3>
       <p className="text-lg leading-relaxed text-neutral-800">{children}</p>
       <VideoCard src={video} />
-    </div>
-  );
-}
-
-function VideoPlaceholder({ label }: { label: string }) {
-  return (
-    <div className="mx-auto max-w-2xl overflow-hidden rounded-3xl border border-dashed border-neutral-300 bg-neutral-50 shadow-sm">
-      <div className="flex items-center justify-center py-32">
-        <span className="text-base text-neutral-400">{label}</span>
-      </div>
     </div>
   );
 }
