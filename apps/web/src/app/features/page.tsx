@@ -3,9 +3,9 @@ import React from "react";
 import Link from "next/link";
 
 const VIDEOS = {
-  modes: "/videos/Modes Video 2.mp4",
-  hierarchy: "/videos/Hierarchy Video 4.mp4",
-  comments: "/videos/Comments Video.mp4",
+  modes: "/videos/Modes Video.mp4",
+  hierarchy: "/videos/Hierarchy Image.png",
+  comments: "/videos/Comments.mp4",
   notes: "/videos/Notes Video.mp4",
   boards: "/videos/Boards Video.mp4",
   timer: "/videos/Stats Video.mp4",
@@ -162,7 +162,7 @@ export default function HowItWorksPage() {
               </p>
             </TextBlock>
 
-            <VideoCard src={VIDEOS.hierarchy} />
+            <ImageCard src={VIDEOS.hierarchy} alt="Hierarchy of Goals, Projects, Milestones and Tasks" />
           </Section>
 
           {/* FEATURES */}
@@ -372,6 +372,14 @@ function TextBlock({
         {title}
       </h2>
       {children}
+    </div>
+  );
+}
+
+function ImageCard({ src, alt }: { src: string; alt: string }) {
+  return (
+    <div className="overflow-hidden rounded-3xl border border-neutral-200 bg-neutral-50 shadow-md">
+      <img className="block w-full" src={src} alt={alt} />
     </div>
   );
 }
