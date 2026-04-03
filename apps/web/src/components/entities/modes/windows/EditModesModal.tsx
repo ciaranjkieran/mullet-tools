@@ -194,7 +194,7 @@ export default function EditModesModal({ isOpen, onClose, modes }: Props) {
         position: m.position ?? 0,
       });
 
-      const tempToReal = new Map<TempModeId, number>();
+      tempToReal.set(m.id, created.id);
 
       addMode({
         id: created.id,
