@@ -11,10 +11,13 @@ class ProfileSerializer(serializers.ModelSerializer):
         source="display_name", required=False, allow_blank=True
     )
     avatar = serializers.ImageField(required=False, allow_null=True)
+    hasCompletedOnboarding = serializers.BooleanField(
+        source="has_completed_onboarding", required=False
+    )
 
     class Meta:
         model = Profile
-        fields = ["displayName", "avatar"]
+        fields = ["displayName", "avatar", "hasCompletedOnboarding"]
 
 
 class UserSerializer(serializers.ModelSerializer):

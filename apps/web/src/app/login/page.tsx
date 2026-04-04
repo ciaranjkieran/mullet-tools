@@ -51,10 +51,11 @@ export default function LoginSignupPage() {
     try {
       if (mode === "login") {
         await login.mutateAsync({ email, password });
+        router.push("/dashboard");
       } else {
         await register.mutateAsync({ email, password });
+        router.push("/onboarding");
       }
-      router.push("/dashboard");
     } catch {
       // errors shown via `error`
     }

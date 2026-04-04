@@ -22,7 +22,6 @@ import logging
 import zipfile
 import uuid
 from datetime import datetime
-from core.services.create_default_modes_for_user import create_default_modes_for_user
 from billing.models import Subscription
 from .models import Profile
 from .serializers import UserSerializer, ProfileSerializer
@@ -81,7 +80,6 @@ class RegisterView(APIView):
                 password=password,
             )
 
-            create_default_modes_for_user(user)
             Profile.objects.create(user=user)
             Subscription.objects.create(user=user)
 
@@ -167,6 +165,16 @@ class ProfileView(APIView):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data)
+
+
+class CompleteOnboardingView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        profile, _ = Profile.objects.get_or_create(user=request.user)
+        profile.has_completed_onboarding = True
+        profile.save(update_fields=["has_completed_onboarding"])
+        return Response({"status": "ok"})
 
 
 class ExportDataView(APIView):

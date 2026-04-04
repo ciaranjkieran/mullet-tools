@@ -6,6 +6,7 @@ import api from "../../axios";
 export type UserProfile = {
   displayName: string;
   avatar: string | null;
+  hasCompletedOnboarding: boolean;
 };
 
 export type SubscriptionStatus = "trialing" | "active" | "cancelled" | "expired";

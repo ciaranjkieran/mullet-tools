@@ -10,6 +10,7 @@ class Profile(models.Model):
     )
     display_name = models.CharField(max_length=100, blank=True, default="")
     avatar = models.ImageField(upload_to="avatars/", blank=True, null=True)
+    has_completed_onboarding = models.BooleanField(default=False)
 
     def __str__(self):
         return f"Profile({self.user.username})"

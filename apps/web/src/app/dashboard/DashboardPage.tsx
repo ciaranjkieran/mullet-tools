@@ -18,13 +18,8 @@ import ScrollJumper from "@/components/common/ScrollJumper";
 import ModeFilter from "@/components/entities/modes/windows/ModeFilter";
 import DialogManager from "@/components/dialogs/DialogManager";
 
-import {
-  AddGoalButton,
-  AddMilestoneButton,
-  AddProjectButton,
-  AddTaskButton,
-} from "@/components/addbuttons";
 import MobileEntityFAB from "@/components/addbuttons/MobileEntityFAB";
+import DesktopEntityFAB from "@/components/addbuttons/DesktopEntityFAB";
 
 import { useViewerStore } from "@/components/boards/viewer/store/useViewerStore";
 
@@ -567,37 +562,26 @@ export default function DashboardPage() {
               onOpenAiBuilder={() => setIsAiBuilderOpen(true)}
             />
 
-            {/* Desktop: full stack */}
-            <div className="fixed z-[70] bottom-10 right-12 hidden lg:flex flex-col items-center gap-4">
-              <AddGoalButton
-                onClick={() => {
-                  setGoalToEdit(null);
-                  setIsGoalDialogOpen(true);
-                }}
-                modeColor={modeColor}
-              />
-              <AddProjectButton
-                onClick={() => {
-                  setProjectToEdit(null);
-                  setIsProjectDialogOpen(true);
-                }}
-                modeColor={modeColor}
-              />
-              <AddMilestoneButton
-                onClick={() => {
-                  setMilestoneToEdit(null);
-                  setIsMilestoneDialogOpen(true);
-                }}
-                modeColor={modeColor}
-              />
-              <AddTaskButton
-                onClick={() => {
-                  setTaskToEdit(null);
-                  setIsTaskDialogOpen(true);
-                }}
-                modeColor={modeColor}
-              />
-            </div>
+            {/* Desktop: expandable FAB */}
+            <DesktopEntityFAB
+              modeColor={modeColor}
+              onAddGoal={() => {
+                setGoalToEdit(null);
+                setIsGoalDialogOpen(true);
+              }}
+              onAddProject={() => {
+                setProjectToEdit(null);
+                setIsProjectDialogOpen(true);
+              }}
+              onAddMilestone={() => {
+                setMilestoneToEdit(null);
+                setIsMilestoneDialogOpen(true);
+              }}
+              onAddTask={() => {
+                setTaskToEdit(null);
+                setIsTaskDialogOpen(true);
+              }}
+            />
           </>
         )}
       </section>
