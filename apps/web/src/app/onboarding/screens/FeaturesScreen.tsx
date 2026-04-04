@@ -1,5 +1,7 @@
 "use client";
 
+import Image from "next/image";
+
 const FEATURES = [
   {
     emoji: "📝",
@@ -34,9 +36,24 @@ export default function FeaturesScreen({ onNext }: { onNext: () => void }) {
         Mullet comes with a set of tools that live inside any element.
       </p>
 
-      {/* Image placeholder */}
-      <div className="mt-8 w-full max-w-lg h-40 rounded-xl bg-gray-100 flex items-center justify-center text-sm text-gray-400 font-medium">
-        IMAGE PLACEHOLDER
+      {/* Feature icons */}
+      <div className="mt-8 grid grid-cols-4 gap-6 w-full max-w-sm">
+        <div className="flex flex-col items-center gap-1.5">
+          <Image src="/Images/Notes Img.png" alt="Notes" width={56} height={56} className="object-contain" />
+          <span className="text-xs text-gray-500 font-medium">Notes</span>
+        </div>
+        <div className="flex flex-col items-center gap-1.5">
+          <Image src="/Images/Comments Img.png" alt="Comments" width={56} height={56} className="object-contain" />
+          <span className="text-xs text-gray-500 font-medium">Comments</span>
+        </div>
+        <div className="flex flex-col items-center gap-1.5">
+          <Image src="/Images/Boards Img.png" alt="Boards" width={56} height={56} className="object-contain" />
+          <span className="text-xs text-gray-500 font-medium">Boards</span>
+        </div>
+        <div className="flex flex-col items-center gap-1.5">
+          <Image src="/Images/Timer Img.png" alt="Timer" width={56} height={56} className="object-contain" />
+          <span className="text-xs text-gray-500 font-medium">Timer</span>
+        </div>
       </div>
 
       {/* Feature grid */}
@@ -58,9 +75,7 @@ export default function FeaturesScreen({ onNext }: { onNext: () => void }) {
       </div>
 
       <a
-        href="https://mullet.la/how-it-works#features"
-        target="_blank"
-        rel="noopener noreferrer"
+        href="/features#features"
         className="mt-6 text-sm font-medium text-gray-500 hover:text-gray-800 transition"
       >
         Learn more about features &rarr;

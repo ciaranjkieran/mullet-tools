@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import type { SelectedMode } from "../types";
 
 const PRESET_COLORS = [
@@ -63,10 +64,13 @@ export default function ModesScreen({
           </p>
         </div>
 
-        {/* Image placeholder */}
-        <div className="hidden md:flex w-40 h-28 rounded-xl bg-gray-100 items-center justify-center text-xs text-gray-400 font-medium shrink-0">
-          IMAGE PLACEHOLDER
-        </div>
+        <Image
+          src="/Images/Modes Onboarding image.png"
+          alt="Modes illustration"
+          width={160}
+          height={112}
+          className="hidden md:block rounded-xl object-cover shrink-0"
+        />
       </div>
 
       {/* Mode grid */}

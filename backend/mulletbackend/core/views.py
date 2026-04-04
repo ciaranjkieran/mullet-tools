@@ -36,6 +36,16 @@ from collaboration.permissions import accessible_mode_ids, writable_mode_ids, va
 # Safety cap: prevent unbounded list responses
 MAX_LIST_SIZE = 2000
 
+
+class CappedListMixin:
+    """Apply MAX_LIST_SIZE only on list actions so detail views can still filter."""
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        if self.action == "list":
+            return qs[:MAX_LIST_SIZE]
+        return qs
+
 # ─────────────────────────────────────────────
 # MODES
 # ─────────────────────────────────────────────
@@ -103,7 +113,7 @@ class ModeViewSet(ModelViewSet):
 # ─────────────────────────────────────────────
 # GOALS
 # ─────────────────────────────────────────────
-class GoalViewSet(ModelViewSet):
+class GoalViewSet(CappedListMixin, ModelViewSet):
     serializer_class = GoalSerializer
     permission_classes = [IsAuthenticated]
 
@@ -113,7 +123,7 @@ class GoalViewSet(ModelViewSet):
             mode_ids = accessible_mode_ids(user)
         else:
             mode_ids = writable_mode_ids(user)
-        return Goal.objects.filter(mode_id__in=mode_ids).select_related("assigned_to__profile").order_by("position", "id")[:MAX_LIST_SIZE]
+        return Goal.objects.filter(mode_id__in=mode_ids).select_related("assigned_to__profile").order_by("position", "id")
 
     def perform_create(self, serializer):
         validate_mode_write_access(self.request.user, serializer.validated_data.get("mode"))
@@ -247,7 +257,7 @@ class GoalReorderTodayView(APIView):
 # ─────────────────────────────────────────────
 # PROJECTS
 # ─────────────────────────────────────────────
-class ProjectViewSet(ModelViewSet):
+class ProjectViewSet(CappedListMixin, ModelViewSet):
     serializer_class = ProjectSerializer
     permission_classes = [IsAuthenticated]
 
@@ -257,7 +267,7 @@ class ProjectViewSet(ModelViewSet):
             mode_ids = accessible_mode_ids(user)
         else:
             mode_ids = writable_mode_ids(user)
-        return Project.objects.filter(mode_id__in=mode_ids).select_related("assigned_to__profile").order_by("position", "id")[:MAX_LIST_SIZE]
+        return Project.objects.filter(mode_id__in=mode_ids).select_related("assigned_to__profile").order_by("position", "id")
 
     def perform_create(self, serializer):
         validate_mode_write_access(self.request.user, serializer.validated_data.get("mode"))
@@ -403,7 +413,7 @@ class ProjectReorderHomeView(APIView):
 # ─────────────────────────────────────────────
 # MILESTONES
 # ─────────────────────────────────────────────
-class MilestoneViewSet(ModelViewSet):
+class MilestoneViewSet(CappedListMixin, ModelViewSet):
     serializer_class = MilestoneSerializer
     permission_classes = [IsAuthenticated]
 
@@ -413,7 +423,7 @@ class MilestoneViewSet(ModelViewSet):
             mode_ids = accessible_mode_ids(user)
         else:
             mode_ids = writable_mode_ids(user)
-        return Milestone.objects.filter(mode_id__in=mode_ids).select_related("assigned_to__profile").order_by("position", "id")[:MAX_LIST_SIZE]
+        return Milestone.objects.filter(mode_id__in=mode_ids).select_related("assigned_to__profile").order_by("position", "id")
 
     def perform_create(self, serializer):
         validate_mode_write_access(self.request.user, serializer.validated_data.get("mode"))
@@ -581,7 +591,7 @@ class MilestoneReorderHomeView(APIView):
 # ─────────────────────────────────────────────
 # TASKS
 # ─────────────────────────────────────────────
-class TaskViewSet(ModelViewSet):
+class TaskViewSet(CappedListMixin, ModelViewSet):
     serializer_class = TaskSerializer
     permission_classes = [IsAuthenticated]
 
@@ -591,7 +601,7 @@ class TaskViewSet(ModelViewSet):
             mode_ids = accessible_mode_ids(user)
         else:
             mode_ids = writable_mode_ids(user)
-        return Task.objects.filter(mode_id__in=mode_ids).select_related("assigned_to__profile").order_by("position", "id")[:MAX_LIST_SIZE]
+        return Task.objects.filter(mode_id__in=mode_ids).select_related("assigned_to__profile").order_by("position", "id")
 
     def perform_create(self, serializer):
         validate_mode_write_access(self.request.user, serializer.validated_data.get("mode"))

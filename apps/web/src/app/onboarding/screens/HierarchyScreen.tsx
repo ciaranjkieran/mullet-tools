@@ -1,5 +1,7 @@
 "use client";
 
+import Image from "next/image";
+
 const BUILDING_BLOCKS = [
   { emoji: "🎯", name: "Goal", description: "the big picture outcome" },
   { emoji: "📁", name: "Project", description: "a defined piece of work" },
@@ -22,10 +24,13 @@ export default function HierarchyScreen({ onNext }: { onNext: () => void }) {
         Inside each Mode you have four flexible building blocks.
       </p>
 
-      {/* Image placeholder */}
-      <div className="mt-8 w-full max-w-md h-40 rounded-xl bg-gray-100 flex items-center justify-center text-sm text-gray-400 font-medium">
-        IMAGE PLACEHOLDER
-      </div>
+      <Image
+        src="/Images/Hierarchy Image2.png"
+        alt="Hierarchy diagram showing Goal, Project, Milestone, and Task"
+        width={448}
+        height={160}
+        className="mt-8 w-full max-w-md rounded-xl object-contain"
+      />
 
       {/* Building blocks */}
       <div className="mt-8 w-full max-w-md space-y-3">
@@ -49,9 +54,7 @@ export default function HierarchyScreen({ onNext }: { onNext: () => void }) {
       </p>
 
       <a
-        href="https://mullet.la/how-it-works#hierarchy"
-        target="_blank"
-        rel="noopener noreferrer"
+        href="/features#hierarchy"
         className="mt-3 text-sm font-medium text-gray-500 hover:text-gray-800 transition"
       >
         Learn more about the hierarchy &rarr;

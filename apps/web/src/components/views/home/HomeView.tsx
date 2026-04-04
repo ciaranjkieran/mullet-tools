@@ -18,6 +18,7 @@ import { buildProjectTree } from "@/components/entities/projects/utils/buildProj
 import GoalList from "@/components/entities/goals/containers/dashboard/GoalList";
 import { projectEffectiveGoalId } from "@shared/lineage/effective";
 import { useHomeFocusStore } from "@/lib/store/useNavFocusStore";
+import EmptyModeState from "./EmptyModeState";
 
 type Props = {
   tasks: Task[];
@@ -192,7 +193,28 @@ export default function HomeView({
     return () => window.removeEventListener("hashchange", onHash);
   }, [tasks, projects, milestones]);
 
-  // ── Render (unchanged) ───────────────────────────────────
+  // ── Check if current view is completely empty ────────────
+  const hasAnyContent = useMemo(() => {
+    if (isAll) return activeModes.length > 0;
+    if (!activeMode) return false;
+    const id = activeMode.id;
+    return (
+      tasks.some((t) => t.modeId === id) ||
+      projects.some((p) => p.modeId === id) ||
+      milestones.some((m) => m.modeId === id) ||
+      goals.some((g) => g.modeId === id)
+    );
+  }, [isAll, activeModes, activeMode, tasks, projects, milestones, goals]);
+
+  // ── Render ──────────────────────────────────────────────
+  if (!hasAnyContent) {
+    return (
+      <div className="mt-4">
+        <EmptyModeState mode={activeMode} isAll={isAll} />
+      </div>
+    );
+  }
+
   return (
     <div className="mt-4 space-y-8">
       {activeModes.map((mode) => {
