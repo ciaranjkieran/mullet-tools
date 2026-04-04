@@ -34,6 +34,14 @@ class SubscriptionMiddleware:
         if user.is_staff:
             return self.get_response(request)
 
+        # Allow users who haven't completed onboarding yet (they need to
+        # create modes / entities during the onboarding flow).
+        try:
+            if not user.profile.has_completed_onboarding:
+                return self.get_response(request)
+        except Exception:
+            pass
+
         try:
             subscription = user.subscription
             if subscription.is_active:

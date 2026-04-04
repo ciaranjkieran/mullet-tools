@@ -77,19 +77,27 @@ export default function OnboardingFlow() {
 
   const finishOnboarding = useCallback(async () => {
     setFinishing(true);
-    await completeOnboarding.mutateAsync();
-    router.push("/dashboard");
+    try {
+      await completeOnboarding.mutateAsync();
+      router.push("/dashboard");
+    } catch {
+      setFinishing(false);
+    }
   }, [completeOnboarding, router]);
 
   const skipToEnd = useCallback(async () => {
     setFinishing(true);
-    // Create modes if not yet created (skipping from screen 3/4)
-    let modes = createdModeIds;
-    if (modes.length === 0) {
-      modes = await createSelectedModes();
+    try {
+      // Create modes if not yet created (skipping from screen 3/4)
+      let modes = createdModeIds;
+      if (modes.length === 0) {
+        modes = await createSelectedModes();
+      }
+      await completeOnboarding.mutateAsync();
+      router.push("/dashboard");
+    } catch {
+      setFinishing(false);
     }
-    await completeOnboarding.mutateAsync();
-    router.push("/dashboard");
   }, [createdModeIds, createSelectedModes, completeOnboarding, router]);
 
   const handleModesNext = useCallback(async () => {
