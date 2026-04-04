@@ -6,6 +6,7 @@ interface ApiConfig {
   baseURL: string;
   authMode: AuthMode;
   onSubscriptionExpired?: () => void;
+  onUnauthenticated?: () => void;
 }
 
 let _authMode: AuthMode = "session";
@@ -44,15 +45,19 @@ export function configureApi(
     });
   }
 
-  // Response interceptor: detect subscription expiry
+  // Response interceptor: detect subscription expiry and auth failures
   api.interceptors.response.use(
     (response) => response,
     (error) => {
+      const status = error.response?.status;
       if (
-        error.response?.status === 403 &&
+        status === 403 &&
         error.response?.data?.code === "subscription_expired"
       ) {
         config.onSubscriptionExpired?.();
+      }
+      if (status === 401) {
+        config.onUnauthenticated?.();
       }
       return Promise.reject(error);
     }

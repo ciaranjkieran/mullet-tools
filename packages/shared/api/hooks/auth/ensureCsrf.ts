@@ -25,3 +25,13 @@ export async function ensureCsrf() {
 
   return _csrfPromise;
 }
+
+/**
+ * Force-refresh the CSRF token. Call after login/register since
+ * Django rotates the session (and its CSRF token) on authentication.
+ */
+export function refreshCsrf() {
+  delete api.defaults.headers.common["X-CSRFToken"];
+  _csrfPromise = null;
+  return ensureCsrf();
+}

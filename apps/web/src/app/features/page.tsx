@@ -1,5 +1,13 @@
 // app/features/page.tsx
 import React from "react";
+import Image from "next/image";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Features",
+  description:
+    "Modes, Goals, Projects, Milestones, Tasks, Notes, Comments, Boards, Timer, and more. See everything Mullet can do.",
+};
 
 const VIDEOS = {
   modes: "/videos/Modes Video Real.mp4",
@@ -356,9 +364,11 @@ export default function HowItWorksPage() {
                     key={icon.label}
                     className="flex flex-col items-center gap-2 text-center"
                   >
-                    <img
+                    <Image
                       src={icon.src}
                       alt={icon.label}
+                      width={48}
+                      height={48}
                       className="h-12 w-12 object-contain"
                     />
                     <span className="text-sm font-medium text-neutral-700">
@@ -412,7 +422,13 @@ function TextBlock({
 function ImageCard({ src, alt }: { src: string; alt: string }) {
   return (
     <div className="overflow-hidden rounded-3xl border border-neutral-200 bg-neutral-50 shadow-md">
-      <img className="block w-full" src={src} alt={alt} />
+      <Image
+        className="block w-full h-auto"
+        src={src}
+        alt={alt}
+        width={800}
+        height={500}
+      />
     </div>
   );
 }

@@ -10,10 +10,27 @@ export const viewport = {
 };
 
 export const metadata = {
-  title: "Mullet",
-  description: "Compartmentalize your life with modes.",
+  title: {
+    default: "Mullet — Compartmentalize your life",
+    template: "%s | Mullet",
+  },
+  description:
+    "Organise every area of your life with Modes, Goals, Projects, Milestones, and Tasks. Built-in notes, comments, boards, and a focused work timer.",
   icons: {
     icon: "/logo.png",
+  },
+  openGraph: {
+    title: "Mullet — Compartmentalize your life",
+    description:
+      "A productivity app that gives every area of your life its own space.",
+    siteName: "Mullet",
+    type: "website",
+  },
+  twitter: {
+    card: "summary",
+    title: "Mullet — Compartmentalize your life",
+    description:
+      "A productivity app that gives every area of your life its own space.",
   },
 };
 

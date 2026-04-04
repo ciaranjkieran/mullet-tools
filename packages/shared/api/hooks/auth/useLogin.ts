@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import api, { getAuthMode } from "../../axios";
-import { ensureCsrf } from "./ensureCsrf";
+import { ensureCsrf, refreshCsrf } from "./ensureCsrf";
 import { handleTokenReceived } from "./tokenCallbacks";
 
 export function useLogin() {
@@ -18,6 +18,9 @@ export function useLogin() {
       return res.data;
     },
     onSuccess: async (data) => {
+      // Django rotates the session on login, invalidating the old CSRF token
+      await refreshCsrf();
+
       if (data.token) {
         await handleTokenReceived(data.token);
       }

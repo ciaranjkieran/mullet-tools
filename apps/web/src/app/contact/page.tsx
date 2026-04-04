@@ -39,14 +39,11 @@ export default function ContactClient() {
 
     try {
       setStatus("submitting");
-      // TODO: wire this to your API route (e.g., /api/contact) or email service
-      // const res = await fetch("/api/contact", {
-      //   method: "POST",
-      //   headers: { "Content-Type": "application/json" },
-      //   body: JSON.stringify(payload),
-      // });
-      // if (!res.ok) throw new Error("Failed");
-      await new Promise((r) => setTimeout(r, 600)); // demo latency
+      const subject = encodeURIComponent(`[${payload.topic}] from ${payload.name}`);
+      const body = encodeURIComponent(
+        `Name: ${payload.name}\nEmail: ${payload.email}\nTopic: ${payload.topic}\n\n${payload.message}`
+      );
+      window.location.href = `mailto:support@mullet.tools?subject=${subject}&body=${body}`;
       setStatus("success");
       (e.currentTarget as HTMLFormElement).reset();
     } catch {

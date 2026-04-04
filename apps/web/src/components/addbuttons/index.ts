@@ -1,4 +1,2 @@
-export * from "./AddGoalButton";
-export * from "./AddProjectButton";
-export * from "./AddMilestoneButton";
-export * from "./AddTaskButton";
+export { default as DesktopEntityFAB } from "./DesktopEntityFAB";
+export { default as MobileEntityFAB } from "./MobileEntityFAB";

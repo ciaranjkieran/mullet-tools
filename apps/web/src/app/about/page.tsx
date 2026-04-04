@@ -1,6 +1,13 @@
 // app/about/page.tsx
 import React from "react";
 import Link from "next/link";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "About",
+  description:
+    "Mullet is a productivity app that gives every area of your life its own space. Learn about the idea behind it.",
+};
 
 const HERO_VIDEO_SRC = "/videos/About 1 Edit 1.mp4";
 const CONTACT_HREF = "/contact";

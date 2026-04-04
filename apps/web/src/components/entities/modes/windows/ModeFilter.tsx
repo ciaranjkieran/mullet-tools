@@ -40,7 +40,6 @@ function SortableModeButton({
   const selectedMode = useModeStore((s) => s.selectedMode);
   const setSelectedMode = useModeStore((s) => s.setSelectedMode);
 
-  const [isHovered, setIsHovered] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
 
   const {
@@ -95,14 +94,12 @@ function SortableModeButton({
             taskId: null,
           });
         }}
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
         className="px-2 py-0.5 md:px-3 md:py-1 rounded-full border transition select-none text-sm md:text-base"
         style={{
           backgroundColor: isActive ? color : "#F3F4F6",
           color: isActive ? getContrastingText(mode.color) : "#111",
           borderColor: isActive ? mode.color : "#D1D5DB",
-          cursor: isHovered ? (isActive ? "grab" : "pointer") : "default",
+          cursor: "pointer",
           whiteSpace: "nowrap",
         }}
       >

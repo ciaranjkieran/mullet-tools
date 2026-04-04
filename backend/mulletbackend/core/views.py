@@ -33,6 +33,9 @@ from timers.services import stop_active_if_targeting
 from comments.services import soft_delete_comments_for_instance
 from collaboration.permissions import accessible_mode_ids, writable_mode_ids, validate_mode_write_access
 
+# Safety cap: prevent unbounded list responses
+MAX_LIST_SIZE = 2000
+
 # ─────────────────────────────────────────────
 # MODES
 # ─────────────────────────────────────────────
@@ -110,7 +113,7 @@ class GoalViewSet(ModelViewSet):
             mode_ids = accessible_mode_ids(user)
         else:
             mode_ids = writable_mode_ids(user)
-        return Goal.objects.filter(mode_id__in=mode_ids).select_related("assigned_to__profile").order_by("position", "id")
+        return Goal.objects.filter(mode_id__in=mode_ids).select_related("assigned_to__profile").order_by("position", "id")[:MAX_LIST_SIZE]
 
     def perform_create(self, serializer):
         validate_mode_write_access(self.request.user, serializer.validated_data.get("mode"))
@@ -254,7 +257,7 @@ class ProjectViewSet(ModelViewSet):
             mode_ids = accessible_mode_ids(user)
         else:
             mode_ids = writable_mode_ids(user)
-        return Project.objects.filter(mode_id__in=mode_ids).select_related("assigned_to__profile").order_by("position", "id")
+        return Project.objects.filter(mode_id__in=mode_ids).select_related("assigned_to__profile").order_by("position", "id")[:MAX_LIST_SIZE]
 
     def perform_create(self, serializer):
         validate_mode_write_access(self.request.user, serializer.validated_data.get("mode"))
@@ -410,7 +413,7 @@ class MilestoneViewSet(ModelViewSet):
             mode_ids = accessible_mode_ids(user)
         else:
             mode_ids = writable_mode_ids(user)
-        return Milestone.objects.filter(mode_id__in=mode_ids).select_related("assigned_to__profile").order_by("position", "id")
+        return Milestone.objects.filter(mode_id__in=mode_ids).select_related("assigned_to__profile").order_by("position", "id")[:MAX_LIST_SIZE]
 
     def perform_create(self, serializer):
         validate_mode_write_access(self.request.user, serializer.validated_data.get("mode"))
@@ -588,7 +591,7 @@ class TaskViewSet(ModelViewSet):
             mode_ids = accessible_mode_ids(user)
         else:
             mode_ids = writable_mode_ids(user)
-        return Task.objects.filter(mode_id__in=mode_ids).select_related("assigned_to__profile").order_by("position", "id")
+        return Task.objects.filter(mode_id__in=mode_ids).select_related("assigned_to__profile").order_by("position", "id")[:MAX_LIST_SIZE]
 
     def perform_create(self, serializer):
         validate_mode_write_access(self.request.user, serializer.validated_data.get("mode"))

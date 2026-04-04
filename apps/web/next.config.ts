@@ -76,6 +76,20 @@ const nextConfig: NextConfig = {
             value:
               "camera=(), microphone=(), geolocation=(), interest-cohort=()",
           },
+          {
+            key: "Content-Security-Policy",
+            value: [
+              "default-src 'self'",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com",
+              "style-src 'self' 'unsafe-inline'",
+              "img-src 'self' data: blob: https://mullet-tools-backend.onrender.com https://www.google.com https://img.youtube.com",
+              "font-src 'self'",
+              "connect-src 'self' https://mullet-tools-backend.onrender.com https://api.stripe.com",
+              "frame-src https://js.stripe.com",
+              "object-src 'none'",
+              "base-uri 'self'",
+            ].join("; "),
+          },
         ],
       },
     ];

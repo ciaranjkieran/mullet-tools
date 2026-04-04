@@ -53,6 +53,12 @@ export default function Paywall() {
               {checkout.isPending ? "Loading..." : "Subscribe now"}
             </button>
 
+            {checkout.isError && (
+              <p className="mt-2 text-sm text-red-600 text-center">
+                Something went wrong. Please try again.
+              </p>
+            )}
+
             <button
               onClick={handleLogout}
               className="w-full rounded-lg border border-gray-300 px-6 py-3 text-sm font-medium text-gray-600 hover:bg-gray-50 transition"

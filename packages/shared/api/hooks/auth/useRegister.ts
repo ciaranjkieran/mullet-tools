@@ -2,6 +2,7 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import api, { getAuthMode } from "../../axios";
+import { refreshCsrf } from "./ensureCsrf";
 import { handleTokenReceived } from "./tokenCallbacks";
 
 export function useRegister() {
@@ -17,6 +18,9 @@ export function useRegister() {
       return res.data;
     },
     onSuccess: async (data) => {
+      // Django rotates the session on registration, invalidating the old CSRF token
+      await refreshCsrf();
+
       if (data.token) {
         await handleTokenReceived(data.token);
       }

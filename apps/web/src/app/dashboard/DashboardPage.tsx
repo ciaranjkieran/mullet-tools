@@ -65,11 +65,24 @@ function isView(v: string | null): v is View {
 export default function DashboardPage() {
   // Read data directly from React Query — avoids double-subscription with
   // Zustand stores that caused React error #300 under React 19 concurrent rendering.
-  const { data: modes = [] } = useModes();
-  const { data: tasks = [] } = useTasks();
-  const { data: milestones = [] } = useMilestones();
-  const { data: projects = [] } = useProjects();
-  const { data: goals = [] } = useGoals();
+  const modesQuery = useModes();
+  const tasksQuery = useTasks();
+  const milestonesQuery = useMilestones();
+  const projectsQuery = useProjects();
+  const goalsQuery = useGoals();
+
+  const modes = modesQuery.data ?? [];
+  const tasks = tasksQuery.data ?? [];
+  const milestones = milestonesQuery.data ?? [];
+  const projects = projectsQuery.data ?? [];
+  const goals = goalsQuery.data ?? [];
+
+  const dataLoading =
+    modesQuery.isLoading ||
+    tasksQuery.isLoading ||
+    milestonesQuery.isLoading ||
+    projectsQuery.isLoading ||
+    goalsQuery.isLoading;
 
   // Router + URL state
   const router = useRouter();
@@ -232,6 +245,29 @@ export default function DashboardPage() {
       setDefaultDate("");
     }
   }, [activeView, setDefaultDate]);
+
+  if (dataLoading) {
+    return (
+      <div className="min-h-screen px-6 py-16 max-w-4xl mx-auto animate-pulse">
+        {/* Mode filter skeleton */}
+        <div className="flex gap-2 mb-8">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <div key={i} className="h-9 w-24 rounded-full bg-gray-200" />
+          ))}
+        </div>
+        {/* Content skeletons */}
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="mb-6">
+            <div className="h-5 w-32 bg-gray-200 rounded mb-3" />
+            <div className="space-y-2">
+              <div className="h-12 bg-gray-100 rounded-lg" />
+              <div className="h-12 bg-gray-100 rounded-lg" />
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen">

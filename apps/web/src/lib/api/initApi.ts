@@ -13,6 +13,12 @@ configureApi({
   onSubscriptionExpired: () => {
     window.dispatchEvent(new CustomEvent("subscription:expired"));
   },
+  onUnauthenticated: () => {
+    // Session expired — redirect to login (unless already there)
+    if (typeof window !== "undefined" && !window.location.pathname.startsWith("/login")) {
+      window.location.href = "/login";
+    }
+  },
 });
 
 // Eagerly fetch CSRF token so the first write request doesn't fail

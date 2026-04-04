@@ -25,6 +25,12 @@ def _null_if_blank(v):
     return None if v == "" else v
 
 
+def _validate_title(value):
+    if not value or not value.strip():
+        raise serializers.ValidationError("Title cannot be blank.")
+    return value.strip()
+
+
 def _merged(serializer, data):
     """
     For PATCH validation: merge incoming attrs with instance fields
@@ -50,6 +56,9 @@ class ModeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Mode
         fields = ["id", "title", "color", "position", "isOwned", "collaboratorCount", "ownerName"]
+
+    def validate_title(self, value):
+        return _validate_title(value)
 
     def validate_position(self, value):
         if value < 0:
@@ -160,6 +169,9 @@ class GoalSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ("position",)
 
+    def validate_title(self, value):
+        return _validate_title(value)
+
     def validate(self, attrs):
         if "due_date" in attrs:
             attrs["due_date"] = _null_if_blank(attrs["due_date"])
@@ -226,6 +238,9 @@ class ProjectSerializer(serializers.ModelSerializer):
             "assignee",
         )
         read_only_fields = ("position",)
+
+    def validate_title(self, value):
+        return _validate_title(value)
 
     def validate(self, attrs):
         if "due_date" in attrs:
@@ -297,6 +312,9 @@ class TaskSerializer(serializers.ModelSerializer):
         )
         read_only_fields = ("position",)
 
+    def validate_title(self, value):
+        return _validate_title(value)
+
     def validate(self, attrs):
         if "due_date" in attrs:
             attrs["due_date"] = _null_if_blank(attrs["due_date"])
@@ -364,6 +382,9 @@ class MilestoneSerializer(serializers.ModelSerializer):
             "assignee",
         )
         read_only_fields = ("position",)
+
+    def validate_title(self, value):
+        return _validate_title(value)
 
     def validate(self, attrs):
         if "due_date" in attrs:

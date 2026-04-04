@@ -102,6 +102,12 @@ export default function PricingClient() {
               >
                 {checkout.isPending ? "Loading..." : ctaText}
               </button>
+
+              {checkout.isError && (
+                <p className="mt-2 text-sm text-red-600 text-center">
+                  Something went wrong. Please try again.
+                </p>
+              )}
             </div>
           </div>
         </div>
