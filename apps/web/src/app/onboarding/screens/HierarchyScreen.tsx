@@ -29,7 +29,7 @@ export default function HierarchyScreen({ onNext }: { onNext: () => void }) {
         alt="Hierarchy diagram showing Goal, Project, Milestone, and Task"
         width={800}
         height={500}
-        className="mt-8 w-full max-w-2xl rounded-xl object-contain"
+        className="mt-8 w-full max-w-4xl rounded-xl object-contain"
       />
 
       {/* Building blocks */}
