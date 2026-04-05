@@ -1,21 +1,25 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
 import { X } from "lucide-react";
 import type { SelectedMode } from "../types";
 
 const PRESET_COLORS = [
-  "#3B82F6",
-  "#8B5CF6",
-  "#10B981",
-  "#F59E0B",
   "#EF4444",
-  "#06B6D4",
-  "#EC4899",
   "#F97316",
-  "#64748B",
+  "#F59E0B",
+  "#84CC16",
+  "#10B981",
   "#14B8A6",
+  "#06B6D4",
+  "#0284C7",
+  "#3B82F6",
+  "#6366F1",
+  "#8B5CF6",
+  "#A855F7",
+  "#D946EF",
+  "#EC4899",
+  "#64748B",
 ];
 
 export default function ModesScreen({
@@ -67,13 +71,6 @@ export default function ModesScreen({
           </p>
         </div>
 
-        <Image
-          src="/Images/Modes Onboarding image.png"
-          alt="Modes illustration"
-          width={160}
-          height={112}
-          className="hidden md:block rounded-xl object-cover shrink-0"
-        />
       </div>
 
       {/* Mode grid */}
