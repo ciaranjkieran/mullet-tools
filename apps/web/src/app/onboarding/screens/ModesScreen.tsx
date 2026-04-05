@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import { X } from "lucide-react";
 import type { SelectedMode } from "../types";
 
 const PRESET_COLORS = [
@@ -29,9 +30,11 @@ export default function ModesScreen({
   busy: boolean;
 }) {
   const [editing, setEditing] = useState(false);
-  const [editIndex, setEditIndex] = useState<number | null>(null);
 
-  const selectedCount = modes.filter((m) => m.selected).length;
+  const selectedModes = modes
+    .map((m, i) => ({ ...m, originalIndex: i }))
+    .filter((m) => m.selected);
+  const selectedCount = selectedModes.length;
 
   function toggle(index: number) {
     const updated = [...modes];
@@ -76,69 +79,87 @@ export default function ModesScreen({
       {/* Mode grid */}
       <div className="mt-8 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
         {modes.map((mode, i) => (
-          <div key={mode.label + i} className="relative">
-            {editing && editIndex === i ? (
-              <div className="rounded-xl border-2 border-gray-900 p-3 bg-white space-y-2">
-                <input
-                  className="w-full text-sm font-medium border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-200"
-                  value={mode.label}
-                  onChange={(e) => updateLabel(i, e.target.value)}
-                  autoFocus
-                />
-                <div className="flex flex-wrap gap-1.5">
-                  {PRESET_COLORS.map((c) => (
-                    <button
-                      key={c}
-                      onClick={() => updateColor(i, c)}
-                      className="w-5 h-5 rounded-full border-2 transition"
-                      style={{
-                        backgroundColor: c,
-                        borderColor:
-                          mode.color === c ? "#111827" : "transparent",
-                      }}
-                    />
-                  ))}
-                </div>
-                <button
-                  onClick={() => {
-                    setEditIndex(null);
-                    setEditing(false);
-                  }}
-                  className="text-xs text-gray-500 hover:text-gray-800 font-medium"
-                >
-                  Done
-                </button>
-              </div>
-            ) : (
-              <button
-                onClick={() => (editing ? setEditIndex(i) : toggle(i))}
-                className={[
-                  "w-full rounded-xl px-3 py-4 text-center transition border-2",
-                  mode.selected
-                    ? "border-gray-900 bg-gray-50"
-                    : "border-gray-200 bg-white hover:border-gray-300",
-                ].join(" ")}
-              >
-                <span className="text-2xl block">{mode.emoji}</span>
-                <span
-                  className={[
-                    "mt-1 text-sm font-medium block",
-                    mode.selected ? "text-gray-900" : "text-gray-500",
-                  ].join(" ")}
-                >
-                  {mode.label}
-                </span>
-                {mode.selected && (
-                  <div
-                    className="mt-1.5 mx-auto w-3 h-3 rounded-full"
-                    style={{ backgroundColor: mode.color }}
-                  />
-                )}
-              </button>
+          <button
+            key={mode.label + i}
+            onClick={() => toggle(i)}
+            className={[
+              "w-full rounded-xl px-3 py-4 text-center transition border-2",
+              mode.selected
+                ? "border-gray-900 bg-gray-50"
+                : "border-gray-200 bg-white hover:border-gray-300",
+            ].join(" ")}
+          >
+            <span className="text-2xl block">{mode.emoji}</span>
+            <span
+              className={[
+                "mt-1 text-sm font-medium block",
+                mode.selected ? "text-gray-900" : "text-gray-500",
+              ].join(" ")}
+            >
+              {mode.label}
+            </span>
+            {mode.selected && (
+              <div
+                className="mt-1.5 mx-auto w-3 h-3 rounded-full"
+                style={{ backgroundColor: mode.color }}
+              />
             )}
-          </div>
+          </button>
         ))}
       </div>
+
+      {/* Edit panel — shows all selected modes with editable name + color */}
+      {editing && (
+        <div className="mt-6 rounded-xl border border-gray-200 bg-white p-4 space-y-3">
+          <div className="flex items-center justify-between mb-1">
+            <p className="text-sm font-semibold text-gray-900">
+              Edit your selected Modes
+            </p>
+            <button
+              onClick={() => setEditing(false)}
+              className="text-gray-400 hover:text-gray-600 transition"
+              aria-label="Close edit panel"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          {selectedModes.length === 0 && (
+            <p className="text-sm text-gray-400">
+              Select some Modes above first.
+            </p>
+          )}
+
+          {selectedModes.map((mode) => (
+            <div
+              key={mode.originalIndex}
+              className="flex items-center gap-3"
+            >
+              <input
+                className="flex-1 text-sm font-medium border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                value={mode.label}
+                onChange={(e) =>
+                  updateLabel(mode.originalIndex, e.target.value)
+                }
+              />
+              <div className="flex gap-1.5">
+                {PRESET_COLORS.map((c) => (
+                  <button
+                    key={c}
+                    onClick={() => updateColor(mode.originalIndex, c)}
+                    className="w-5 h-5 rounded-full border-2 transition"
+                    style={{
+                      backgroundColor: c,
+                      borderColor:
+                        mode.color === c ? "#111827" : "transparent",
+                    }}
+                  />
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       <p className="mt-4 text-sm text-gray-400">
         You can add, edit, or remove Modes at any time.
@@ -154,19 +175,14 @@ export default function ModesScreen({
           {busy ? "Creating Modes..." : "Continue with these Modes"}
         </button>
 
-        <button
-          onClick={() => {
-            if (editing) {
-              setEditing(false);
-              setEditIndex(null);
-            } else {
-              setEditing(true);
-            }
-          }}
-          className="text-sm font-medium text-gray-500 hover:text-gray-800 transition"
-        >
-          {editing ? "Done editing" : "Edit Modes now"}
-        </button>
+        {!editing && (
+          <button
+            onClick={() => setEditing(true)}
+            className="text-sm font-medium text-gray-500 hover:text-gray-800 transition"
+          >
+            Edit Modes now
+          </button>
+        )}
       </div>
     </div>
   );

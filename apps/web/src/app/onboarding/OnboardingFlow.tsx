@@ -41,6 +41,11 @@ export default function OnboardingFlow() {
     { label: "Family", emoji: "👨‍👩‍👧‍👦", color: "#EC4899", selected: false },
     { label: "Creative", emoji: "🎨", color: "#F97316", selected: false },
     { label: "Business", emoji: "📊", color: "#64748B", selected: false },
+    { label: "Social", emoji: "🎉", color: "#A855F7", selected: false },
+    { label: "Fitness", emoji: "🏋️", color: "#16A34A", selected: false },
+    { label: "Career", emoji: "📈", color: "#0284C7", selected: false },
+    { label: "Hobbies", emoji: "🎮", color: "#D946EF", selected: false },
+    { label: "Education", emoji: "🎓", color: "#0D9488", selected: false },
   ]);
   const [createdModeIds, setCreatedModeIds] = useState<
     { label: string; id: number }[]
