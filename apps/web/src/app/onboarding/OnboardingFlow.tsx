@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { useMe } from "@shared/api/hooks/auth/useMe";
 import { useCompleteOnboarding } from "@shared/api/hooks/auth/useCompleteOnboarding";
 import { useCreateMode } from "@shared/api/hooks/modes/useCreateMode";
+import { useModes } from "@shared/api/hooks/modes/useModes";
+import { useDeleteMode } from "@shared/api/hooks/modes/useDeleteMode";
 import { useCreateGoal } from "@shared/api/hooks/goals/useCreateGoal";
 import { useCreateProject } from "@shared/api/hooks/projects/useCreateProject";
 import { useCreateMilestone } from "@shared/api/hooks/milestones/useCreateMilestone";
@@ -23,7 +25,9 @@ export default function OnboardingFlow() {
   const router = useRouter();
   const { data: me } = useMe();
   const completeOnboarding = useCompleteOnboarding();
+  const { data: existingModes = [] } = useModes();
   const createMode = useCreateMode();
+  const deleteMode = useDeleteMode();
   const createGoal = useCreateGoal();
   const createProject = useCreateProject();
   const createMilestone = useCreateMilestone();
@@ -63,6 +67,16 @@ export default function OnboardingFlow() {
   const back = useCallback(() => setStep((s) => Math.max(s - 1, 1)), []);
 
   const createSelectedModes = useCallback(async () => {
+    // If modes already exist (e.g. page was refreshed mid-onboarding),
+    // delete them first so we don't create duplicates.
+    for (const mode of existingModes) {
+      try {
+        await deleteMode.mutateAsync(mode.id);
+      } catch {
+        // ignore — mode may already be gone
+      }
+    }
+
     const chosen = selectedModes.filter((m) => m.selected);
     const results: { label: string; id: number }[] = [];
 
@@ -78,7 +92,7 @@ export default function OnboardingFlow() {
 
     setCreatedModeIds(results);
     return results;
-  }, [selectedModes, createMode]);
+  }, [selectedModes, existingModes, createMode, deleteMode]);
 
   const finishOnboarding = useCallback(async () => {
     setFinishing(true);
