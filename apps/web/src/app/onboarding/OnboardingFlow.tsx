@@ -37,15 +37,15 @@ export default function OnboardingFlow() {
     { label: "Finance", emoji: "💰", color: "#F59E0B", selected: false },
     { label: "Health", emoji: "💪", color: "#EF4444", selected: false },
     { label: "Travel", emoji: "✈️", color: "#06B6D4", selected: false },
-    { label: "Learning", emoji: "📚", color: "#8B5CF6", selected: false },
+    { label: "Learning", emoji: "📚", color: "#6366F1", selected: false },
     { label: "Family", emoji: "👨‍👩‍👧‍👦", color: "#EC4899", selected: false },
     { label: "Creative", emoji: "🎨", color: "#F97316", selected: false },
     { label: "Business", emoji: "📊", color: "#64748B", selected: false },
     { label: "Social", emoji: "🎉", color: "#A855F7", selected: false },
-    { label: "Fitness", emoji: "🏋️", color: "#16A34A", selected: false },
+    { label: "Fitness", emoji: "🏋️", color: "#84CC16", selected: false },
     { label: "Career", emoji: "📈", color: "#0284C7", selected: false },
     { label: "Hobbies", emoji: "🎮", color: "#D946EF", selected: false },
-    { label: "Education", emoji: "🎓", color: "#0D9488", selected: false },
+    { label: "Education", emoji: "🎓", color: "#14B8A6", selected: false },
   ]);
   const [createdModeIds, setCreatedModeIds] = useState<
     { label: string; id: number }[]
