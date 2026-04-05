@@ -27,9 +27,9 @@ export default function HierarchyScreen({ onNext }: { onNext: () => void }) {
       <Image
         src="/Images/Hierarchy Image2.png"
         alt="Hierarchy diagram showing Goal, Project, Milestone, and Task"
-        width={448}
-        height={160}
-        className="mt-8 w-full max-w-md rounded-xl object-contain"
+        width={800}
+        height={500}
+        className="mt-8 w-full max-w-2xl rounded-xl object-contain"
       />
 
       {/* Building blocks */}
